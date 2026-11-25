@@ -562,8 +562,11 @@ const ART = (() => {
   function lerpPose(a, b, t) {
     const o = {};
     for (const k in FEET) if (k in a || k in b) o[k] = (a[k] ?? FEET[k]) + ((b[k] ?? FEET[k]) - (a[k] ?? FEET[k])) * t;
+    // pés opcionais (poltrona): giro/inclinação partem de 0; posição de lado (fzx) só vale enquanto a pose pede
+    for (const k of ["fyF", "fyB", "fpF", "fpB"]) if (k in a || k in b) o[k] = (a[k] || 0) + ((b[k] || 0) - (a[k] || 0)) * t;
+    for (const k of ["fzxF", "fzxB"]) if (k in b && (k in a || t > 0.5)) o[k] = k in a ? a[k] + (b[k] - a[k]) * t : b[k];
     for (const k in a) {
-      if (k in FEET) continue;
+      if (k in FEET || k in o) continue;
       if (Array.isArray(a[k])) {
         const bb = b[k] || a[k];
         o[k] = a[k].map((v, i) => (i === 3 ? (t > 0.5 ? bb[3] || 0 : v) : v + ((bb[i] ?? v) - v) * t));

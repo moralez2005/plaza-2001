@@ -662,13 +662,13 @@ const STREET = (() => {
       if (s.act === "door" && c) return "Sair (o disco fica)";
       return s.label;
     }
-    // deitado na poltrona: recostado, mãos atrás da cabeça, pernas esticadas no pufe com os calcanhares apoiados
-    // (ponta do pé pra cima e aberta, a sola fica pra frente) e um pé balançando de leve no ritmo
+    // deitado na poltrona: recostado, mãos atrás da cabeça, pernas esticadas no pufe e tornozelos cruzados,
+    // calcanhares apoiados com a ponta do pé pra cima (a sola fica virada pra frente); o pé de cima balança no ritmo
     function LOUNGE(t, br) {
-      const sw = Math.sin(t * 2.1) * 0.06;
+      const sw = Math.sin(t * 2.1) * 0.05;
       return POSE({ stand: 0, walk: 0, px: -0.06, py: 0.47 + br, pz: 0, lean: -0.72, twist: 0.04, hy: Math.sin(t * 0.25) * 0.2, hp: 0.32, hr: 0.05,
         hF: [-0.5, 1.02, 0.15], hB: [-0.52, 1.0, -0.15],
-        fxF: 0.7, fxB: 0.64, fzF: 0.17, fzB: -0.15, lf: 0.47, lb: 0.46, fyF: 0.35 + sw, fyB: -0.3, fpF: 1.15, fpB: 1.05 });
+        fxF: 0.75, fxB: 0.7, fzxF: -0.015, fzxB: 0.03, lf: 0.56, lb: 0.44, fyF: 0.14 + sw, fyB: -0.12, fpF: 1.38 + sw, fpB: 1.32 });
     }
     function needleInfo() {
       const N = IN.needle, ds = dsOf(N.deck), ai = ds[N.fmt], a = shopAlbums()[ai];

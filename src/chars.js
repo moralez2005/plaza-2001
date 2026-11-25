@@ -21,7 +21,7 @@ const CHARS = (() => {
     kf: {
       cam: { body: 0xc9ced8, trim: 0xe8242c, lens: 0x2a2d38 },
       name: "K.F.", face: "kf", skin: 0xc68e62, hair: 0x2b170c, top: 0xff6a1a, top2: 0xd8460a, pants: 0x4f86d6, shoe: 0xe02a2a, shoeToe: 0xffffff, shoe2: 0xe02a2a, sole: 0xf4f1ea, tee: "loose", flare: 1.3,
-      phones: 0xe8262b, deck: 0x3fd0ff, deckShape: "shark", hairStyle: "taper", sleeve: "short", belt: true, print: "nerd", walkman: true, earbud: "both", wristband: 0xe8262b,
+      phones: 0xe8262b, deck: 0x3fd0ff, deckShape: "shark", hairStyle: "afro", sleeve: "short", belt: true, print: "nerd", walkman: true, earbud: "both", wristband: 0xe8262b,
       len: { thigh: 0.49, shin: 0.49, torso: 0.5, up: 0.31, fore: 0.29 }, headScale: 0.9, shoulder: 1.14, pantsR: 1.0, pyAdd: 0.06,
       headProf: "mature", stance: "regular", shades: true, ride: { lean: 0.2, twist: 0.32, hy: -1.05, hp: 0.02 }, idle: "peace",
     },
@@ -667,7 +667,7 @@ const CHARS = (() => {
         const fzS = s === "F" ? (p.fzF ?? 0.13) : (p.fzB ?? -0.13);
         const fxS = (s === "F" ? p.fxF : p.fxB) ?? (p.fx || 0);
         foot = M.pt(feetBase, [0.02 + fxS, 0.21 + lift, fzS]);
-      } else foot = M.pt(feetBase, [0.02 + ((s === "F" ? p.fxF : p.fxB) || p.fx || 0), 0.21 + lift, p.walk ? (s === "F" ? p.fzF : p.fzB) : fz]);
+      } else foot = M.pt(feetBase, [0.02 + ((s === "F" ? p.fxF : p.fxB) || p.fx || 0), 0.21 + lift, (s === "F" ? p.fzxF : p.fzxB) ?? (p.walk ? (s === "F" ? p.fzF : p.fzB) : fz)]);
       const hint = look.skates || p.walk ? V.add(fwd, V.mul(along, hz > 0 ? 0.04 : -0.04)) : V.add(fwd, V.mul(along, hz > 0 ? 0.2 : -0.2));
       const k = ik(hip, foot, LEN.thigh, LEN.shin, hint);
       F[BONE["thigh" + s]] = seg(hip, k.mid, along);
