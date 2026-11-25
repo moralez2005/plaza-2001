@@ -21,7 +21,7 @@ const CHARS = (() => {
     kf: {
       cam: { body: 0xc9ced8, trim: 0xe8242c, lens: 0x2a2d38 },
       name: "K.F.", face: "kf", skin: 0xc68e62, hair: 0x2b170c, top: 0xff6a1a, top2: 0xd8460a, pants: 0x4f86d6, shoe: 0xe02a2a, shoeToe: 0xffffff, shoe2: 0xe02a2a, sole: 0xf4f1ea, tee: "loose", flare: 1.3,
-      phones: 0xe8262b, deck: 0x3fd0ff, deckShape: "shark", hairStyle: "afro", sleeve: "short", belt: true, print: "nerd", walkman: true, earbud: "both", wristband: 0xe8262b,
+      phones: 0xe8262b, deck: 0x3fd0ff, deckShape: "shark", hairStyle: "taper", sleeve: "short", belt: true, print: "nerd", walkman: true, earbud: "both", wristband: 0xe8262b,
       len: { thigh: 0.49, shin: 0.49, torso: 0.5, up: 0.31, fore: 0.29 }, headScale: 0.9, shoulder: 1.14, pantsR: 1.0, pyAdd: 0.06,
       headProf: "mature", stance: "regular", shades: true, ride: { lean: 0.2, twist: 0.32, hy: -1.05, hp: 0.02 }, idle: "peace",
     },
@@ -1034,10 +1034,10 @@ const CHARS = (() => {
       for (let k = 0; k < rings.length - 1; k++)
         for (let i = 0; i < N; i++) {
           const j = (i + 1) % N, A = rings[k], B = rings[k + 1];
-          t.quad(A[i], A[j], B[j], B[i], hair, FLAT);
+          t.quad(A[i], A[j], B[j], B[i], o.col || hair, FLAT);
         }
       const tp = rings[rings.length - 1], tcen = [prof[prof.length - 1][3], prof[prof.length - 1][0] + 0.02, 0];
-      for (let i = 0; i < N; i++) t.tri(tcen, tp[(i + 1) % N], tp[i], hair, FLAT);
+      for (let i = 0; i < N; i++) t.tri(tcen, tp[(i + 1) % N], tp[i], o.col || hair, FLAT);
       t.orient([-0.01, 0.22, 0], st);
     };
     const P = (s) => [[0, 0.155 * s, 0.15 * s, -0.01], [0.27, 0.16 * s, 0.154 * s, -0.005], [0.33, 0.15 * s, 0.144 * s, -0.01], [0.38, 0.118 * s, 0.114 * s, -0.015], [0.42, 0.06 * s, 0.06 * s, -0.015]];
@@ -1060,6 +1060,22 @@ const CHARS = (() => {
         const mid = V.add(o, V.add(V.mul(out, 0.055), [0, 0, sgn * 0.02]));
         shard(t, V.sub(o, V.mul(out, 0.02)), mid, 0.034, 0.026, hairL);
         shard(t, mid, V.add(mid, V.add(V.mul(out, 0.03), [0, -0.03, -sgn * 0.03])), 0.026, 0.02, hair);
+      }
+    } else if (L.hairStyle === "taper") {
+      // taper fade: laterais e nuca bem baixinhas (degradê pra pele) e cachinhos curtos em cima
+      const skin = c(L.skin), fade = V.add(V.mul(hair, 0.5), V.mul(skin, 0.5));
+      cap({ prof: P(1.0), back: 0.1, bang: 0.33, pow: 3, col: fade });
+      cap({ prof: P(1.018), back: 0.25, bang: 0.335, pow: 2 });
+      const TC = [
+        [0.085, 0.395, 0, 0.062], [0.075, 0.385, 0.085, 0.052], [0.075, 0.385, -0.085, 0.052],
+        [-0.005, 0.43, 0, 0.07], [-0.01, 0.415, 0.095, 0.058], [-0.01, 0.415, -0.095, 0.058],
+        [-0.095, 0.415, 0.0, 0.066], [-0.095, 0.4, 0.085, 0.054], [-0.095, 0.4, -0.085, 0.054], [-0.165, 0.355, 0, 0.05],
+      ];
+      TC.forEach(([x, y, z, r], i) => lump([x, y, z], r, 0.95 + R() * 0.2, 0.7 + R() * 0.15, 0.95 + R() * 0.2, i % 3 === 1 ? hairL : hair));
+      // cachinhos soltos no topo (quebram a silhueta, sem virar black power)
+      for (const [x, z, sgn] of [[0.1, 0.05, 1], [0.04, -0.07, -1], [-0.05, 0.06, 1], [-0.12, -0.04, -1], [0.0, 0.0, 1]]) {
+        const o = [x, 0.47 - Math.abs(x) * 0.25, z], up = V.norm([x * 0.8, 1, z * 0.8]);
+        shard(t, o, V.add(o, V.add(V.mul(up, 0.035), [0, 0, sgn * 0.018])), 0.022, 0.016, sgn > 0 ? hairL : hair);
       }
     } else if (L.hairStyle === "spiky") {
       cap({ prof: P(1.05), back: 0.13, bang: 0.28, pow: 3 });
@@ -1170,7 +1186,7 @@ const CHARS = (() => {
       // senão só num lado (o outro tá com a Julie)
       const sides = L.earbud === "both" ? [-1, 1] : [L.earSide || 1];
       for (const sd of sides) {
-        const z = sd * (L.hairStyle === "afro" ? 0.255 : 0.14);
+        const z = sd * (L.hairStyle === "afro" ? 0.255 : L.hairStyle === "taper" ? 0.152 : 0.14);
         t.ball([0.03, 0.19, z], 0.028, c(0xf4f4f4), FLAT, 6, 4);
       }
     } else if (L.walkman) {

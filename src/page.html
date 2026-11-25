@@ -403,7 +403,7 @@ function dmSet(cls,line){const dm=$('dm');clearTimeout(dmQ);
   dmQ=setTimeout(()=>{dm.className='dm show '+cls;DISC.set(cls);$('dmLine').textContent=line;clearTimeout(dmMini);
     if(cls==='play')dmMini=setTimeout(()=>dm.classList.add('mini'),5000)},Math.max(0,insertEnd-performance.now()))}
 RADIO.onEvent((ev,t,st)=>{const dm=$('dm');
-  if(game.inside){if(ev==='failed')toastC('Sem YouTube aqui: o disco gira, mas o som não sai');else if(ev==='shopfail')toastC('Esse disco não abriu (o vídeo tá bloqueado ou fora do ar). Me manda outro link!');return}
+  if(game.inside){if(ev==='failed')toastC('Sem YouTube aqui: o disco gira, mas o som não sai');else if(ev==='shopskip')toastC('Essa faixa não deixa tocar fora do YouTube: pulei pra próxima');else if(ev==='shopfail')toastC('Esse disco não abriu (o vídeo tá bloqueado ou fora do ar). Me manda outro link!');return}
   if(ev==='insert'){clearTimeout(dmQ);clearTimeout(dmMini);dm.style.setProperty('--dmSkin',st.hand||'#a8714a');dm.style.setProperty('--dmBand',st.band||'#e8242c');$('dmName').textContent=st.name.toUpperCase();$('dmLine').textContent=st.style;
     dm.className='dm';void dm.offsetWidth;dm.className='dm show insert';insertEnd=performance.now()+1750;DISC.setHand(st.hand||'#a8714a',st.band||'#e8242c');DISC.resize();DISC.set('insert')}
   else if(ev==='loading')dmSet('load','carregando');
@@ -470,7 +470,7 @@ function inOpen(id){INO=id;$('say').classList.remove('on');for(const o of ['digO
 function inClose(){INO=null;for(const o of ['digO','insO'])$(o).classList.remove('on');game.release();$('cv').focus()}
 for(const b of document.querySelectorAll('[data-inclose]'))b.addEventListener('click',()=>{if(INO==='insO'&&INS.from==='dig'){inOpen('digO');drawDig()}else inClose()});
 ui.inside=(ev,d)=>{
-  if(ev==='enter'){$('screen').classList.add('inside');$('inName').textContent=d.name;$('mmBox').classList.remove('on');clearTimeout(dmQ);clearTimeout(dmMini);$('dm').className='dm';DISC.set('');SHOP.radioWas=RADIO.active;if(RADIO.active)RADIO.pause(true);clearInterval(SHOP.tm);SHOP.tm=setInterval(shopTick,400);inSpot(null);if(d.skates)setTimeout(()=>toastC('Patins na porta, chinelo no pé 🩴'),900)}
+  if(ev==='enter'){$('screen').classList.add('inside');$('inName').textContent=d.name;$('mmBox').classList.remove('on');clearTimeout(dmQ);clearTimeout(dmMini);$('dm').className='dm';DISC.set('');SHOP.radioWas=RADIO.active;RADIO.hold(true);if(RADIO.active)RADIO.pause(true);clearInterval(SHOP.tm);SHOP.tm=setInterval(shopTick,400);inSpot(null);if(d.skates)setTimeout(()=>toastC('Patins na porta, chinelo no pé 🩴'),900)}
   else if(ev==='spot')inSpot(d);
   else if(ev==='say'&&d.mini){toastC(d.line)}
   else if(ev==='say'){$('sayW').textContent=d.who;$('sayL').textContent='“'+d.line+'”';const b=$('say');b.classList.remove('on');void b.offsetWidth;b.classList.add('on');clearTimeout(SHOP.sayT);SHOP.sayT=setTimeout(()=>b.classList.remove('on'),4200)}
@@ -482,16 +482,24 @@ ui.inside=(ev,d)=>{
   else if(ev==='lift')shopStop();
   else if(ev==='leave'){inSpot(null);fadeDo(()=>game.exitPlace())}
   else if(ev==='exit'){$('screen').classList.remove('inside');$('mmBox').classList.add('on');inSpot(null);$('say').classList.remove('on');clearInterval(SHOP.tm);for(const o of ['digO','insO','lanO'])$(o).classList.remove('on');INO=null;placeOn=null;MG.stop();
-    if(d.reset){if(SHOP.ai>=0){SHOP.ai=-1;$('np').classList.remove('on');RADIO.stopTrack()}return}
+    if(d.reset){RADIO.hold(false);RADIO.setVol(null);if(SHOP.ai>=0){SHOP.ai=-1;$('np').classList.remove('on');RADIO.stopTrack()}return}
     $('ndl').classList.remove('on');
-    RADIO.setVol(null);
+    RADIO.setVol(null);RADIO.hold(false);
     if(SHOP.ai>=0){SHOP.ai=-1;$('np').classList.remove('on');if(SHOP.radioWas){RADIO.stopTrack();RADIO.pause(false)}else RADIO.stop()}else if(SHOP.radioWas)RADIO.pause(false);$('cv').focus()}};
 function inSpot(d){$('inP').classList.toggle('on',!!d);if(d)$('inPL').textContent=d.label}
 // toca o disco (LP na vitrola, CD no aparelho); num álbum de vídeo único é só soltar a agulha no segundo certo
-function shopPlay(ai,fmt,ti,deck){const a=albs()[ai];ti=ti||0;const f=a.faixas[ti];deck=deck||SHOP.deck||'main';SHOP.deck=deck;SHOP.req={ti,at:performance.now()};
+// disco tem de onde tocar? (playlist do álbum, vídeo do álbum inteiro ou vídeo de pelo menos uma faixa)
+function shopSrc(a){return !!(a&&(a.pl||a.um||a.faixas.some(x=>x.id)))}
+function shopPlay(ai,fmt,ti,deck){const a=albs()[ai];ti=ti||0;deck=deck||SHOP.deck||'main';
+  // disco novo na vitrola/no aparelho: o anterior para na hora, toca só o que é deste disco
+  if(SHOP.ai>=0&&(SHOP.ai!==ai||SHOP.deck!==deck)){SHOP.ai=-1;game.shopStop();$('np').classList.remove('on');RADIO.pause(true);RADIO.stopTrack()}
+  if(!shopSrc(a)){toastC('“'+a.t+'” ainda tá sem som aqui — manda o link do álbum que o Vavá põe pra tocar');return}
+  // disco com faixas soltas: pula as que ainda não têm vídeo
+  if(!a.pl&&!a.um&&!a.faixas[ti].id){let k=ti;while(k<a.faixas.length&&!a.faixas[k].id)k++;if(k>=a.faixas.length)k=a.faixas.findIndex(x=>x.id);toastC('Faixa '+(ti+1)+' ainda sem link — indo pra '+(k+1)+'. '+a.faixas[k].t);ti=k}
+  const f=a.faixas[ti];SHOP.deck=deck;SHOP.req={ti,at:performance.now()};
   const base={a:a.a,once:1,onEnd:shopEnded};
   base.onFail=()=>{SHOP.ai=-1;game.shopStop();$('np').classList.remove('on')};
-  RADIO.playTrack(Object.assign(base,f,a.pl?{pl:a.pl,i:ti,n:a.faixas.length}:a.um?{}:{q:a.faixas.slice(ti+1).map(x=>Object.assign({a:a.a},x))}));
+  RADIO.playTrack(Object.assign(base,f,a.pl?{pl:a.pl,i:ti,n:a.faixas.length}:a.um?{}:{q:a.faixas.slice(ti+1).filter(x=>x.id).map(x=>Object.assign({a:a.a},x))}));
   SHOP.ai=ai;SHOP.fmt=fmt;SHOP.ti=ti;game.shopPlay(ai,fmt,deck);game.shopProg(a.um?f.s/a.fim:ti/a.faixas.length,ti);
   $('npV').className='vmini'+(fmt==='cd'?' cd':'');$('npL').src=fmt==='cd'?'':labOf(a);$('npL').style.display=fmt==='cd'?'none':'';$('np').classList.add('on');shopTick();
   toastC('♪ '+(ti+1)+'. '+f.t)}
@@ -505,7 +513,9 @@ function shopCur(){const a=albs()[SHOP.ai];if(!a)return null;const t=RADIO.time(
   else if(a.pl){let k=RADIO.plIndex();if(fresh&&k!==SHOP.req.ti)k=SHOP.req.ti;else if(fresh&&k===SHOP.req.ti)SHOP.req.at=0;if(k>=0)ti=k;if(ti>=a.faixas.length){ti=a.faixas.length-1;SHOP.over=1}p=(ti+Math.min(1,t/300))/a.faixas.length}
   else{const c=RADIO.now();if(c){const k=a.faixas.findIndex(f=>f.id===c.id&&f.t===c.t);if(k>=0)ti=k}p=(ti+Math.min(1,t/240))/a.faixas.length}
   return{a,ti,p:Math.max(0,Math.min(1,p)),t}}
-function shopTick(){if(SHOP.ai<0)return;const c=shopCur();if(!c)return;if(SHOP.over){SHOP.over=0;shopStop();toastC('Fim do disco ♪');return}const f=c.a.faixas[c.ti];game.shopProg(c.p,c.ti);
+function shopTick(){if(SHOP.ai<0)return;let c=shopCur();if(!c)return;
+  if(c.a.auto&&c.a.pl&&!(SHOP.req&&performance.now()-SHOP.req.at<4500)){const n=RADIO.plLen();if(n>0&&n!==c.a.faixas.length){c.a.faixas=Array.from({length:n},(_,i)=>c.a.faixas[i]||{t:'Faixa '+(i+1)});c=shopCur()}
+    const tt=RADIO.title().replace(/\s*[\(\[](official|clipe|video|áudio|audio|lyric|visualizer)[^\)\]]*[\)\]]/ig,'').replace(new RegExp('^'+c.a.a.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\s*[-–]\\s*','i'),'').trim();if(tt&&c.a.faixas[c.ti])c.a.faixas[c.ti].t=tt}if(SHOP.over){SHOP.over=0;shopStop();toastC('Fim do disco ♪');return}const f=c.a.faixas[c.ti];game.shopProg(c.p,c.ti);
   set($('npT'),'textContent',(c.a.um||c.a.faixas.some(x=>x.lado)?'Lado '+(f.lado||'A')+' · ':'')+(c.ti+1)+'. '+f.t);set($('npA'),'textContent',c.a.a+' — '+c.a.t+(SHOP.fmt==='cd'?' (CD)':' (LP)'));$('npBar').style.width=Math.round(c.p*100)+'%';}
 // caixote: folhear os discos um por um
 let DIG={fmt:'lp',list:[],c:0};
@@ -517,7 +527,7 @@ function drawDig(){const A=albs(),L=DIG.list,stk=$('stk');let h='';
     h+=`<div class="rec${DIG.fmt==='cd'?' cd':''}${d<0?' fw':''}" data-i="${i}" style="background-image:url('${urlOf(a)}');transform:${tr};z-index:${50-Math.abs(d)};filter:brightness(${d===0?1:d<0?.75:Math.max(.35,.92-d*.09)})"></div>`}
   h+=`<div class="crF${DIG.fmt==='cd'?' cd':''}" data-t="${DIG.fmt==='cd'?'CDs':'ROCK · POP · NACIONAL'}"></div>`;stk.innerHTML=h;
   for(const r of stk.querySelectorAll('.rec'))r.addEventListener('click',()=>{const i=+r.dataset.i;if(i===DIG.c)digPick();else{DIG.c=i;drawDig()}});
-  const a=A[L[DIG.c]];$('digA').textContent=a?a.t:'';$('digN').textContent=a?a.a+(a.y?' · '+a.y:'')+'  ('+(DIG.c+1)+'/'+L.length+')':''}
+  const a=A[L[DIG.c]];$('digA').textContent=a?a.t:'';$('digN').textContent=a?a.a+(a.y?' · '+a.y:'')+(shopSrc(a)?'':' · sem som ainda')+'  ('+(DIG.c+1)+'/'+L.length+')':''}
 function digMove(d){const n=DIG.c+d;if(n<0||n>=DIG.list.length)return;DIG.c=n;drawDig();sfxFlip()}
 function digPick(){openIns(DIG.list[DIG.c],DIG.fmt,'dig')}
 $('digL').addEventListener('click',()=>digMove(-1));$('digR').addEventListener('click',()=>digMove(1));
@@ -665,6 +675,7 @@ addEventListener('keydown',e=>{const k=e.key.toLowerCase();
     if(k==='arrowleft'||k==='a')game.needleMove(-1);else if(k==='arrowright'||k==='d')game.needleMove(1);else if(k==='enter'||k===' '||k==='e')game.needleDrop();else if(k==='l'||k==='x')game.needleLift();else if(k==='t')game.needleTake();else if(k==='escape')game.needleExit();return}
   if(game.inside&&!paused&&game.lounging){if(k==='enter'||k==='escape'||k===' '||k==='e'){e.preventDefault();game.release()}return}
   if(game.inside&&!paused&&k==='f'){game.phones();return}
+  if(game.inside&&!paused&&k==='q'){game.door();return}
   if(game.inside&&!paused){if(k==='enter'||k==='e'||k===' '){e.preventDefault();if(!e.repeat)game.interact();return}if(k==='n'){shopSkip(1);return}if(k==='b'){shopSkip(-1);return}if(k==='f'||k==='r'||k==='c')return}
   if(dlgOn){if(k==='enter'){e.preventDefault();game.acceptMission();dlg(false);return}if(k==='escape'){e.preventDefault();dlg(false);return}}
   // fita passando: controles do videocassete

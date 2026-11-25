@@ -70,6 +70,60 @@ const STREET = (() => {
     const sparks = Array.from({ length: 10 }, () => add(sparkG, M.I(), { hidden: true, v: [0, 0, 0], p: [0, 0, 0], life: 0 }));
     const puffG = [0xff4fa3, 0xffe14d, 0x3fd0ff, 0x8c5cff].map((c) => Rn.upload(new Mesh().ball([0, 0, 0], 0.18, hex(c), 2, 6, 4), { outline: false }));
     const puffs = Array.from({ length: 28 }, (_, i) => add(puffG[i % 4], M.I(), { hidden: true, v: [0, 0, 0], p: [0, 0, 0], life: 0 }));
+    // ---------- fachada da Vavá Discos: um vinil gigante girando acima da porta e o letreiro em neon ----------
+    const vava = (() => {
+      const cv = document.createElement("canvas");
+      cv.width = 1024; cv.height = 512;
+      const g = cv.getContext("2d");
+      // vinil (512 × 512 à esquerda)
+      const cx = 256, cy = 256, R0 = 250;
+      g.fillStyle = "#0d0c12"; g.beginPath(); g.arc(cx, cy, R0, 0, Math.PI * 2); g.fill();
+      for (let r = 96; r < R0 - 6; r += 3.2) { g.strokeStyle = (r | 0) % 7 < 3 ? "#26232e" : "#18161e"; g.lineWidth = 1.4; g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.stroke(); }
+      g.strokeStyle = "#8a84a0"; g.lineWidth = 6; g.beginPath(); g.arc(cx, cy, R0 - 4, 0, Math.PI * 2); g.stroke();
+      // brilho (gira junto: é ele que mostra o disco rodando)
+      for (const a0 of [-0.9, Math.PI - 0.9]) {
+        const gr = g.createRadialGradient(cx, cy, 90, cx, cy, R0);
+        gr.addColorStop(0, "rgba(255,255,255,0)"); gr.addColorStop(0.6, "rgba(200,190,255,0.22)"); gr.addColorStop(1, "rgba(255,255,255,0.05)");
+        g.fillStyle = gr; g.beginPath(); g.moveTo(cx, cy); g.arc(cx, cy, R0 - 6, a0, a0 + 0.55); g.closePath(); g.fill();
+      }
+      // rótulo do meio
+      g.fillStyle = "#ff4fa3"; g.beginPath(); g.arc(cx, cy, 92, 0, Math.PI * 2); g.fill();
+      g.fillStyle = "#ffd23f"; g.beginPath(); g.arc(cx, cy, 92, Math.PI, Math.PI * 2); g.fill();
+      g.strokeStyle = "#1b1530"; g.lineWidth = 4; g.beginPath(); g.arc(cx, cy, 90, 0, Math.PI * 2); g.stroke();
+      g.textAlign = "center"; g.textBaseline = "middle"; g.fillStyle = "#1b1530";
+      g.font = "900 40px Rubik, Arial Black, sans-serif"; g.fillText("VAVÁ", cx, cy - 38);
+      g.font = "800 22px Rubik, Arial, sans-serif"; g.fillStyle = "#fff6e6"; g.fillText("DISCOS · 33⅓", cx, cy + 40);
+      g.fillStyle = "#0d0c12"; g.beginPath(); g.arc(cx, cy, 9, 0, Math.PI * 2); g.fill();
+      // letreiro (512 × 256 à direita): placa escura com neon rosa e azul
+      const x = 512, y = 0, w = 512, h = 256;
+      g.fillStyle = "#1b1530"; g.beginPath(); g.roundRect ? g.roundRect(x + 6, y + 6, w - 12, h - 12, 28) : g.rect(x + 6, y + 6, w - 12, h - 12); g.fill();
+      g.lineWidth = 8; g.strokeStyle = "#ff4fa3"; g.shadowColor = "#ff4fa3"; g.shadowBlur = 18; g.stroke();
+      // neon: brilho em volta e depois o texto nítido por cima
+      for (const [txt, ty, fs, glow, core, tube] of [["VAVÁ", 100, 128, "#ff4fa3", "#fff0f8", "#ff7ac0"], ["D I S C O S", 196, 62, "#3fd0ff", "#f0fcff", "#7ae0ff"]]) {
+        g.font = "900 " + fs + "px Rubik, Arial Black, sans-serif";
+        g.shadowColor = glow; g.shadowBlur = 26; g.fillStyle = tube; g.fillText(txt, x + w / 2, y + ty);
+        g.shadowBlur = 0; g.lineWidth = 7; g.strokeStyle = tube; g.strokeText(txt, x + w / 2, y + ty); g.fillStyle = core; g.fillText(txt, x + w / 2, y + ty);
+      }
+      const tex = Rn.texture(cv);
+      const U = (x0, y0, x1, y1) => [x0 / 1024, y0 / 512, x1 / 1024, y1 / 512];
+      // prédio da loja: x -25..-16, frente em z = 44 (olha pra -z), telhado em ~7.5
+      const SW = 0.14, cz = 43.78;
+      const dM = new Mesh().decal([0, 0, 0], [-1, 0, 0], [0, 1, 0], 4.3, 4.3, U(4, 4, 508, 508), [1.08, 1.08, 1.08], 4);
+      const disc = add(Rn.upload(dM, { outline: false }), M.I(), { tex });
+      const at = M.T(-18.3, SW + 7.15, cz);
+      // espessura e suporte do disco (de lado não parece papel)
+      const back = new Mesh();
+      back.tube([-18.3, SW + 7.15, cz + 0.02], [-18.3, SW + 7.15, cz + 0.12], 2.13, 2.13, 28, hex(0x0d0c12));
+      back.tube([-18.3, SW + 7.15, cz + 0.12], [-18.3, SW + 7.15, 44.02], 0.12, 0.12, 8, hex(0xb8bcc4), 1);
+      add(Rn.upload(back), M.I());
+      const sM = new Mesh().decal([-22.55, SW + 6.05, 43.94], [-1, 0, 0], [0, 1, 0], 3.9, 1.95, U(516, 6, 1020, 250), [1.25, 1.25, 1.25], 4);
+      add(Rn.upload(sM, { outline: false }), M.I(), { tex });
+      const plate = new Mesh();
+      plate.box(-24.62, SW + 5.0, 43.95, -20.48, SW + 7.1, 44.0, hex(0x15111f));
+      add(Rn.upload(plate), M.I());
+      return { disc, at, spin: (t) => { disc.mo = M.mul(at, M.RZ(-t * 0.55)); } };
+    })();
+    vava.spin(0);
     // skatista
     let look = ART.LOOKS[opt.look || "kf"];
     let skFwd = opt.skatesForward !== false;
@@ -111,7 +165,7 @@ const STREET = (() => {
     ];
     // figurantes: gente que só passeia ou trabalha nas lojas (mesmos rostos dos moradores, outras roupas e cabelos)
     {
-      const HAIRS = ["short", "long", "bun", "cap", "afro", "bob", "spiky", "short", "long", "bald"];
+      const HAIRS = ["short", "long", "bun", "cap", "afro", "bob", "spiky", "taper", "long", "bald"];
       const HC = [0x1b1210, 0x2b170c, 0x6a3a1a, 0xc88a3a, 0x1b1530, 0x8a5a2a, 0xd84a8a, 0x2a1a10];
       const TOPS = [0x2457c8, 0xe0302b, 0x1fae5a, 0xffd23f, 0xff8fc8, 0x8c5cff, 0xf5f1e6, 0x1b1530, 0xff8a1f, 0x3fd0ff, 0x7a4a9a, 0x2a8a7a];
       const PANTS = [0x2b3a7a, 0x3a3a52, 0x5a4a3a, 0x1b1a22, 0x6a6a7a, 0xd8cbb0, 0x2f6fd8];
@@ -436,7 +490,7 @@ const STREET = (() => {
     // lugares onde dá pra entrar: lan house (minigames) e loja de discos (ouvir álbuns)
     const PLACES = [
       { id: "lan", at: [-30, 42.4], who: "Dudu da Lan", line: "E aí, mano! Bora jogar um pouco? Pra vocês a ficha é por minha conta... só não conta pro meu chefe, kkkk.", title: "Entrar na Lan House" },
-      { id: "discos", at: [-20.5, 42.4], who: "Seu Vavá dos Discos", line: "Chegou coisa nova! Pode escutar à vontade na cabine, só não risca meus vinis, hein.", title: "Entrar na loja de discos" },
+      { id: "discos", at: [-20.5, 42.4], who: "Seu Vavá dos Discos", line: "Chegou coisa nova! Pode escutar à vontade na cabine, só não risca meus vinis, hein.", title: "Entrar na Vavá Discos" },
     ];
     let poffer = null;
     function placeFrame() {
@@ -513,7 +567,23 @@ const STREET = (() => {
       const r = 0.27;
       for (const [x0, z0, x1, z1] of IN.R.solids) if (x > x0 - r && x < x1 + r && z > z0 - r && z < z1 + r) return true;
       for (const n of IN.R.npcR) if (Math.hypot(x - n.x, z - n.z) < 0.5) return true;
+      // portas das cabines: fechada tranca a frente; aberta fica pra fora, do lado da dobradiça
+      for (const b of IN.R.booths || []) {
+        const d = b.door, Q = d.a < 0.6 ? [b.bx - b.w, b.z0 - 0.06, b.bx + b.w, b.z0 + 0.06] : [b.bx - b.w - 0.25, b.z0 - 1.1, b.bx - b.w + 0.02, b.z0 - 0.02];
+        if (x > Q[0] - r && x < Q[2] + r && z > Q[1] - r && z < Q[3] + r) return true;
+      }
       return false;
+    }
+    const boothAt = (x, z) => (IN.R.booths || []).find((b) => Math.abs(x - b.bx) < b.w && z > b.z0 && z < b.z1);
+    // abre/fecha a porta da cabine onde você está (ou da que está na sua frente)
+    function doorToggle() {
+      if (!IN || !IN.R.booths || IN.hold) return false;
+      const b = boothAt(IN.x, IN.z) || IN.R.booths.find((q) => Math.abs(IN.x - q.bx) < 0.7 && IN.z > q.z0 - 1.3 && IN.z <= q.z0);
+      if (!b) return false;
+      b.open = b.open === false;
+      if (b.open === false && !boothAt(IN.x, IN.z)) { b.open = true; return false; }
+      IN.lb = null;
+      return true;
     }
     function inInteract() {
       if (!IN || IN.hold || IN.sit || !S.running) return false;
@@ -580,7 +650,8 @@ const STREET = (() => {
       const c = IN.carry;
       if (s.act === "deck") {
         const d = deckOf(s.deck), ds = dsOf(d.id), f = deckFmt(s, d), loaded = ds.lp != null || ds.cd != null;
-        const fone = s.booth ? (IN.phones && IN.phoneDeck === d.id ? " · F tira o fone" : " · F põe o fone") : "";
+        const bt = s.booth && IN.R.booths.find((b) => "b" + b.k === d.id);
+        const fone = s.booth ? (IN.phones && IN.phoneDeck === d.id ? " · F tira o fone" : " · F põe o fone") + (bt && bt.open === false ? " · Q abre" : " · Q fecha") : "";
         if (d.box) return (c ? (c.fmt === "cd" ? "Pôr o CD no rádio" : "O rádio só toca CD") : ds.cd != null ? "Trocar faixa do rádio" : "Rádio de CD (traga um CD)");
         if (s.booth) return (c ? (c.fmt === "lp" ? "Pôr o disco na vitrola da cabine" : "Pôr o CD no aparelho da cabine") : loaded ? "Trocar faixa" : "Cabine livre") + fone;
         if (f === "lp") return c ? (c.fmt === "lp" ? "Pôr o disco na vitrola" : "CD vai no aparelho do lado →") : ds.lp != null ? "Mexer na agulha (trocar faixa)" : "Vitrola vazia";
@@ -637,8 +708,8 @@ const STREET = (() => {
       const k = lookKey();
       if (phoneCache[k]) return phoneCache[k];
       const hs = look.hairStyle, big = hs === "afro";
-      const pz = big ? 0.27 : look.beanie ? 0.178 : hs === "spiky" ? 0.168 : 0.166;
-      const r = big ? 0.33 : look.beanie ? 0.24 : hs === "spiky" ? 0.27 : 0.21;
+      const pz = big ? 0.27 : look.beanie ? 0.178 : hs === "spiky" ? 0.168 : hs === "taper" ? 0.172 : 0.166;
+      const r = big ? 0.33 : look.beanie ? 0.24 : hs === "spiky" ? 0.27 : hs === "taper" ? 0.25 : 0.21;
       return (phoneCache[k] = Rn.upload(INSIDE.phoneMesh(r, pz, 0.2)));
     }
     const hookG = Rn.upload(INSIDE.phoneMesh(0.16, 0.13, 0.0));
@@ -653,6 +724,14 @@ const STREET = (() => {
     function discosFrame(R, Dy, dt, t, fx, fz, px, pz, yaw) {
       const P = IN.play, A = IN.anim, G = R.G;
       if (A) A.t += dt;
+      for (const b of R.booths || []) {
+        // andando pra fora com a porta fechada, ela abre sozinha
+        const inside = Math.abs(px - b.bx) < b.w && pz > b.z0 && pz < b.z1;
+        if (b.open === false && inside && Math.abs(IN.v) > 0.1 && fz * Math.sign(IN.v) < -0.3) { b.open = true; IN.lb = null; }
+        const tgt = b.open === false ? 0 : 1.75;
+        b.door.a += (tgt - b.door.a) * Math.min(1, dt * 5);
+        b.door.mo = M.mul(M.T(b.bx - b.w, 0, b.z0), M.RY(b.door.a));
+      }
       const ease = (a, b, x) => { const u = Math.max(0, Math.min(1, (x - a) / (b - a))); return u * u * (3 - 2 * u); };
       const L3 = (a, b, k) => [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k];
       const ya = Math.atan2(fx, fz);
@@ -750,11 +829,22 @@ const STREET = (() => {
         nt.mo = M.mul(M.T(src[0] + Math.sin(k * 7 + nt.sp * 2) * 0.18, src[1] + k * 1.3, src[2] - k * 0.5), M.mul(M.RY(Math.sin(t * 2 + nt.sp) * 0.6), M.S(1 - k * 0.6, 1 - k * 0.6, 1 - k * 0.6)));
       }
       // volume: perto das caixas mais alto; na cabine, só com o fone fica alto
+      // volume: cabine com o próprio disco toca alto lá dentro (com o fone, mais ainda); de porta fechada o
+      // som de fora quase some e o de dentro quase não vaza
       let vol = 60;
+      const myB = boothAt(px, pz);
       if (P) {
         const d = deckOf(P.deck);
-        if (d && d.booth) vol = IN.phones && IN.phoneDeck === d.id ? 95 : IN.spot && IN.spot.deck === d.id ? 30 : 10;
-        else if (d) { const src = d.TT && P.fmt === "lp" ? d.TT : d.CDP, dist = Math.hypot(px - src[0], pz - src[2]); vol = Math.round(70 * Math.max(0.45, Math.min(1, 1 - (dist - 2.5) / 12))); if (IN.phones) vol = Math.round(vol * 0.35); }
+        if (d && d.booth) {
+          const b = d.booth, closed = R.booths[b.k].open === false;
+          if (myB && myB.k === b.k) vol = IN.phones ? 100 : closed ? 88 : 75;
+          else vol = closed ? 6 : 20;
+        } else if (d) {
+          const src = d.TT && P.fmt === "lp" ? d.TT : d.CDP, dist = Math.hypot(px - src[0], pz - src[2]);
+          vol = Math.round(70 * Math.max(0.45, Math.min(1, 1 - (dist - 2.5) / 12)));
+          if (myB) vol = Math.round(vol * (myB.open === false ? 0.18 : 0.6));
+          if (IN.phones) vol = Math.round(vol * 0.35);
+        }
       }
       if (Math.abs(vol - (IN.vol || 0)) >= 3) { IN.vol = vol; ui.inside && ui.inside("vol", { v: vol }); }
       // fone na cabeça
@@ -823,7 +913,7 @@ const STREET = (() => {
         yaw = Lg.from[2] + d * e;
         IN.x = px; IN.z = pz; IN.yaw = yaw;
         const br = Math.sin(t * 0.8) * 0.01;
-        tp = k < 1 ? POSE({ py: 0.94 - 0.3 * e }) : POSE({ stand: 0, walk: 0, px: -0.14, py: 0.5 + br, pz: 0, lean: -0.5, twist: 0, hy: Math.sin(t * 0.25) * 0.25, hp: -0.12, hF: [-0.02, 0.66, 0.34], hB: [-0.04, 0.64, -0.34], fxF: 0.6, fxB: 0.56, fzF: 0.13, fzB: -0.11, lf: 0.14, lb: 0.12 });
+        tp = k < 1 ? POSE({ py: 0.94 - 0.3 * e }) : POSE({ stand: 0, walk: 0, px: -0.14, py: 0.5 + br, pz: 0, lean: -0.5, twist: 0, hy: Math.sin(t * 0.25) * 0.25, hp: -0.12, hF: [-0.02, 0.66, 0.34], hB: [-0.04, 0.64, -0.34], fxF: 0.64, fxB: 0.6, fzF: 0.12, fzB: -0.1, lf: 0.43, lb: 0.41 });
       } else if (Math.abs(IN.v) > 0.12) {
         const sw = Math.sin(IN.ph), cw = Math.cos(IN.ph), sg = IN.v < 0 ? -1 : 1;
         tp = POSE({ lean: 0.06, twist: sw * 0.07, fxF: sw * 0.2 * sg, fxB: -sw * 0.2 * sg, lf: Math.max(0, cw) * 0.07, lb: Math.max(0, -cw) * 0.07, hF: [-sw * 0.18 * sg, 0.93, 0.27], hB: [sw * 0.18 * sg, 0.93, -0.27] });
@@ -882,7 +972,7 @@ const STREET = (() => {
       IN.cam.eye = V.lerp(IN.cam.eye, eye, Math.min(1, dt * 4.5));
       IN.cam.at = V.lerp(IN.cam.at, at, Math.min(1, dt * 7));
       const sc = R.scene;
-      sc.objects = R.base.concat(Object.values(D).flat(), ...R.decks.map((d) => Object.values(d.objs)), R.npcR.map((n) => n.rig.objs[0]), rig.objs, R.notes);
+      sc.objects = R.base.concat(Object.values(D).flat(), ...R.decks.map((d) => Object.values(d.objs)), (R.booths || []).map((b) => b.door), R.npcR.map((n) => n.rig.objs[0]), rig.objs, R.notes);
       if (IN.skates) sc.objects.push({ g: skatePropG, mo: M.I() });
       else if (!look.skates) sc.objects.push({ g: rig.board.g, mo: M.mul(M.T(0.95, 0.42, 0.16), M.mul(M.RY(0.25), M.mul(M.RX(1.3), M.RZ(Math.PI)))) });
       Rn.draw(sc, window.__cam || IN.cam);
@@ -2813,6 +2903,7 @@ const STREET = (() => {
         render(0);
         return;
       }
+      vava.spin(now / 1000);
       if (PLAY) {
         playFrame(dt, now / 1000);
         return;
@@ -3084,6 +3175,7 @@ const STREET = (() => {
       get inside() { return IN ? IN.id : null; },
       shopPlay(ai, fmt, deck) { if (IN) { IN.play = { ai, fmt, deck: deck || "main" }; } },
       phones: () => phonesToggle(),
+      door: () => doorToggle(),
       get lounging() { return !!(IN && IN.lounge); },
       shopProg(p, ti) { if (IN) { IN.prog = p; if (ti != null) IN.curTi = ti; } },
       carry(ai, fmt) { if (IN) IN.carry = { ai, fmt }; },

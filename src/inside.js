@@ -5,12 +5,13 @@
 "use strict";
 const INSIDE = (() => {
   const { V, M, hex, Mesh } = E;
-  const TW = 1024;
-  const RR = (x, y, w, h) => [x / TW, y / TW, (x + w) / TW, (y + h) / TW];
+  // textura 2048 × 1024: a metade esquerda tem móveis, placas e cartazes; a direita, capas e rótulos (até 40 discos)
+  const TW = 2048, TH = 1024, NCOV = 40, NLAB = 48;
+  const RR = (x, y, w, h) => [x / TW, y / TH, (x + w) / TW, (y + h) / TH];
   const T = {
-    covers: Array.from({ length: 16 }, (_, i) => RR((i % 8) * 128 + 2, Math.floor(i / 8) * 128 + 2, 124, 124)),
+    covers: Array.from({ length: NCOV }, (_, i) => RR(1024 + (i % 8) * 128 + 2, Math.floor(i / 8) * 128 + 2, 124, 124)),
     vinyl: RR(0, 256, 256, 256),
-    labels: Array.from({ length: 24 }, (_, i) => RR(256 + (i % 12) * 64, 256 + Math.floor(i / 12) * 64, 64, 64)),
+    labels: Array.from({ length: NLAB }, (_, i) => RR(1024 + (i % 16) * 64, 640 + Math.floor(i / 16) * 64, 64, 64)),
     cd: RR(256, 384, 128, 128),
     spinesCD: RR(384, 384, 384, 64),
     booth: RR(768, 384, 256, 64),
@@ -159,14 +160,14 @@ const INSIDE = (() => {
   // monta a textura das salas; albs = álbuns da loja (cada um ganha uma capa e um rótulo)
   function makeTex(albs, onUpdate) {
     const cv = document.createElement("canvas");
-    cv.width = cv.height = TW;
+    cv.width = TW; cv.height = TH;
     const g = cv.getContext("2d");
-    const P = (r) => [r[0] * TW, r[1] * TW, (r[2] - r[0]) * TW, (r[3] - r[1]) * TW];
+    const P = (r) => [r[0] * TW, r[1] * TH, (r[2] - r[0]) * TW, (r[3] - r[1]) * TH];
     const paintAlb = (a, i) => {
-      const [x, y, w] = P(T.covers[i % 16]);
+      const [x, y, w] = P(T.covers[i % NCOV]);
       g.clearRect(x - 2, y - 2, w + 4, w + 4);
       drawCover(g, a, x, y, w);
-      const [lx, ly, lw] = P(T.labels[i % 24]);
+      const [lx, ly, lw] = P(T.labels[i % NLAB]);
       g.clearRect(lx, ly, lw, lw);
       drawLabel(g, a, lx + lw / 2, ly + lw / 2, lw / 2 - 1);
     };
@@ -179,7 +180,7 @@ const INSIDE = (() => {
     T.screens.forEach((r, k) => { const [x, y, w, h] = P(r); screen(g, x, y, w, h, k); });
     { const [x, y, w, h] = P(T.ouca); sign(g, x, y, w, h, "OUÇA ANTES DE COMPRAR", "#c8282f", "#f5f1e6", 52); g.strokeStyle = "#f5f1e6"; g.lineWidth = 4; g.strokeRect(x + 6, y + 6, w - 12, h - 12); }
     { const [x, y, w, h] = P(T.precos); g.fillStyle = "#6a4422"; g.fillRect(x, y, w, h); g.fillStyle = "#1e2a24"; g.fillRect(x + 7, y + 7, w - 14, h - 14); sign(g, x, y, w, h, "LP R$ 15 · CD R$ 18 · K7 R$ 5", null, "#f2efe6", 38); }
-    { const [x, y, w, h] = P(T.neonD); sign(g, x, y, w, h, "DISCOS & CDs", null, "#ffe3f3", 50, "#ff4fa3"); }
+    { const [x, y, w, h] = P(T.neonD); sign(g, x, y, w, h, "VAVÁ DISCOS", null, "#ffe3f3", 50, "#ff4fa3"); }
     { const [x, y, w, h] = P(T.semana); sign(g, x, y, w, h, "DISCO DA SEMANA", "#ffd23f", "#1b1530", 26); }
     { const [x, y, w, h] = P(T.neonL); sign(g, x, y, w, h, "MEGABYTE", null, "#e6fbff", 44, "#3fd0ff"); }
     { const [x, y, w, h] = P(T.booth); g.fillStyle = "#1b1418"; g.fillRect(x, y, w, h); sign(g, x + 4, y + 6, w - 8, h - 12, "OUÇA AQUI", "#f4efe0", "#1b1418", 34); }
@@ -318,22 +319,20 @@ const INSIDE = (() => {
     st.tf = M.mul(M.T(bx, H + 0.06, (z0 + z1) / 2), M.S(1, 0.35, 1.05));
     st.ball([0, 0, 0], w + 0.04, red, 0, 10, 4, { cut: 0.5 });
     st.tf = null;
-    // porta aberta (presa na dobradiça da esquerda), com vidrinhos
-    st.tf = M.mul(M.T(bx - w, 0, z0), M.RY(1.75));
-    st.box(0, 0.02, -0.03, 1.05, 0.75, 0.02, red); st.box(0, 2.0, -0.03, 1.05, 2.35, 0.02, red);
-    for (let i = 0; i <= 3; i++) st.box(i * 0.35 - 0.015, 0.75, -0.03, i * 0.35 + 0.015, 2.0, 0.02, red);
-    for (let j = 0; j <= 5; j++) st.box(0, 0.75 + j * 0.25 - 0.012, -0.03, 1.05, 0.75 + j * 0.25 + 0.012, 0.02, red);
-    st.box(0.95, 1.2, -0.06, 0.98, 1.3, -0.03, C.metal, { m: 1 });
-    st.tf = null;
-    thin.tf = M.mul(M.T(bx - w, 0, z0), M.RY(1.75));
-    thin.quad([0, 0.75, 0], [1.05, 0.75, 0], [1.05, 2.0, 0], [0, 2.0, 0], glass, 3);
-    thin.tf = null;
+    // porta (presa na dobradiça da esquerda), com vidrinhos: é uma peça à parte, que abre e fecha
+    const door = new Mesh();
+    door.box(0, 0.02, -0.03, 1.08, 0.75, 0.02, red); door.box(0, 2.0, -0.03, 1.08, 2.35, 0.02, red);
+    for (let i = 0; i <= 3; i++) door.box(i * 0.36 - 0.015, 0.75, -0.03, i * 0.36 + 0.015, 2.0, 0.02, red);
+    for (let j = 0; j <= 5; j++) door.box(0, 0.75 + j * 0.25 - 0.012, -0.03, 1.08, 0.75 + j * 0.25 + 0.012, 0.02, red);
+    for (const zz of [-0.06, 0.05]) door.box(0.97, 1.2, zz, 1.0, 1.3, zz + 0.03, C.metal, { m: 1 });
+    door.quad([0, 0.75, 0], [1.08, 0.75, 0], [1.08, 2.0, 0], [0, 2.0, 0], glass, 3);
     // bancada com a vitrola e prateleira de cima com o aparelho de CD
     st.box(bx - w + 0.08, 0, z1 - 0.48, bx + w - 0.08, 0.86, z1 - 0.08, C.woodD, { top: C.woodT });
     st.box(bx - w + 0.08, 1.22, z1 - 0.38, bx + w - 0.08, 1.25, z1 - 0.08, C.woodT);
     // luz do teto da cabine e o gancho do fone
     st.box(bx - 0.12, H - 0.36, (z0 + z1) / 2 - 0.12, bx + 0.12, H - 0.33, (z0 + z1) / 2 + 0.12, C.lamp, { m: 2 });
     st.box(bx + w - 0.1, 1.55, z1 - 0.5, bx + w - 0.06, 1.58, z1 - 0.44, C.metal, { m: 1 });
+    return door;
   }
   // fone de ouvido (aro + conchas). r = raio do aro, pz = distância das conchas pro meio
   function phoneMesh(r, pz, y0) {
@@ -358,7 +357,8 @@ const INSIDE = (() => {
     shell(st, fl, { wallLo: C.wood, wallHi: C.teal, floorA: C.wine, floorB: C.cream, tile: 0.5, W, D, H: 3.4 });
     const N = albs.length, all = albs.map((a, i) => i);
     // discos escolhidos (os de verdade, com capa) ficam na parede; o resto nas gôndolas
-    let wall = all.filter((i) => albs[i].capa && (albs[i].fmt || ["lp"]).includes("lp"));
+    let wall = all.filter((i) => albs[i].parede && (albs[i].fmt || ["lp"]).includes("lp"));
+    if (!wall.length) wall = all.filter((i) => albs[i].capa && (albs[i].fmt || ["lp"]).includes("lp")).slice(0, 5);
     let bins = all.filter((i) => !wall.includes(i) && (albs[i].fmt || ["lp"]).includes("lp"));
     if (!bins.length) bins = wall.slice();
     const cdI = all.filter((i) => (albs[i].fmt || ["cd"]).includes("cd"));
@@ -392,7 +392,7 @@ const INSIDE = (() => {
         const z = z0 + 0.15 + k * ((z1 - z0 - 0.3) / Math.max(1, n - 1)), ai = cdI[k];
         thin.tf = M.mul(M.T(cx + 0.26, y, z), M.RZ(0.1));
         thin.box(-0.012, 0, -0.072, 0.012, 0.142, 0.072, hex(0xdfe6ee));
-        dec(thin, [0.0125, 0.071, 0], [0, 0, -1], [0, 1, 0], 0.122, 0.122, T.covers[ai % 16]);
+        dec(thin, [0.0125, 0.071, 0], [0, 0, -1], [0, 1, 0], 0.122, 0.122, T.covers[ai % NCOV]);
         thin.tf = null;
       }
       dec(fl, [cx + 0.4, y + 0.33, (z0 + z1) / 2], [0, 0, -1], [0, 1, 0], 0.5, 0.25, T.tags[4]);
@@ -405,7 +405,7 @@ const INSIDE = (() => {
     st.box(W - 0.2, 1.18, wallZ0 - 0.1, W - 0.16, 1.26, wallZ0 + nW * wsp + 0.1, C.woodT);
     wallSlots.forEach(({ ai, z }, k) => {
       thin.box(W - 0.05, 1.22, z - 0.24, W - 0.03, 1.72, z + 0.24, C.dark);
-      dec(thin, [W - 0.075, 1.47, z], [0, 0, 1], V.norm([0.05, 1, 0]), 0.46, 0.46, T.covers[ai % 16], [1.1, 1.1, 1.1]);
+      dec(thin, [W - 0.075, 1.47, z], [0, 0, 1], V.norm([0.05, 1, 0]), 0.46, 0.46, T.covers[ai % NCOV], [1.1, 1.1, 1.1]);
       st.tube([W - 0.02, 2.35, z], [W - 0.3, 2.22, z], 0.03, 0.06, 8, C.dark, 0, { cap: false }); st.ball([W - 0.29, 2.22, z], 0.03, C.lamp, 2, 6, 3);
       if (k === 0) dec(fl, [W - 0.02, 1.95, z], [0, 0, 1], [0, 1, 0], 0.56, 0.14, T.semana);
     });
@@ -462,7 +462,7 @@ const INSIDE = (() => {
         const a0 = bins[(ci * 2) % bins.length];
         thin.tf = M.mul(M.T(bxc, yt + 0.012, za + 0.04), M.RX(0.34));
         thin.box(-0.155, 0, -0.002, 0.155, 0.31, 0.002, C.white);
-        dec(thin, [0, 0.155, -0.003], [-1, 0, 0], [0, 1, 0], 0.305, 0.305, T.covers[a0 % 16]);
+        dec(thin, [0, 0.155, -0.003], [-1, 0, 0], [0, 1, 0], 0.305, 0.305, T.covers[a0 % NCOV]);
         thin.tf = M.mul(M.T(bxc, yt + 0.012, za + 0.35), M.RX(0.22));
         thin.box(-0.16, 0, -0.002, 0.16, 0.36, 0.002, hex(0xd9c9a0));
         dec(thin, [0, 0.395, -0.003], [-1, 0, 0], [0, 1, 0], 0.2, 0.095, T.tags[[0, 1, 2, 3, 5][ci % 5]]);
@@ -515,12 +515,11 @@ const INSIDE = (() => {
     const booths = [];
     [2.35, 3.55, 4.75].forEach((bx, k) => {
       const z0 = 11.15, z1 = 12.45;
-      addBooth(st, fl, thin, bx, z0, z1);
+      const door = addBooth(st, fl, thin, bx, z0, z1);
       const bTT = [bx, 0.86, z1 - 0.29], bCD = [bx, 1.25, z1 - 0.22];
       addTT(st, bTT); addCDP(st, bCD);
       S(bx - 0.6, z0, bx - 0.47, z1); S(bx + 0.47, z0, bx + 0.6, z1); S(bx - 0.6, z1 - 0.5, bx + 0.6, D);
-      booths.push({ k, bx, z0, z1, TT: bTT, CDP: bCD, hook: [bx + 0.44, 1.5, z1 - 0.47] });
-      if (k === 0) S(bx - 0.6, z0 - 0.02, bx - 0.47, z0 + 0.95); // porta aberta encostada
+      booths.push({ k, bx, z0, z1, w: 0.55, TT: bTT, CDP: bCD, hook: [bx + 0.44, 1.5, z1 - 0.47], doorM: door });
     });
     // cartazes, planta, ventilador e luzes
     dec(fl, [-W + 0.01, 1.75, 0.95], [0, 0, -1], [0, 1, 0], 0.5, 0.75, T.posters[2]);
@@ -543,13 +542,13 @@ const INSIDE = (() => {
     disc.tube([0, 0, 0], [0, 0.003, 0], 0.15, 0.15, 24, C.black, 0, { cap: true });
     dec(disc, [0, 0.0035, 0], [1, 0, 0], [0, 0, -1], 0.3, 0.3, T.vinyl);
     const discG = up(disc);
-    const labG = albs.map((a, i) => { const m = new Mesh(); dec(m, [0, 0.0045, 0], [1, 0, 0], [0, 0, -1], 0.1, 0.1, T.labels[i % 24]); return up(m, { outline: false }); });
+    const labG = albs.map((a, i) => { const m = new Mesh(); dec(m, [0, 0.0045, 0], [1, 0, 0], [0, 0, -1], 0.1, 0.1, T.labels[i % NLAB]); return up(m, { outline: false }); });
     const arm = new Mesh();
     arm.tube([0, 0, 0], [0, 0, -0.2], 0.006, 0.006, 5, C.metal, 1); arm.tube([0, 0, -0.2], [-0.02, -0.005, -0.235], 0.006, 0.006, 5, C.metal, 1);
     arm.box(-0.035, -0.02, -0.25, -0.005, 0.0, -0.225, C.dark); arm.tube([0, 0, 0], [0, 0, 0.07], 0.012, 0.012, 6, C.metal, 1); arm.tube([0, 0, 0.07], [0, 0, 0.1], 0.025, 0.025, 8, C.dark);
     const armG = up(arm);
-    const nowG = albs.map((a, i) => { const m = new Mesh(); m.box(-0.155, 0, -0.004, 0.155, 0.31, 0.0, C.white); dec(m, [0, 0.155, -0.0045], [-1, 0, 0], [0, 1, 0], 0.305, 0.305, T.covers[i % 16]); return up(m, { outline: false }); });
-    const caseG = albs.map((a, i) => { const m = new Mesh(); m.box(-0.071, 0, -0.012, 0.071, 0.142, 0, hex(0xdfe6ee)); dec(m, [0, 0.071, -0.0125], [-1, 0, 0], [0, 1, 0], 0.124, 0.124, T.covers[i % 16]); m.box(-0.071, 0, -0.0128, -0.062, 0.142, -0.012, hex(0xf4f8fc)); return up(m, { outline: false }); });
+    const nowG = albs.map((a, i) => { const m = new Mesh(); m.box(-0.155, 0, -0.004, 0.155, 0.31, 0.0, C.white); dec(m, [0, 0.155, -0.0045], [-1, 0, 0], [0, 1, 0], 0.305, 0.305, T.covers[i % NCOV]); return up(m, { outline: false }); });
+    const caseG = albs.map((a, i) => { const m = new Mesh(); m.box(-0.071, 0, -0.012, 0.071, 0.142, 0, hex(0xdfe6ee)); dec(m, [0, 0.071, -0.0125], [-1, 0, 0], [0, 1, 0], 0.124, 0.124, T.covers[i % NCOV]); m.box(-0.071, 0, -0.0128, -0.062, 0.142, -0.012, hex(0xf4f8fc)); return up(m, { outline: false }); });
     const trayG = up(new Mesh().box(-0.075, 0, -0.14, 0.075, 0.008, 0, hex(0x2a2a30)));
     const cdD = new Mesh(); dec(cdD, [0, 0.0105, -0.07], [1, 0, 0], [0, 0, -1], 0.12, 0.12, T.cd);
     const cdDG = up(cdD, { outline: false });
@@ -562,6 +561,7 @@ const INSIDE = (() => {
       if (d.CDP) { O.tray = { g: trayG, mo: M.I(), inkw: 0.6 }; O.cdDisc = { g: cdDG, mo: M.I(), tex, hidden: true }; O.led = { g: d.box ? boxLedG : ledG, mo: M.T(...d.CDP), tint: [0.25, 0.4, 0.3] }; O.case = { g: caseG[0], mo: M.I(), tex, hidden: true }; }
       return d;
     };
+    booths.forEach((b) => { b.door = { g: up(b.doorM), mo: M.mul(M.T(b.bx - b.w, 0, b.z0), M.RY(1.75)), a: 1.75 }; delete b.doorM; });
     const decks = [
       mkDeck({ id: "main", TT, CDP, stand: true, pub: true, cam: [0.95, 0.96, -0.72], notes: [[-1.27, 1.15, mz - 0.3], [1.27, 1.15, mz - 0.3]], caseAt: [CDP[0] + 0.32, CDP[1], CDP[2] - 0.05] }),
       ...booths.map((b) => mkDeck({ id: "b" + b.k, TT: b.TT, CDP: b.CDP, booth: b, cam: [0.34, 1.22, -0.72], caseAt: [b.CDP[0] + 0.12, b.CDP[1] + 0.09, b.CDP[2]] })),
@@ -589,7 +589,7 @@ const INSIDE = (() => {
     booths.forEach((b) => spots.push({ id: "b" + b.k, x: b.bx, z: (b.z0 + b.z1) / 2 - 0.15, r: 0.36, act: "deck", deck: "b" + b.k, booth: 1, label: "Cabine", face: [b.bx, D] }));
     chairs.forEach((c, i) => spots.push({ id: "chair" + i, x: c.x - 1.15, z: c.z, r: 0.42, act: "lounge", chair: c, label: "Deitar na poltrona", face: [W, c.z] }));
     return {
-      id: "discos", name: "DISCOS & CDs", W, D, H: 3.4, base: [{ g: up(fl, { outline: false }), tex }, { g: up(st), tex }, { g: up(thin, { outline: false }), tex }], dyn, decks, G, solids, spots, lights, crates, wall, bins,
+      id: "discos", name: "VAVÁ DISCOS", W, D, H: 3.4, booths, base: [{ g: up(fl, { outline: false }), tex }, { g: up(st), tex }, { g: up(thin, { outline: false }), tex }], dyn, decks, G, solids, spots, lights, crates, wall, bins,
       npcs: [
         { look: "vava", x: -4.0, z: 12.0, yaw: Math.PI / 2, idle: "calm", who: "vava" },
         { look: "fig12", x: -W + 0.95, z: 5.0, yaw: Math.PI, idle: "browse", who: "cli" },

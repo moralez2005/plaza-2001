@@ -427,7 +427,7 @@ const ART = (() => {
       big(1024, 736, "MERCADO MUNICIPAL", "#9a2a22", "#ffe14d", "#4a0f0a");
       big(1024, 848, "POSTO TREVO", "#1fae5a", "#ffffff", "#0b4a22");
       // placas da lan house e da loja de discos (cantinho livre do atlas)
-      for (const [y, txt, bg, fg, ln] of [[1922, "LAN HOUSE", "#1b1530", "#3fd0ff", "#3fd0ff"], [1986, "DISCOS & CDs", "#ffd23f", "#1b1530", "#8a2a3a"]]) {
+      for (const [y, txt, bg, fg, ln] of [[1922, "LAN HOUSE", "#1b1530", "#3fd0ff", "#3fd0ff"], [1986, "LPs · CDs · K7", "#ffd23f", "#1b1530", "#8a2a3a"]]) {
         const x = 768;
         rr(x + 3, y + 3, 250, 54, 10); g.fillStyle = bg; g.fill(); g.lineWidth = 5; g.strokeStyle = ln; g.stroke();
         g.textAlign = "center"; g.textBaseline = "middle"; fit(txt, 220, 34);

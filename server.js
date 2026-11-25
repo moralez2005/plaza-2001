@@ -1,11 +1,11 @@
 // Servidor bem simples pra jogar no navegador (o rádio do YouTube só toca abrindo por http://).
-// Uso: node server.js  →  abre http://localhost:3000
+// Uso: node server.js  →  abre http://localhost:3000 (ou a próxima porta livre, que aparece no terminal)
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const PORT = process.env.PORT || 3000;
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".png": "image/png", ".jpg": "image/jpeg", ".css": "text/css", ".json": "application/json" };
-http.createServer((req, res) => {
+const server = http.createServer((req, res) => {
   let p = decodeURIComponent(req.url.split("?")[0]);
   if (p === "/") p = "/index.html";
   const file = path.join(__dirname, path.normalize(p).replace(/^(\.\.[/\\])+/, ""));
@@ -15,4 +15,12 @@ http.createServer((req, res) => {
     res.writeHead(200, { "Content-Type": TYPES[path.extname(file)] || "application/octet-stream" });
     res.end(data);
   });
-}).listen(PORT, () => console.log("PLAZA 2001 rodando em http://localhost:" + PORT));
+});
+// se a porta já estiver ocupada (o site do Atmospherius, por exemplo), tenta a próxima
+let port = +PORT;
+server.on("error", (e) => {
+  if (e.code === "EADDRINUSE" && port < +PORT + 20) { port++; server.listen(port); }
+  else throw e;
+});
+server.on("listening", () => console.log("PLAZA 2001 rodando em http://localhost:" + port));
+server.listen(port);

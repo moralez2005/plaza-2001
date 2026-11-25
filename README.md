@@ -44,8 +44,12 @@ Pra mudar o jogo: edite os arquivos de `src/` e rode `npm run build` (ou `npm ru
 Os discos ficam em `src/radio.js`, na lista `ALBUNS`. Cada um tem artista, título, ano, a capa
 (foto) e as faixas. Um disco toca de um destes jeitos: por uma playlist oficial do álbum (`pl`),
 por um vídeo só com o álbum inteiro (`um`, com o segundo em que cada faixa começa) ou por um
-vídeo pra cada faixa. Os discos da lista `ALBUNS` ficam na parede da loja. O resto vai pras
-gôndolas.
+vídeo pra cada faixa (`id` na faixa). Um disco sem nenhum desses aparece na loja, mas avisa
+que ainda está sem som. Com `auto: 1`, os nomes das faixas vêm do próprio YouTube quando o disco
+ganha uma playlist.
+
+`fmt` diz se é vinil (`["lp"]`), CD (`["cd"]`) ou os dois. Os discos com `parede: 1` ficam na
+parede da loja; os outros vinis vão pras gôndolas e os CDs, pra estante.
 
 ## Controles
 
