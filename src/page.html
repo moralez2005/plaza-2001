@@ -498,7 +498,8 @@ function shopPlay(ai,fmt,ti,deck){const a=albs()[ai];ti=ti||0;deck=deck||SHOP.de
   if(!a.pl&&!a.um&&!a.faixas[ti].id){let k=ti;while(k<a.faixas.length&&!a.faixas[k].id)k++;if(k>=a.faixas.length)k=a.faixas.findIndex(x=>x.id);toastC('Faixa '+(ti+1)+' ainda sem link — indo pra '+(k+1)+'. '+a.faixas[k].t);ti=k}
   const f=a.faixas[ti];SHOP.deck=deck;SHOP.req={ti,at:performance.now()};
   const base={a:a.a,once:1,onEnd:shopEnded};
-  base.onFail=()=>{SHOP.ai=-1;game.shopStop();$('np').classList.remove('on')};
+  // playlist não abriu: tenta a versão reserva do álbum (alt) antes de desistir
+  base.onFail=()=>{if(a.alt&&!a.altOn){a.altOn=1;const t=a.pl;a.pl=a.alt;a.alt=t;setTimeout(()=>{toastC('Tocando outra versão do álbum');shopPlay(ai,fmt,ti,deck)},150);return}SHOP.ai=-1;game.shopStop();$('np').classList.remove('on')};
   RADIO.playTrack(Object.assign(base,f,a.pl?{pl:a.pl,i:ti,n:a.faixas.length}:a.um?{}:{q:a.faixas.slice(ti+1).filter(x=>x.id).map(x=>Object.assign({a:a.a},x))}));
   SHOP.ai=ai;SHOP.fmt=fmt;SHOP.ti=ti;game.shopPlay(ai,fmt,deck);game.shopProg(a.um?f.s/a.fim:ti/a.faixas.length,ti);
   $('npV').className='vmini'+(fmt==='cd'?' cd':'');$('npL').src=fmt==='cd'?'':labOf(a);$('npL').style.display=fmt==='cd'?'none':'';$('np').classList.add('on');shopTick();
@@ -513,10 +514,13 @@ function shopCur(){const a=albs()[SHOP.ai];if(!a)return null;const t=RADIO.time(
   else if(a.pl){let k=RADIO.plIndex();if(fresh&&k!==SHOP.req.ti)k=SHOP.req.ti;else if(fresh&&k===SHOP.req.ti)SHOP.req.at=0;if(k>=0)ti=k;if(ti>=a.faixas.length){ti=a.faixas.length-1;SHOP.over=1}p=(ti+Math.min(1,t/300))/a.faixas.length}
   else{const c=RADIO.now();if(c){const k=a.faixas.findIndex(f=>f.id===c.id&&f.t===c.t);if(k>=0)ti=k}p=(ti+Math.min(1,t/240))/a.faixas.length}
   return{a,ti,p:Math.max(0,Math.min(1,p)),t}}
+// nome da faixa a partir do título do vídeo: tira o artista, número da faixa e "(Official Video)" etc.
+function cleanT(t,art){if(!t)return'';const w=art.split(/[^0-9A-Za-zÀ-ú]+/).filter(Boolean).join('[^0-9A-Za-zÀ-ú]*'),A='[^0-9A-Za-zÀ-ú]*'+w+'[^0-9A-Za-zÀ-ú]*';
+  return t.replace(/\s*[\(\[][^\)\]]*(official|oficial|clipe|video|vídeo|áudio|audio|lyric|letra|visualizer|remaster|hd|hq)[^\)\]]*[\)\]]/ig,'').replace(new RegExp('^\\s*'+A+'\\s*[-–|:]\\s*','i'),'').replace(new RegExp('\\s*[-–|:]\\s*'+A+'$','i'),'').replace(/^\s*\d{1,2}\s*[-.–)]\s*/,'').trim()}
 function shopTick(){if(SHOP.ai<0)return;let c=shopCur();if(!c)return;
   if(c.a.auto&&c.a.pl&&!(SHOP.req&&performance.now()-SHOP.req.at<4500)){const n=RADIO.plLen();if(n>0&&n!==c.a.faixas.length){c.a.faixas=Array.from({length:n},(_,i)=>c.a.faixas[i]||{t:'Faixa '+(i+1)});c=shopCur()}
-    const tt=RADIO.title().replace(/\s*[\(\[](official|clipe|video|áudio|audio|lyric|visualizer)[^\)\]]*[\)\]]/ig,'').replace(new RegExp('^'+c.a.a.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\s*[-–]\\s*','i'),'').trim();if(tt&&c.a.faixas[c.ti])c.a.faixas[c.ti].t=tt}if(SHOP.over){SHOP.over=0;shopStop();toastC('Fim do disco ♪');return}const f=c.a.faixas[c.ti];game.shopProg(c.p,c.ti);
-  set($('npT'),'textContent',(c.a.um||c.a.faixas.some(x=>x.lado)?'Lado '+(f.lado||'A')+' · ':'')+(c.ti+1)+'. '+f.t);set($('npA'),'textContent',c.a.a+' — '+c.a.t+(SHOP.fmt==='cd'?' (CD)':' (LP)'));$('npBar').style.width=Math.round(c.p*100)+'%';}
+    const tt=cleanT(RADIO.title(),c.a.a);if(tt&&c.a.faixas[c.ti])c.a.faixas[c.ti].t=tt}if(SHOP.over){SHOP.over=0;shopStop();toastC('Fim do disco ♪');return}const f=c.a.faixas[c.ti];game.shopProg(c.p,c.ti);
+  set($('npT'),'textContent',(SHOP.fmt!=='cd'&&(c.a.um||c.a.faixas.some(x=>x.lado))?'Lado '+(f.lado||'A')+' · ':'')+(c.ti+1)+'. '+f.t);set($('npA'),'textContent',c.a.a+' — '+c.a.t+(SHOP.fmt==='cd'?' (CD)':' (LP)'));$('npBar').style.width=Math.round(c.p*100)+'%';}
 // caixote: folhear os discos um por um
 let DIG={fmt:'lp',list:[],c:0};
 function openDig(fmt,start){const A=albs();DIG.fmt=fmt;DIG.list=A.map((a,i)=>i).filter(i=>(A[i].fmt||['lp']).includes(fmt));DIG.c=Math.min(DIG.list.length-1,start||0);

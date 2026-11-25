@@ -673,7 +673,9 @@ const CHARS = (() => {
       F[BONE["thigh" + s]] = seg(hip, k.mid, along);
       F[BONE["shin" + s]] = seg(k.mid, k.end, along);
       const fl = M.pt(M.inv(fb), k.end);
-      F[BONE["foot" + s]] = M.mul(fb, M.mul(M.T(fl[0], fl[1], fl[2]), M.RY(yawF)));
+      // fy = abre a ponta do pé pro lado; fp = levanta a ponta (pé apoiado no calcanhar, sola pra frente)
+      const fy = (s === "F" ? p.fyF : p.fyB) || 0, fp = (s === "F" ? p.fpF : p.fpB) || 0;
+      F[BONE["foot" + s]] = M.mul(fb, M.mul(M.T(fl[0], fl[1], fl[2]), M.mul(M.RY(yawF + fy), M.RZ(fp))));
     }
     for (const [s, sz, ht] of [["F", 0.19, p.hF], ["B", -0.19, p.hB]]) {
       const sh = M.pt(torso, [0, LEN.torso - 0.08, sz * (look.shoulder || 1)]);
@@ -1062,21 +1064,41 @@ const CHARS = (() => {
         shard(t, mid, V.add(mid, V.add(V.mul(out, 0.03), [0, -0.03, -sgn * 0.03])), 0.026, 0.02, hair);
       }
     } else if (L.hairStyle === "taper") {
-      // taper fade: laterais e nuca bem baixinhas (degradê pra pele) e cachinhos curtos em cima
+      // cacheado com taper: laterais e nuca baixinhas (degradê pra pele), volume de cachos em cima
+      // e uma franja de cachos caindo na testa
       const skin = c(L.skin), fade = V.add(V.mul(hair, 0.5), V.mul(skin, 0.5));
       cap({ prof: P(1.0), back: 0.1, bang: 0.33, pow: 3, col: fade });
       cap({ prof: P(1.018), back: 0.25, bang: 0.335, pow: 2 });
       const TC = [
-        [0.085, 0.395, 0, 0.062], [0.075, 0.385, 0.085, 0.052], [0.075, 0.385, -0.085, 0.052],
-        [-0.005, 0.43, 0, 0.07], [-0.01, 0.415, 0.095, 0.058], [-0.01, 0.415, -0.095, 0.058],
-        [-0.095, 0.415, 0.0, 0.066], [-0.095, 0.4, 0.085, 0.054], [-0.095, 0.4, -0.085, 0.054], [-0.165, 0.355, 0, 0.05],
+        // miolo (topo)
+        [0.02, 0.47, 0, 0.085], [-0.08, 0.47, 0.065, 0.08], [-0.08, 0.47, -0.065, 0.08], [0.08, 0.445, 0.07, 0.07], [0.08, 0.445, -0.07, 0.07],
+        [-0.16, 0.42, 0, 0.07], [-0.15, 0.405, 0.085, 0.06], [-0.15, 0.405, -0.085, 0.06],
+        // laterais de cima (o volume para antes do degradê)
+        [0.0, 0.4, 0.115, 0.064], [0.0, 0.4, -0.115, 0.064], [-0.09, 0.4, 0.115, 0.06], [-0.09, 0.4, -0.115, 0.06],
+        // franja
+        [0.12, 0.405, 0.0, 0.066], [0.13, 0.385, 0.075, 0.055], [0.13, 0.385, -0.075, 0.055], [0.155, 0.35, 0.03, 0.042], [0.155, 0.355, -0.045, 0.04],
       ];
-      TC.forEach(([x, y, z, r], i) => lump([x, y, z], r, 0.95 + R() * 0.2, 0.7 + R() * 0.15, 0.95 + R() * 0.2, i % 3 === 1 ? hairL : hair));
-      // cachinhos soltos no topo (quebram a silhueta, sem virar black power)
-      for (const [x, z, sgn] of [[0.1, 0.05, 1], [0.04, -0.07, -1], [-0.05, 0.06, 1], [-0.12, -0.04, -1], [0.0, 0.0, 1]]) {
-        const o = [x, 0.47 - Math.abs(x) * 0.25, z], up = V.norm([x * 0.8, 1, z * 0.8]);
-        shard(t, o, V.add(o, V.add(V.mul(up, 0.035), [0, 0, sgn * 0.018])), 0.022, 0.016, sgn > 0 ? hairL : hair);
+      TC.forEach(([x, y, z, r], i) => lump([x, y, z], r, 0.95 + R() * 0.2, 0.82 + R() * 0.18, 0.95 + R() * 0.2, i % 3 === 1 ? hairL : i % 3 === 2 ? hairD : hair));
+      // cachos: bolinhas (molinhas) espalhadas por cima do volume + poucos ganchinhos curtos na borda
+      const cen = [-0.02, 0.385, 0];
+      for (let k = 0; k < 34; k++) {
+        const a = R() * Math.PI * 2, el = 0.12 + R() * 1.25, rr = 0.155 + R() * 0.02;
+        const d = [Math.cos(a) * Math.cos(el) * 1.08, Math.sin(el) * 0.92, Math.sin(a) * Math.cos(el)];
+        const q = V.add(cen, V.mul(d, rr));
+        if (q[1] < 0.35 && q[0] < 0.08) continue; // não desce no degradê (só na franja)
+        lump(q, 0.026 + R() * 0.008, 1, 0.85, 1, k % 3 ? hair : hairL);
       }
+      // franja: molinhas caindo na testa
+      for (const [z, y] of [[-0.085, 0.33], [-0.04, 0.315], [0.0, 0.322], [0.045, 0.312], [0.088, 0.33]]) lump([0.162 - Math.abs(z) * 0.25, y, z], 0.03, 1, 1.1, 1, z > 0 ? hairL : hair);
+      const CU = [[0.06, 0.53, 0.04, 1], [-0.05, 0.545, -0.03, -1], [-0.14, 0.5, 0.05, 1], [0.03, 0.44, 0.165, 1], [0.03, 0.44, -0.165, -1], [-0.2, 0.45, -0.07, -1]];
+      for (const [x, y, z, sgn] of CU) {
+        const o = [x, y, z], out = V.norm(V.sub(o, cen));
+        const mid = V.add(o, V.add(V.mul(out, 0.026), [0, 0, sgn * 0.012]));
+        shard(t, V.sub(o, V.mul(out, 0.012)), mid, 0.026, 0.02, hairL);
+        shard(t, mid, V.add(mid, V.add(V.mul(out, 0.01), [0, -0.02, -sgn * 0.018])), 0.02, 0.014, hair);
+      }
+      // costeleta curtinha
+      for (const sd of [-1, 1]) t.box(0.035, 0.2, sd * 0.148 - 0.008, 0.075, 0.3, sd * 0.148 + 0.008, fade, { m: FLAT });
     } else if (L.hairStyle === "spiky") {
       cap({ prof: P(1.05), back: 0.13, bang: 0.28, pow: 3 });
       // espetos de tamanhos e direções variados, mais longos atrás e no topo

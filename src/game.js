@@ -662,6 +662,14 @@ const STREET = (() => {
       if (s.act === "door" && c) return "Sair (o disco fica)";
       return s.label;
     }
+    // deitado na poltrona: recostado, mãos atrás da cabeça, pernas esticadas no pufe com os calcanhares apoiados
+    // (ponta do pé pra cima e aberta, a sola fica pra frente) e um pé balançando de leve no ritmo
+    function LOUNGE(t, br) {
+      const sw = Math.sin(t * 2.1) * 0.06;
+      return POSE({ stand: 0, walk: 0, px: -0.06, py: 0.47 + br, pz: 0, lean: -0.72, twist: 0.04, hy: Math.sin(t * 0.25) * 0.2, hp: 0.32, hr: 0.05,
+        hF: [-0.5, 1.02, 0.15], hB: [-0.52, 1.0, -0.15],
+        fxF: 0.7, fxB: 0.64, fzF: 0.17, fzB: -0.15, lf: 0.47, lb: 0.46, fyF: 0.35 + sw, fyB: -0.3, fpF: 1.15, fpB: 1.05 });
+    }
     function needleInfo() {
       const N = IN.needle, ds = dsOf(N.deck), ai = ds[N.fmt], a = shopAlbums()[ai];
       ui.inside && ui.inside("needle", { on: true, fmt: N.fmt, ti: N.ti, n: a.faixas.length, t: a.faixas[N.ti].t, lado: a.faixas[N.ti].lado || "", a: a.a, playing: !!(IN.play && IN.play.deck === N.deck && IN.play.fmt === N.fmt) });
@@ -709,7 +717,7 @@ const STREET = (() => {
       if (phoneCache[k]) return phoneCache[k];
       const hs = look.hairStyle, big = hs === "afro";
       const pz = big ? 0.27 : look.beanie ? 0.178 : hs === "spiky" ? 0.168 : hs === "taper" ? 0.172 : 0.166;
-      const r = big ? 0.33 : look.beanie ? 0.24 : hs === "spiky" ? 0.27 : hs === "taper" ? 0.25 : 0.21;
+      const r = big ? 0.33 : look.beanie ? 0.24 : hs === "spiky" ? 0.27 : hs === "taper" ? 0.31 : 0.21;
       return (phoneCache[k] = Rn.upload(INSIDE.phoneMesh(r, pz, 0.2)));
     }
     const hookG = Rn.upload(INSIDE.phoneMesh(0.16, 0.13, 0.0));
@@ -913,7 +921,7 @@ const STREET = (() => {
         yaw = Lg.from[2] + d * e;
         IN.x = px; IN.z = pz; IN.yaw = yaw;
         const br = Math.sin(t * 0.8) * 0.01;
-        tp = k < 1 ? POSE({ py: 0.94 - 0.3 * e }) : POSE({ stand: 0, walk: 0, px: -0.14, py: 0.5 + br, pz: 0, lean: -0.5, twist: 0, hy: Math.sin(t * 0.25) * 0.25, hp: -0.12, hF: [-0.02, 0.66, 0.34], hB: [-0.04, 0.64, -0.34], fxF: 0.64, fxB: 0.6, fzF: 0.12, fzB: -0.1, lf: 0.43, lb: 0.41 });
+        tp = k < 1 ? POSE({ py: 0.94 - 0.3 * e }) : LOUNGE(t, br);
       } else if (Math.abs(IN.v) > 0.12) {
         const sw = Math.sin(IN.ph), cw = Math.cos(IN.ph), sg = IN.v < 0 ? -1 : 1;
         tp = POSE({ lean: 0.06, twist: sw * 0.07, fxF: sw * 0.2 * sg, fxB: -sw * 0.2 * sg, lf: Math.max(0, cw) * 0.07, lb: Math.max(0, -cw) * 0.07, hF: [-sw * 0.18 * sg, 0.93, 0.27], hB: [sw * 0.18 * sg, 0.93, -0.27] });
