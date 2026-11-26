@@ -499,6 +499,8 @@ ui.inside=(ev,d)=>{
 function inSpot(d){$('inP').classList.toggle('on',!!d);if(d)$('inPL').textContent=d.label}
 // toca o disco (LP na vitrola, CD no aparelho); num álbum de vídeo único é só soltar a agulha no segundo certo
 // disco tem de onde tocar? (playlist do álbum, vídeo do álbum inteiro ou vídeo de pelo menos uma faixa)
+const plPos=(a,i)=>a.faixas[i].pi!=null?a.faixas[i].pi:i;
+const plLen=(a)=>a.faixas.some(x=>x.pi!=null)?a.faixas.filter(x=>!x.id).length:a.faixas.length;
 function shopSrc(a){return !!(a&&(a.pl||a.um||a.faixas.some(x=>x.id)))}
 function shopPlay(ai,fmt,ti,deck){const a=albs()[ai];ti=ti||0;deck=deck||SHOP.deck||'main';
   // disco novo na vitrola/no aparelho: o anterior para na hora, toca só o que é deste disco
@@ -511,7 +513,10 @@ function shopPlay(ai,fmt,ti,deck){const a=albs()[ai];ti=ti||0;deck=deck||SHOP.de
   const base={a:a.a,once:1,onEnd:shopEnded};
   // playlist não abriu: tenta a versão reserva do álbum (alt) antes de desistir
   base.onFail=()=>{if(a.alt&&!a.altOn){a.altOn=1;const t=a.pl;a.pl=a.alt;a.alt=t;setTimeout(()=>{toastC('Tocando outra versão do álbum');shopPlay(ai,fmt,ti,deck)},150);return}SHOP.ai=-1;game.shopStop();$('np').classList.remove('on')};
-  RADIO.playTrack(Object.assign(base,f,a.pl?{pl:a.pl,i:ti,n:a.faixas.length}:a.um?{}:{q:a.faixas.slice(ti+1).filter(x=>x.id).map(x=>Object.assign({a:a.a},x))}));
+  SHOP.lastTi=ti;
+  // álbum de playlist com uma faixa que não está na playlist: essa toca pelo vídeo dela e depois o disco segue
+  if(a.pl&&f.id){base.onEnd=()=>{if(SHOP.ai===ai&&ti+1<a.faixas.length)shopPlay(ai,fmt,ti+1,deck);else shopEnded()};RADIO.playTrack(Object.assign(base,{id:f.id,t:f.t,s:0}))}
+  else RADIO.playTrack(Object.assign(base,f,a.pl?{pl:a.pl,i:plPos(a,ti),n:plLen(a)}:a.um?{}:{q:a.faixas.slice(ti+1).filter(x=>x.id).map(x=>Object.assign({a:a.a},x))}));
   SHOP.ai=ai;SHOP.fmt=fmt;SHOP.ti=ti;game.shopPlay(ai,fmt,deck);shopVol();game.shopProg(a.um?f.s/a.fim:ti/a.faixas.length,ti);
   $('npV').className='vmini'+(fmt==='cd'?' cd':'');$('npL').src=fmt==='cd'?'':labOf(a);$('npL').style.display=fmt==='cd'?'none':'';$('np').classList.add('on');shopTick();
   toastC('♪ '+(ti+1)+'. '+f.t)}
@@ -522,7 +527,8 @@ function shopCur(){const a=albs()[SHOP.ai];if(!a)return null;const t=RADIO.time(
   // logo depois de trocar de faixa o player ainda informa a música anterior: até ele confirmar, vale a que foi pedida
   const fresh=SHOP.req&&performance.now()-SHOP.req.at<4500;
   if(a.um){let k=SHOP.req?SHOP.req.ti:ti;if(t>0){k=0;a.faixas.forEach((f,i)=>{if(t>=f.s-0.5)k=i})}if(fresh&&k!==SHOP.req.ti)k=SHOP.req.ti;else if(fresh)SHOP.req.at=0;ti=k;p=(t>0&&!fresh?t:a.faixas[ti].s)/a.fim}
-  else if(a.pl){let k=RADIO.plIndex();if(fresh&&k!==SHOP.req.ti)k=SHOP.req.ti;else if(fresh&&k===SHOP.req.ti)SHOP.req.at=0;if(k>=0)ti=k;if(ti>=a.faixas.length){ti=a.faixas.length-1;SHOP.over=1}p=(ti+Math.min(1,t/300))/a.faixas.length}
+  else if(a.pl){let k=RADIO.plIndex();const want=plPos(a,SHOP.req?SHOP.req.ti:ti);if(fresh&&k>=0&&k!==want)k=want;else if(fresh&&k===want)SHOP.req.at=0;
+    if(k>=0){if(k>=plLen(a)){ti=a.faixas.length-1;SHOP.over=1}else{const j=a.faixas.findIndex((x,i)=>!x.id&&plPos(a,i)===k);if(j>=0)ti=j}}p=(ti+Math.min(1,t/300))/a.faixas.length}
   else{const c=RADIO.now();if(c){const k=a.faixas.findIndex(f=>f.id===c.id&&f.t===c.t);if(k>=0)ti=k}p=(ti+Math.min(1,t/240))/a.faixas.length}
   return{a,ti,p:Math.max(0,Math.min(1,p)),t}}
 // nome da faixa a partir do título do vídeo: tira o artista, número da faixa e "(Official Video)" etc.
@@ -544,6 +550,8 @@ function tvLoop(){if(!TVON)return;requestAnimationFrame(tvLoop);const q=game.tvQ
 function shopTick(){if(SHOP.ai<0)return;let c=shopCur();if(!c)return;
   if(c.a.auto&&c.a.pl&&!(SHOP.req&&performance.now()-SHOP.req.at<4500)){const n=RADIO.plLen();if(n>0&&n!==c.a.faixas.length){c.a.faixas=Array.from({length:n},(_,i)=>c.a.faixas[i]||{t:'Faixa '+(i+1)});c=shopCur()}
     const tt=cleanT(RADIO.title(),c.a.a);if(tt&&c.a.faixas[c.ti])c.a.faixas[c.ti].t=tt}if(SHOP.over){SHOP.over=0;shopStop();toastC('Fim do disco ♪');return}
+  if(c.a.pl&&SHOP.lastTi!=null&&c.ti>SHOP.lastTi+1){const j=c.a.faixas.findIndex((x,i)=>i>SHOP.lastTi&&i<c.ti&&x.id);if(j>=0){shopPlay(SHOP.ai,SHOP.fmt,j,SHOP.deck);return}}
+  SHOP.lastTi=c.ti;
   {const dz=!!(c.a.disco&&c.a.disco.includes(c.ti)),vv=dz&&!!(c.a.vava&&c.a.vava.includes(c.ti)),key=dz+'|'+vv;if(key!==SHOP.dz){SHOP.dz=key;game.disco(dz,vv)}}
   if(!c.a.um){if(c.ti!==SHOP.seenTi){SHOP.seenTi=c.ti;SHOP.seekDone=false}const m=markGet(c.a,c.ti);if(!SHOP.seekDone&&RADIO.ready()&&c.t>0.05){SHOP.seekDone=true;if(m!=null&&c.t<m-0.4)RADIO.seek(m)}}
   const f=c.a.faixas[c.ti];game.shopProg(c.p,c.ti);
