@@ -607,22 +607,25 @@ const STREET = (() => {
       // sorveteria: pedir no balcão, pegar picolé no freezer, sentar na mesinha
       if (s.act === "order") {
         const ice = SA && SA.def.kind === "ice";
+        if (IN.sayQ && IN.sayQ.length) return true;
         if (ice && !SA.phase) {
-          SA.phase = 1; IN.cone = { kf: 1, julie: 1, c: 0xf8f2e6 }; sfx.can();
-          sayIn("julie", "Dois de flocos, por favor! ♡", 2.2);
-          IN.sayQ = [{ t: 2.3, who: "neide", line: "Saindo dois de flocos! Capricha nessa casquinha, hein." }, { t: 5.0, who: "julie", line: "Agora bora lá pra rampa grande ver o pôr do sol?" }];
-        } else if (IN.cone || IN.pop) sayIn("neide", "Termina esse primeiro, apressadinho! Hahaha.");
+          sayIn("julie", "Pra mim, de flocos!", 2.2);
+          IN.sayQ = [{ t: 2.3, who: "kf", line: "Faz dois de flocos, por favor. Deixa que eu pago." },
+            { t: 2.6, who: "neide", line: "Dois de flocos, então. Aqui, ó.", give: 1 },
+            { t: 2.3, who: "julie", line: "Ah, não precisava... valeu, K.F.! Da próxima é por minha conta." },
+            { t: 3.0, who: "julie", line: "Bora ver o pôr do sol lá em cima da rampa?" }];
+        } else if (IN.cone || IN.pop) sayIn("neide", "Termina esse primeiro, hein!");
         else {
           const F = [["flocos", 0xf8f2e6], ["chocolate", 0x5a3424], ["morango", 0xff8fb0], ["limão", 0xa8e07a], ["creme", 0xfff0a0]], f = F[(IN.li++) % F.length];
           IN.cone = { kf: 1, c: f[1] }; sfx.can();
-          sayIn("neide", "Uma de " + f[0] + " saindo! Bom proveito.");
+          sayIn("neide", "Uma de " + f[0] + "? Tá na mão!");
         }
         return true;
       }
       if (s.act === "picole") {
-        if (IN.cone || IN.pop) { sayIn("neide", "Uma coisa de cada vez, menino!"); return true; }
+        if (IN.cone || IN.pop) { sayIn("neide", "Termina esse primeiro, hein!"); return true; }
         IN.pop = [0xff6a6a, 0xffd23f, 0x7ae07a, 0xff9ccf, 0x8c5cff][(IN.li++) % 5]; sfx.can();
-        sayIn("neide", "Pode pegar! Depois acerta comigo no caixa.");
+        sayIn("neide", "Pode pegar. Depois acerta ali no caixa.");
         return true;
       }
       if (s.act === "seat") {
@@ -664,7 +667,7 @@ const STREET = (() => {
     const progOf = (ai, ti) => { const a = shopAlbums()[ai]; if (!a) return 0; ti = Math.max(0, Math.min(a.faixas.length - 1, ti)); return a.um ? a.faixas[ti].s / a.fim : ti / a.faixas.length; };
     const deckOf = (id) => IN && IN.R.decks.find((d) => d.id === id);
     const dsOf = (id) => (IN.ds[id] = IN.ds[id] || { lp: null, cd: null, ang: 0, spin: 0, armA: 0, armY: 0, trayK: 0, drop: null });
-    const WHO = { vava: "Seu Vavá", dudu: "Dudu", neide: "Neide", julie: "Julie" };
+    const WHO = { vava: "Seu Vavá", dudu: "Dudu", neide: "Neide", julie: "Julie", kf: "K.F." };
     function sayIn(who, line, t = 3.5) { IN.talk = { who, t }; ui.inside && ui.inside("say", { who: WHO[who] || who, line }); }
     function vavaSay(line) { IN.talk = { who: "vava", t: 3.5 }; ui.inside && ui.inside("say", { who: "Seu Vavá", line }); }
     // qual formato o aparelho vai usar agora (cabine tem os dois; o rádio só CD)
@@ -741,8 +744,10 @@ const STREET = (() => {
     const scoopOf = (c) => scoopG[c] || (scoopG[c] = Rn.upload((() => { const m = new Mesh(); m.tube([0, -0.16, 0], [0, 0, 0], 0.005, 0.045, 7, hex(0xd8a25a)); m.ball([0, 0.04, 0], 0.052, hex(c), 0, 7, 5); if (c === 0xf8f2e6) { m.ball([0.02, 0.07, 0.01], 0.012, hex(0x3a2418), 2, 4, 3); m.ball([-0.02, 0.05, -0.02], 0.01, hex(0x3a2418), 2, 4, 3); } return m; })()));
     const popOf = (c) => popG[c] || (popG[c] = Rn.upload((() => { const m = new Mesh(); m.box(-0.008, -0.12, -0.004, 0.008, 0, 0.004, hex(0xe8d0a0)); m.box(-0.03, 0, -0.016, 0.03, 0.13, 0.016, hex(c)); return m; })()));
     function iceFrame(R, D) {
-      if (!D.ice) D.ice = [{ g: coneG, mo: M.I(), hidden: true }, { g: coneG, mo: M.I(), hidden: true }];
-      const [a, b] = D.ice;
+      if (!D.ice) D.ice = [{ g: coneG, mo: M.I(), hidden: true }, { g: coneG, mo: M.I(), hidden: true }, { g: scoopOf(0xff8fb0), mo: M.I(), hidden: true }];
+      const [a, b, cc] = D.ice;
+      const cl = R.npcR.find((n) => n.idle === "seat"), hc = cl && cl.rig.F ? handOf(cl.rig, ART.LOOKS[cl.look], "F") : null;
+      cc.hidden = !hc; if (hc) cc.mo = M.mul(M.T(hc[0], hc[1] + 0.05, hc[2]), M.RZ(0.25));
       const h = rig.F ? handOf(rig, look, "F") : null;
       a.hidden = !(h && (IN.cone || IN.pop));
       if (!a.hidden) { a.g = IN.pop ? popOf(IN.pop) : scoopOf(IN.cone.c); a.mo = M.mul(M.T(h[0], h[1] + 0.05, h[2]), M.RZ(0.25)); }
@@ -1031,7 +1036,7 @@ const STREET = (() => {
       rig.pose(M.mul(M.T(px, look.skates ? 0 : -0.1, pz), M.RY(yaw + sk)), IN.pose);
       rig.board.hidden = true;
       // gente lá dentro
-      if (IN.sayQ && IN.sayQ.length) { IN.sayQ[0].t -= dt; if (IN.sayQ[0].t <= 0) { const q = IN.sayQ.shift(); sayIn(q.who, q.line); } }
+      if (IN.sayQ && IN.sayQ.length) { IN.sayQ[0].t -= dt; if (IN.sayQ[0].t <= 0) { const q = IN.sayQ.shift(); sayIn(q.who, q.line); if (q.give && SA && SA.def.kind === "ice") { SA.phase = 1; IN.cone = { kf: 1, julie: 1, c: 0xf8f2e6 }; sfx.can(); } } }
       for (const n of R.npcR) {
         if (n.julie) { const vis = !!(SA && SA.def.kind === "ice"); n.rig.objs[0].hidden = !vis; n.off = !vis; if (!vis) continue; }
         const near = Math.hypot(IN.x - n.x, IN.z - n.z) < 3.2;
@@ -1101,7 +1106,7 @@ const STREET = (() => {
         { title: "A garota da pista", line: "Ei, você do shape de tubarão. Até que você anda... Faz 2.000 pontos em 90 segundos que eu quero ver.", kind: "score", pts: 2000, time: 90 },
         { title: "Game de S.K.A.T.E. com a Julie", line: "Ok, ok, não foi ruim. Mas aguenta um game de S.K.A.T.E. comigo? 5 rodadas: eu mando, você repete, depois inverte. Errou, ganha letra. Uma tentativa só, hein!", kind: "skate" },
         { title: "Rolê com a Julie até a estação", line: "Tá bom, você anda bem. Bora dar um rolê? Me leva até a estação de trem, lá na cidade nova.", kind: "ride", to: [48, 112, 109, 160] },
-        { title: "Sorvete na pista", line: "Tá um calor, hein... me paga um sorvete? A Sorveteria Pinguim é ali do outro lado da rua. Depois a gente senta lá em cima da rampa.", kind: "ice" },
+        { title: "Sorvete na pista", line: "Tá um calor, hein... bora tomar um sorvete? A Sorveteria Pinguim é ali do outro lado da rua. Depois a gente senta lá em cima da rampa pra ver o pôr do sol.", kind: "ice" },
       ],
     };
     const JULIE_HOME = [8, 16];
@@ -1159,6 +1164,9 @@ const STREET = (() => {
     let EAR = null;
     const jSparks = Array.from({ length: 8 }, () => add(sparkG, M.I(), { hidden: true, v: [0, 0, 0], p: [0, 0, 0], life: 0 }));
     const jMark = add(Rn.upload((() => { const m = new Mesh(); m.box(-0.07, 0.25, -0.07, 0.07, 0.75, 0.07, hex(0xff4fa3), { m: 2 }); m.box(-0.07, 0, -0.07, 0.07, 0.14, 0.07, hex(0xff4fa3), { m: 2 }); return m; })()), M.I(), { hidden: true });
+    // lugar marcado em frente à rampa grande (missão do sorvete): chegando lá com a Julie, começa a cena do pôr do sol
+    const SUNSPOT = [0, 23.4];
+    const sunMark = add(Rn.upload((() => { const m = new Mesh(); m.tube([0, 0, 0], [0, 0.03, 0], 1.0, 1.0, 24, hex(0xff4fa3), 2); m.tube([0, 0.03, 0], [0, 0.04, 0], 0.82, 0.82, 24, hex(0xffd23f), 2); m.box(-0.06, 0.3, -0.06, 0.06, 2.6, 0.06, hex(0xff4fa3), { m: 2 }); return m; })(), { outline: false }), M.I(), { hidden: true });
     let SA = null, soffer = null, replay = null;
     const stepOf = (k) => HS[k] || 0;
     const LET = "SKATE";
@@ -1232,7 +1240,7 @@ const STREET = (() => {
             SA = null;
             ui.mission && ui.mission("hide");
             // cena dos dois e depois a comemoração do capítulo
-            setTimeout(() => { if (!CUT_IN_STORY || !playCut("game", () => { SA = { def, replay: rp }; storyStepDone(); })) { SA = { def, replay: rp }; storyStepDone(); } }, 1400);
+            setTimeout(() => { if (!CUT_ON.game || !playCut("game", () => { SA = { def, replay: rp }; storyStepDone(); })) { SA = { def, replay: rp }; storyStepDone(); } }, 1400);
             return;
           }
           say("A JULIE GANHOU! fala com ela pra revanche", 2.8, true); sfx.nocan();
@@ -1501,6 +1509,7 @@ const STREET = (() => {
         else soffer = { toggle: true, line: julie.follow ? "Já vou indo... amanhã a gente anda de novo?" : "Bora dar um rolê?", title: julie.follow ? "Deixar a Julie em casa" : "Andar com a Julie" };
         ui.mission && ui.mission("offer", { who: "Julie", line: soffer.line, title: soffer.title });
       } else if (!near && soffer) { soffer = null; ui.mission && ui.mission("hide"); }
+      if (!SA || SA.def.kind !== "ice" || !SA.phase) sunMark.hidden = true;
       if (!SA) return;
       if (SA.def.kind === "skate") skateFrame(dt);
       else if (SA.def.kind === "ride") {
@@ -1512,15 +1521,17 @@ const STREET = (() => {
         if (!SA.phase) {
           if (!poffer) ui.mission && ui.mission("tick", { title: "Leve a Julie na Sorveteria Pinguim e peça dois de flocos" });
         } else {
-          ui.mission && ui.mission("tick", { title: "Agora vai com ela até a rampa grande da pista" });
+          ui.mission && ui.mission("tick", { title: "Vá com a Julie até o lugar marcado na rampa grande" });
+          sunMark.hidden = false; sunMark.mo = M.mul(M.T(SUNSPOT[0], H(SUNSPOT[0], SUNSPOT[1]) + 0.02, SUNSPOT[1]), M.RY(t * 0.8));
           coneAt(cones[0], (() => { const h = handAndHead(); return h && h.hand; })());
           coneAt(cones[1], handOf(julie.rig, julie.look, "F"));
-          if (Math.abs(S.x) < 12 && Math.abs(S.z) > 19 && Math.abs(S.z) < 27 && S.mode === "ground" && dPl < 22) {
+          if (Math.hypot(S.x - SUNSPOT[0], S.z - SUNSPOT[1]) < 2.2 && S.mode === "ground" && S.speed < 6 && dPl < 22) {
+            sunMark.hidden = true;
             const def = SA.def, rp = SA.replay;
             SA = null;
             ui.mission && ui.mission("hide");
             cones.forEach((o) => (o.hidden = true));
-            if (!CUT_IN_STORY || !playCut("sorvete", () => { SA = { def, replay: rp }; storyStepDone(); })) { SA = { def, replay: rp }; storyStepDone(); }
+            if (!CUT_ON.sorvete || !playCut("sorvete", () => { SA = { def, replay: rp }; storyStepDone(); })) { SA = { def, replay: rp }; storyStepDone(); }
           }
         }
       } else if (SA.def.kind === "score") {
@@ -1531,8 +1542,8 @@ const STREET = (() => {
     }
     // ---------- cutscene (estilo PS1/PS2): barras pretas, cortes de câmera e poses mais vivas ----------
     let CUT = null;
-    // por enquanto as cenas só passam pelo menu (pra revisar); true = voltam a tocar dentro da história
-    const CUT_IN_STORY = false;
+    // por enquanto só a cena do pôr do sol (sorvete) toca dentro da história; as outras passam pelo menu (pra revisar)
+    const CUT_ON = { sorvete: true };
     const ez = (x) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
     const STD = (o) => Object.assign({ stand: 1, px: 0, py: 0.94, pz: 0, lean: 0.02, twist: 0.05, hy: 0, hp: 0.02, hF: [0.02, 0.97, 0.3], hB: [0.02, 0.97, -0.3], lf: 0, lb: 0 }, o);
     // poses do K.F. e da Julie (peito pra +x; mão da frente em +z)
@@ -1648,11 +1659,11 @@ const STREET = (() => {
       const cv = sh.cam(u);
       C.eye = cv.eye; C.at = cv.at; C.fov = cv.fov;
       if (sh.lean) {
-        // ela chega pertinho e deita a cabeça no ombro dele
-        const k = sh.lean === 2 ? 1 : Math.min(1, Math.max(0, (lt - 0.5) / 1.6)), e = k * k * (3 - 2 * k);
-        sh.jx = () => 0.34 - 0.18 * e;
-        sh.kf = (t) => SIT({ hy: 0.06 + 0.1 * e, hp: 0.04, hr: 0.12 * e, twist: 0.04 });
-        sh.ju = (t) => SIT({ roll: -0.26 * e, lean: -0.06, hy: -0.15 * e, hp: 0.02 * e, hr: -0.38 * e, hB: [0.22, 0.72, -0.22], hF: [0.3, 0.66, 0.2] });
+        // com calma: os dois lado a lado, curtindo o som e balançando a cabeça (sem deitar no ombro)
+        const k = sh.lean === 2 ? 1 : Math.min(1, Math.max(0, (lt - 0.5) / 1.6)), e = k * k * (3 - 2 * k), bob = Math.sin(lt * 4.2) * 0.04 * e;
+        sh.jx = () => 0.34 - 0.03 * e;
+        sh.kf = (t) => SIT({ hy: 0.06 + 0.05 * e, hp: 0.04 + bob, hr: 0.03 * e, twist: 0.04 });
+        sh.ju = (t) => SIT({ roll: -0.04 * e, lean: -0.03, hy: -0.08 * e, hp: 0.02 * e - bob, hr: -0.06 * e, hB: [0.22, 0.72, -0.22], hF: [0.3, 0.66, 0.2] });
       }
       C.kfPose = sh.kf(lt);
       const sc = C.sc;
@@ -3321,6 +3332,7 @@ const STREET = (() => {
         { const key = lookKey(); (DESAFIOS[key] || []).forEach((c, j) => { if (c.at && !dDone[key + j]) out.push({ x: c.at[0], z: c.at[1], on: false, c: "#ff4fa3" }); }); }
         out.push({ x: -30, z: 42.4, on: false, c: "#3fd0ff", t: "L" }, { x: -20.5, z: 42.4, on: false, c: "#ffd23f", t: "♪" });
         if (SA && SA.def.kind === "ice" && !SA.phase && L.sorveteria) out.push({ x: L.sorveteria[0], z: L.sorveteria[1], on: true, c: "#ff4fa3" });
+        if (SA && SA.def.kind === "ice" && SA.phase) out.push({ x: SUNSPOT[0], z: SUNSPOT[1], on: true, c: "#ffd23f" });
         if (lookKey() === "kf" && (stepOf("kf") < STORY.kf.length || replay != null) && !SA) out.push({ x: julie.x, z: julie.z, on: false, c: "#ff4fa3" });
         return out;
       },

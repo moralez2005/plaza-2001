@@ -736,10 +736,10 @@ const INSIDE = (() => {
       "Seu skate tá bem ali na porta, ninguém mexe. Aqui é família.",
     ],
     neide: [
-      "Flocos é o campeão de venda, viu? Mas o de limão no calor é outra coisa.",
-      "Casquinha tá saindo quentinha... quer dizer, geladinha, né! Hahaha.",
-      "Pode sentar na mesinha, fica à vontade. Só não deixa pingar no chão!",
-      "Esses skatistas passam aqui todo fim de tarde. Já sei o pedido de todo mundo.",
+      "Calor desse jeito, o freezer não dá conta. Hoje o flocos tá saindo que nem água.",
+      "Pode sentar na mesinha, fica à vontade.",
+      "Vocês da pista passam aqui todo fim de tarde. Já sei o pedido de cada um.",
+      "No verão o de limão é o mais pedido. Mas flocos nunca sai de moda.",
     ],
     dudu: [
       "E aí, mano! Escolhe um PC aí, a ficha é por minha conta.",
@@ -837,7 +837,7 @@ const INSIDE = (() => {
       npcs: [
         { look: "neide", x: 0.4, z: 6.8, yaw: Math.PI / 2, idle: "calm", who: "neide" },
         { look: "julie", x: 0.35, z: 4.55, yaw: -Math.PI / 2 + 0.25, idle: "calm", who: "julie", julie: 1 },
-        { look: "fig12", x: 2.1 + 0.72, z: 3.9, yaw: Math.PI, idle: "seat" },
+        { look: "npc7", x: 2.1 + 0.72, z: 3.9, yaw: Math.PI, idle: "seat" },
       ],
       spawn: [0, 1.5, 0],
       scene: { sun: V.norm([0.18, 0.95, 0.22]), top: hex(0xfde6ef), mid: hex(0xfde6ef), hz: hex(0xfde6ef), fog: hex(0xfde6ef), fogd: 0.004, shade: hex(0xd4b4cc), ink: hex(0x1b1530), ink_w: 1.5, amb: [0.92, 0.88, 0.88], night: 0.36, wet: 0, winc: [9, 9, 9] },
