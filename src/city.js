@@ -618,7 +618,6 @@ const CITY = (() => {
     car(44.0, 66, "z", 0x7cc8ff, 0);
     car(-75, -33.0, "x", 0xffd166, 0);
     car(86, 40.0, "x", 0xe0302b, 0);
-    car(-20, 40.0, "x", 0x1fae5a, 0);
     // outdoors em cima de prédios
     billboard([8, SW + 9.2 + 3.2, -84], [1, 0, 0], RECT.bill[0]);
     billboard([-11, SW + 10 + 3.2, 50], [-1, 0, 0], RECT.bill[1]);
