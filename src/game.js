@@ -670,6 +670,42 @@ const STREET = (() => {
         hF: [-0.5, 1.02, 0.15], hB: [-0.52, 1.0, -0.15],
         fxF: 0.75, fxB: 0.7, fzxF: -0.015, fzxB: 0.03, lf: 0.56, lb: 0.44, fyF: 0.14 + sw, fyB: -0.12, fpF: 1.38 + sw, fpB: 1.32 });
     }
+    // ---------- modo discoteca: em certas músicas desce o globo do teto, o chão ganha luzes e as paredes, brilhos ----------
+    function discoFx(R, D, dt, t) {
+      const on = !!(IN.disco && IN.disco.on);
+      IN.discoK = Math.max(0, Math.min(1, (IN.discoK || 0) + (on ? dt / 2.2 : -dt / 1.2)));
+      const k = IN.discoK, e = k * k * (3 - 2 * k);
+      if (!D.disco) {
+        const bm = new Mesh();
+        bm.ball([0, 0, 0], 0.26, hex(0xd8dde8), 0.25, 12, 8);
+        for (let i = 0; i < 18; i++) { const a = i * 2.4, b = (i % 6) / 6 * 2.2 - 1.1; bm.ball([Math.cos(a) * Math.cos(b) * 0.25, Math.sin(b) * 0.25, Math.sin(a) * Math.cos(b) * 0.25], 0.035, hex(0xffffff), 2, 4, 2); }
+        const ch = new Mesh(); ch.tube([0, 0, 0], [0, 1, 0], 0.008, 0.008, 4, hex(0x9a9aa2), 1);
+        const cols = [0xff4fa3, 0x3fd0ff, 0xffe14d, 0x8c5cff, 0x2fe08a, 0xff8a3a];
+        const spotG = cols.map((c) => { const m = new Mesh(); m.tube([0, 0, 0], [0, 0.006, 0], 0.42, 0.42, 18, hex(c), 2); return Rn.upload(m, { outline: false }); });
+        const sparkG = Rn.upload(new Mesh().box(-0.03, -0.03, -0.03, 0.03, 0.03, 0.03, hex(0xffffff), { m: 2 }), { outline: false });
+        D.disco = [{ g: Rn.upload(bm), mo: M.I(), hidden: true }, { g: Rn.upload(ch, { outline: false }), mo: M.I(), hidden: true },
+          ...Array.from({ length: 8 }, (_, i) => ({ g: spotG[i % 6], mo: M.I(), hidden: true })), ...Array.from({ length: 28 }, () => ({ g: sparkG, mo: M.I(), hidden: true }))];
+        R.ambBase = R.scene.amb.slice();
+      }
+      const [ball, chain] = D.disco, BX = 0, BZ = 6.4, H = R.H || 3.4, hide = k <= 0.001;
+      const by = H + 0.35 - e * 0.95;
+      ball.hidden = chain.hidden = hide;
+      ball.mo = M.mul(M.T(BX, by, BZ), M.RY(t * 1.1));
+      chain.mo = M.mul(M.T(BX, by + 0.25, BZ), M.S(1, Math.max(0.01, H - by - 0.25), 1));
+      D.disco.slice(2, 10).forEach((o, i) => { o.hidden = k < 0.5; const a = t * (0.6 + i * 0.07) * (i % 2 ? -1 : 1) + i * 0.785, r = 0.9 + (i % 3) * 1.05; o.mo = M.T(BX + Math.cos(a) * r * 1.3, 0.014, BZ + Math.sin(a) * r * 1.5); });
+      D.disco.slice(10).forEach((o, i) => {
+        o.hidden = k < 0.5;
+        const a = t * 0.55 + i * (Math.PI * 2 / 28), el = ((i * 37) % 11) / 11 * 0.8 - 0.45, d = [Math.cos(a), el, Math.sin(a)];
+        let best = 99;
+        for (const [ax, w] of [[0, R.W], [0, -R.W], [2, R.D], [2, 0]]) { const dd = d[ax]; if (Math.abs(dd) < 1e-3) continue; const tt = (w - (ax ? BZ : BX)) / dd; if (tt > 0 && tt < best) best = tt; }
+        const q = [BX + d[0] * best * 0.995, Math.max(0.3, Math.min(H - 0.1, by + d[1] * best)), BZ + d[2] * best * 0.995];
+        o.mo = M.T(q[0], q[1], q[2]);
+      });
+      if (R.ambBase) {
+        const cyc = [[1, 0.35, 0.7], [0.35, 0.8, 1], [0.75, 0.45, 1], [1, 0.9, 0.4]], ph = (t * 1.6) % 4, i0 = Math.floor(ph), u = ph - i0, A = cyc[i0], B = cyc[(i0 + 1) % 4];
+        R.scene.amb = R.ambBase.map((v, j) => v * (1 - e * 0.5) + (A[j] + (B[j] - A[j]) * u) * e * 0.45);
+      }
+    }
     function needleInfo() {
       const N = IN.needle, ds = dsOf(N.deck), ai = ds[N.fmt], a = shopAlbums()[ai];
       ui.inside && ui.inside("needle", { on: true, fmt: N.fmt, ti: N.ti, n: a.faixas.length, t: a.faixas[N.ti].t, lado: a.faixas[N.ti].lado || "", a: a.a, playing: !!(IN.play && IN.play.deck === N.deck && IN.play.fmt === N.fmt) });
@@ -845,11 +881,11 @@ const STREET = (() => {
         const d = deckOf(P.deck);
         if (d && d.booth) {
           const b = d.booth, closed = R.booths[b.k].open === false;
-          if (myB && myB.k === b.k) vol = IN.phones ? 100 : closed ? 88 : 75;
-          else vol = closed ? 6 : 20;
+          if (myB && myB.k === b.k) vol = IN.phones ? 100 : closed ? 96 : 90;
+          else vol = closed ? 6 : 22;
         } else if (d) {
           const src = d.TT && P.fmt === "lp" ? d.TT : d.CDP, dist = Math.hypot(px - src[0], pz - src[2]);
-          vol = Math.round(70 * Math.max(0.45, Math.min(1, 1 - (dist - 2.5) / 12)));
+          vol = Math.round(100 * Math.max(0.62, Math.min(1, 1 - (dist - 3) / 14)));
           if (myB) vol = Math.round(vol * (myB.open === false ? 0.18 : 0.6));
           if (IN.phones) vol = Math.round(vol * 0.35);
         }
@@ -958,7 +994,14 @@ const STREET = (() => {
         else if (talking) p = POSE({ twist: 0.1 + Math.sin(t * 1.3) * 0.06, hp: 0.06 + Math.sin(t * 2.6) * 0.04, hF: [0.26 + Math.sin(t * 3.1) * 0.06, 1.18 + Math.sin(t * 2.3) * 0.08, 0.26] });
         else if (n.idle === "bounce") p = POSE({ py: 0.94 + Math.abs(Math.sin(t * 4)) * 0.03, hy: Math.sin(t * 1.3) * 0.4, hp: -0.06, hF: [-0.14, 0.92, 0.15], hB: [-0.14, 0.92, -0.15] });
         else p = POSE({ lean: 0.04 + Math.sin(t * 1.1 + n.ph) * 0.02, twist: 0.1, hy: -0.3 + Math.sin(t * 0.6 + n.ph) * 0.2, hp: 0.12, hF: [0.06, 1.0, 0.2], hB: [0.02, 0.92, -0.25] });
-        if ((near || talking) && n.idle !== "play" && n.idle !== "browse") p.hy = Math.max(-1, Math.min(1, -(Math.atan2(-(IN.z - n.z), IN.x - n.x) - n.yaw)));
+        const dance = n.who === "vava" && IN.disco && IN.disco.vava && (IN.discoK || 0) > 0.4 && !talking;
+        if (dance) {
+          // passinho de discoteca: quica no tempo, gira o quadril e alterna o dedo pro alto com a mão na cintura
+          const b = t * Math.PI * 2, up = Math.sin(b / 2) > -0.2;
+          p = POSE({ py: 0.92 + Math.abs(Math.sin(b)) * 0.035, lean: 0.06, twist: Math.sin(b / 2) * 0.28, hy: Math.sin(b / 2) * 0.35, hp: -0.04 + Math.sin(b) * 0.05,
+            hF: up ? [0.2, 1.78, 0.34] : [0.06, 0.98, 0.3], hB: [0.04, 0.98, -0.3], lf: Math.max(0, Math.sin(b)) * 0.05, lb: Math.max(0, -Math.sin(b)) * 0.05 });
+        }
+        if (!dance && (near || talking) && n.idle !== "play" && n.idle !== "browse") p.hy = Math.max(-1, Math.min(1, -(Math.atan2(-(IN.z - n.z), IN.x - n.x) - n.yaw)));
         n.pose = n.pose ? ART.lerpPose(n.pose, p, Math.min(1, dt * 8)) : p;
         n.pose.stand = p.stand; n.pose.walk = p.walk;
         n.rig.pose(M.mul(M.T(n.x, -0.1, n.z), M.RY(n.yaw)), n.pose);
@@ -966,7 +1009,7 @@ const STREET = (() => {
       // ventilador, vitrola, notas saindo das caixas
       const D = R.dyn;
       if (D.fan) D.fan.mo = M.mul(M.T(0, 2.95, 5.2), M.RY(t * 2.4));
-      if (R.id === "discos") discosFrame(R, D, dt, t, fx, fz, px, pz, yaw);
+      if (R.id === "discos") { discosFrame(R, D, dt, t, fx, fz, px, pz, yaw); discoFx(R, D, dt, t); }
       // câmera: atrás e acima; quando mexe em alguma coisa, chega perto por cima do ombro
       let eye, at;
       const sx = -fz, sz = fx;
@@ -3190,7 +3233,24 @@ const STREET = (() => {
       get carrying() { return IN ? IN.carry : null; },
       get needleOn() { return !!(IN && IN.needle); },
       needleMove, needleDrop, needleLift, needleTake, needleExit,
-      shopStop() { if (IN) IN.play = null; },
+      shopStop() { if (IN) { IN.play = null; IN.disco = null; } },
+      disco(on, vava) { if (IN) IN.disco = on ? { on: true, vava: !!vava } : null; },
+      // cantos da tela da TV em pixels da tela (pra pôr o vídeo do comercial em cima); null se não dá pra ver
+      tvQuad() {
+        if (!IN || !IN.R.tv) return null;
+        const cam = window.__cam || IN.cam, W = canvas.clientWidth, Hh = canvas.clientHeight;
+        const VP = M.mul(M.persp(cam.fov || 1.1, W / Hh, 0.12, 650), M.look(cam.eye, cam.at, [0, 1, 0]));
+        const pts = [];
+        for (const q of IN.R.tv.corners) {
+          const x = VP[0] * q[0] + VP[4] * q[1] + VP[8] * q[2] + VP[12], y = VP[1] * q[0] + VP[5] * q[1] + VP[9] * q[2] + VP[13], w = VP[3] * q[0] + VP[7] * q[1] + VP[11] * q[2] + VP[15];
+          if (w < 0.2) return null;
+          pts.push([((x / w + 1) / 2) * W, ((1 - y / w) / 2) * Hh]);
+        }
+        const c = IN.R.tv.c;
+        // a tela está virada pra câmera?
+        if ((cam.eye[2] - c[2]) > -0.05) return null;
+        return { pts, dist: Math.hypot(IN.x - c[0], IN.z - c[2]) };
+      },
       acceptMission, dropMission() { if (MA) { MA = null; items.forEach((o) => (o.hidden = true)); ui.mission && ui.mission("hide"); } },
       get offering() { return (!!offer && !MA) || !!soffer; },
       playCut: (k) => playCut(k || "game"),

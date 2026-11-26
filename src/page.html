@@ -184,6 +184,9 @@ kbd{font:900 12px Rubik,sans-serif;background:var(--ink);color:#fff;border-radiu
 .vmini{width:46px;height:46px;flex:none;border-radius:50%;position:relative;background:repeating-radial-gradient(circle,#0c0c10 0 1.5px,#1d1d24 1.5px 3px);box-shadow:0 0 0 2px #000;animation:vspin 1.8s linear infinite}
 .vmini img{position:absolute;left:31%;top:31%;width:38%;height:38%;border-radius:50%}.vmini.cd{background:conic-gradient(#dfe4ea,#b9f0ff,#ffd1f0,#fff6c2,#c9ffd8,#dfe4ea);animation-duration:.9s}
 @keyframes vspin{to{transform:rotate(360deg)}}
+.tvO{position:absolute;left:0;top:0;width:480px;height:360px;transform-origin:0 0;display:none;z-index:2;pointer-events:none;overflow:hidden;border-radius:7%/9%;background:#0c1014;filter:contrast(1.15) saturate(1.25) brightness(.95)}
+.tvO iframe{width:480px;height:360px;border:0;pointer-events:none}
+.tvO:after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(rgba(0,0,0,.2) 0 1px,transparent 1px 3px),radial-gradient(ellipse at 50% 50%,transparent 55%,rgba(0,0,0,.55));pointer-events:none}
 .inO{position:absolute;inset:0;display:none;z-index:9;background:radial-gradient(ellipse at 50% 42%,rgba(46,22,34,.62),rgba(10,6,16,.94));color:#fff;font:700 13px Rubik,sans-serif;overflow:hidden}
 .inO.on{display:block}.inO.light{background:linear-gradient(90deg,rgba(10,6,16,0) 40%,rgba(10,6,16,.78) 62%)}
 .oHead{position:absolute;left:14px;right:14px;top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;z-index:3}
@@ -294,7 +297,8 @@ html.embed body{padding:8px 8px 0;gap:6px;background:#1b1530;min-height:0;height
     <div class="inHud" aria-live="polite"><span id="inName"></span><small>setas andam · Enter mexe nas coisas · Esc pausa</small></div>
     <div class="inP" id="inP"><kbd>Enter</kbd><span id="inPL"></span></div>
     <div class="say" id="say"><b id="sayW"></b><span id="sayL"></span></div>
-    <div class="np" id="np"><div class="vmini" id="npV"><img id="npL" alt=""></div><div><b id="npT"></b><span id="npA"></span><div class="bar"><i id="npBar"></i></div><small>N próxima faixa · B volta uma</small></div></div>
+    <div class="np" id="np"><div class="vmini" id="npV"><img id="npL" alt=""></div><div><b id="npT"></b><span id="npA"></span><div class="bar"><i id="npBar"></i></div><small>N próxima · B volta · M marca onde a música começa</small></div></div>
+    <div class="tvO" id="tvO" aria-hidden="true"><div id="tvP"></div></div>
     <div class="inO" id="digO" role="dialog" aria-label="Caixote de discos"><div class="oHead"><b id="digT">LPs</b><span id="digS"></span><button class="oBtn" data-inclose>Voltar (Esc)</button></div>
       <button class="digArr l" id="digL" aria-label="Disco anterior">‹</button><div class="crate" id="crate"><div class="stk" id="stk"></div></div><button class="digArr r" id="digR" aria-label="Próximo disco">›</button>
       <div class="digInfo"><b id="digA"></b><span id="digN"></span></div><div class="oHint">← → folheia · Enter (ou clique) pega o disco · Esc volta</div></div>
@@ -458,7 +462,13 @@ ui.place=(id)=>{dlg(false);fadeDo(()=>game.enterPlace(id))};
 function placeClose(){const id=placeOn;placeOn=null;$('lanO').classList.remove('on');MG.stop();if(game.inside){game.release()}else game.pause(false);$('cv').focus()}
 for(const b of document.querySelectorAll('[data-close]'))b.addEventListener('click',placeClose);
 // ---------- loja de discos por dentro ----------
-const SHOP={ai:-1,fmt:null,ti:0,radioWas:false,tm:0,sayT:0};
+const SHOP={ai:-1,fmt:null,ti:0,radioWas:false,tm:0,sayT:0,v:null,seenTi:-1,seekDone:true};
+// início de cada música (pula a parte falada/cena do clipe): M marca o segundo em que a música começa
+let MARK={};try{MARK=JSON.parse(localStorage.getItem('plaza-inicio')||'{}')}catch(e){}
+const markKey=(a,ti)=>a.a+' — '+a.t+'|'+ti;
+function markGet(a,ti){const k=markKey(a,ti);if(k in MARK)return MARK[k];const f=a.faixas[ti];return f&&f.ini!=null?f.ini:null}
+// volume: alguns discos são masterizados bem mais altos; o ganho do disco iguala
+function shopVol(){if(SHOP.v==null)return;const a=albs()[SHOP.ai];RADIO.setVol(Math.round(SHOP.v*(a&&a.vol||1)))}
 let INO=null;
 const albs=()=>game.shopAlbums();
 const urlOf=(a)=>a._url||(a._url=a.capa||INSIDE.coverURL(a));
@@ -470,18 +480,18 @@ function inOpen(id){INO=id;$('say').classList.remove('on');for(const o of ['digO
 function inClose(){INO=null;for(const o of ['digO','insO'])$(o).classList.remove('on');game.release();$('cv').focus()}
 for(const b of document.querySelectorAll('[data-inclose]'))b.addEventListener('click',()=>{if(INO==='insO'&&INS.from==='dig'){inOpen('digO');drawDig()}else inClose()});
 ui.inside=(ev,d)=>{
-  if(ev==='enter'){$('screen').classList.add('inside');$('inName').textContent=d.name;$('mmBox').classList.remove('on');clearTimeout(dmQ);clearTimeout(dmMini);$('dm').className='dm';DISC.set('');SHOP.radioWas=RADIO.active;RADIO.hold(true);if(RADIO.active)RADIO.pause(true);clearInterval(SHOP.tm);SHOP.tm=setInterval(shopTick,400);inSpot(null);if(d.skates)setTimeout(()=>toastC('Patins na porta, chinelo no pé 🩴'),900)}
+  if(ev==='enter'){$('screen').classList.add('inside');if(d.name==='VAVÁ DISCOS')tvStart();$('inName').textContent=d.name;$('mmBox').classList.remove('on');clearTimeout(dmQ);clearTimeout(dmMini);$('dm').className='dm';DISC.set('');SHOP.radioWas=RADIO.active;RADIO.hold(true);if(RADIO.active)RADIO.pause(true);clearInterval(SHOP.tm);SHOP.tm=setInterval(shopTick,400);inSpot(null);if(d.skates)setTimeout(()=>toastC('Patins na porta, chinelo no pé 🩴'),900)}
   else if(ev==='spot')inSpot(d);
   else if(ev==='say'&&d.mini){toastC(d.line)}
   else if(ev==='say'){$('sayW').textContent=d.who;$('sayL').textContent='“'+d.line+'”';const b=$('say');b.classList.remove('on');void b.offsetWidth;b.classList.add('on');clearTimeout(SHOP.sayT);SHOP.sayT=setTimeout(()=>b.classList.remove('on'),4200)}
   else if(ev==='open'){inSpot(null);if(d.act==='dig')openDig(d.fmt,d.start);else if(d.act==='insp')openIns(d.alb,d.fmt,'wall');else if(d.act==='pc'){placeOn='lan';$('lanO').classList.add('on');MG.start(d.game||'rush')}}
   else if(ev==='needle'){const n=$('ndl');n.classList.toggle('on',d.on);if(d.on){inSpot(null);$('ndT').textContent=(d.ti+1)+'. '+d.t;$('ndS').textContent=(d.fmt==='cd'?'CD · faixa '+(d.ti+1)+' de '+d.n:'LADO '+(d.lado||'A')+' · '+d.a)+(d.playing?' · tocando':'');$('ndH').textContent=d.fmt==='cd'?'← → escolhe a faixa · Enter toca · L para · T tira o CD · Esc sai':'← → leva a agulha · Enter solta a agulha · L levanta · T tira o disco · Esc sai'}}
   else if(ev==='drop')shopPlay(d.ai,d.fmt,d.ti,d.deck);
-  else if(ev==='vol')RADIO.setVol(d.v);
+  else if(ev==='vol'){SHOP.v=d.v;shopVol()}
   else if(ev==='lounge'){inSpot(d.on?{label:'Curtindo o som… Enter levanta'}:null);if(d.on)$('inPL').parentNode.querySelector('kbd').textContent='Enter';}
   else if(ev==='lift')shopStop();
   else if(ev==='leave'){inSpot(null);fadeDo(()=>game.exitPlace())}
-  else if(ev==='exit'){$('screen').classList.remove('inside');$('mmBox').classList.add('on');inSpot(null);$('say').classList.remove('on');clearInterval(SHOP.tm);for(const o of ['digO','insO','lanO'])$(o).classList.remove('on');INO=null;placeOn=null;MG.stop();
+  else if(ev==='exit'){$('screen').classList.remove('inside');tvStop();SHOP.dz=null;$('mmBox').classList.add('on');inSpot(null);$('say').classList.remove('on');clearInterval(SHOP.tm);for(const o of ['digO','insO','lanO'])$(o).classList.remove('on');INO=null;placeOn=null;MG.stop();
     if(d.reset){RADIO.hold(false);RADIO.setVol(null);if(SHOP.ai>=0){SHOP.ai=-1;$('np').classList.remove('on');RADIO.stopTrack()}return}
     $('ndl').classList.remove('on');
     RADIO.setVol(null);RADIO.hold(false);
@@ -496,16 +506,17 @@ function shopPlay(ai,fmt,ti,deck){const a=albs()[ai];ti=ti||0;deck=deck||SHOP.de
   if(!shopSrc(a)){toastC('“'+a.t+'” ainda tá sem som aqui — manda o link do álbum que o Vavá põe pra tocar');return}
   // disco com faixas soltas: pula as que ainda não têm vídeo
   if(!a.pl&&!a.um&&!a.faixas[ti].id){let k=ti;while(k<a.faixas.length&&!a.faixas[k].id)k++;if(k>=a.faixas.length)k=a.faixas.findIndex(x=>x.id);toastC('Faixa '+(ti+1)+' ainda sem link — indo pra '+(k+1)+'. '+a.faixas[k].t);ti=k}
-  const f=a.faixas[ti];SHOP.deck=deck;SHOP.req={ti,at:performance.now()};
+  if(a.um&&!a.marked){a.marked=1;a.faixas.forEach((x,i)=>{const m=markGet(a,i);if(m!=null)x.s=m})}
+  const f=a.faixas[ti];SHOP.deck=deck;SHOP.req={ti,at:performance.now()};SHOP.seenTi=-1;
   const base={a:a.a,once:1,onEnd:shopEnded};
   // playlist não abriu: tenta a versão reserva do álbum (alt) antes de desistir
   base.onFail=()=>{if(a.alt&&!a.altOn){a.altOn=1;const t=a.pl;a.pl=a.alt;a.alt=t;setTimeout(()=>{toastC('Tocando outra versão do álbum');shopPlay(ai,fmt,ti,deck)},150);return}SHOP.ai=-1;game.shopStop();$('np').classList.remove('on')};
   RADIO.playTrack(Object.assign(base,f,a.pl?{pl:a.pl,i:ti,n:a.faixas.length}:a.um?{}:{q:a.faixas.slice(ti+1).filter(x=>x.id).map(x=>Object.assign({a:a.a},x))}));
-  SHOP.ai=ai;SHOP.fmt=fmt;SHOP.ti=ti;game.shopPlay(ai,fmt,deck);game.shopProg(a.um?f.s/a.fim:ti/a.faixas.length,ti);
+  SHOP.ai=ai;SHOP.fmt=fmt;SHOP.ti=ti;game.shopPlay(ai,fmt,deck);shopVol();game.shopProg(a.um?f.s/a.fim:ti/a.faixas.length,ti);
   $('npV').className='vmini'+(fmt==='cd'?' cd':'');$('npL').src=fmt==='cd'?'':labOf(a);$('npL').style.display=fmt==='cd'?'none':'';$('np').classList.add('on');shopTick();
   toastC('♪ '+(ti+1)+'. '+f.t)}
-function shopStop(){if(SHOP.ai<0)return;SHOP.ai=-1;game.shopStop();$('np').classList.remove('on');RADIO.pause(true);RADIO.stopTrack()}
-function shopEnded(){SHOP.ai=-1;game.shopStop();$('np').classList.remove('on');toastC('Fim do disco ♪')}
+function shopStop(){if(SHOP.ai<0)return;SHOP.ai=-1;SHOP.dz=null;game.shopStop();$('np').classList.remove('on');RADIO.pause(true);RADIO.stopTrack()}
+function shopEnded(){SHOP.ai=-1;SHOP.dz=null;game.shopStop();$('np').classList.remove('on');toastC('Fim do disco ♪')}
 function shopSkip(d){if(SHOP.ai<0)return;const c=shopCur(),n=albs()[SHOP.ai].faixas.length,ti=Math.max(0,Math.min(n-1,(c?c.ti:SHOP.ti)+d));if(ti!==(c?c.ti:SHOP.ti))shopPlay(SHOP.ai,SHOP.fmt,ti)}
 function shopCur(){const a=albs()[SHOP.ai];if(!a)return null;const t=RADIO.time();let ti=SHOP.ti,p;
   // logo depois de trocar de faixa o player ainda informa a música anterior: até ele confirmar, vale a que foi pedida
@@ -517,9 +528,25 @@ function shopCur(){const a=albs()[SHOP.ai];if(!a)return null;const t=RADIO.time(
 // nome da faixa a partir do título do vídeo: tira o artista, número da faixa e "(Official Video)" etc.
 function cleanT(t,art){if(!t)return'';const w=art.split(/[^0-9A-Za-zÀ-ú]+/).filter(Boolean).join('[^0-9A-Za-zÀ-ú]*'),A='[^0-9A-Za-zÀ-ú]*'+w+'[^0-9A-Za-zÀ-ú]*';
   return t.replace(/\s*[\(\[][^\)\]]*(official|oficial|clipe|video|vídeo|áudio|audio|lyric|letra|visualizer|remaster|hd|hq)[^\)\]]*[\)\]]/ig,'').replace(new RegExp('^\\s*'+A+'\\s*[-–|:]\\s*','i'),'').replace(new RegExp('\\s*[-–|:]\\s*'+A+'$','i'),'').replace(/^\s*\d{1,2}\s*[-.–)]\s*/,'').trim()}
+// ---------- TV da loja: comerciais do Summer Eletrohits num YouTube colado em cima da tela da TV ----------
+const ADS=['hIyO1iNFAMw','4UDaY90O7Cg','TCPoWOv5buM','Ggt2B_sljjM'];let TV=null,TVON=false;
+function tvApi(){return new Promise(res=>{if(window.YT&&YT.Player)return res();if(!document.querySelector('script[src*="iframe_api"]')){const sc=document.createElement('script');sc.src='https://www.youtube.com/iframe_api';document.head.appendChild(sc)}const it=setInterval(()=>{if(window.YT&&YT.Player){clearInterval(it);res()}},300)})}
+function tvHomog(w,h,p){const[x0,y0]=p[0],[x1,y1]=p[1],[x2,y2]=p[2],[x3,y3]=p[3];const dx1=x1-x2,dx2=x3-x2,dy1=y1-y2,dy2=y3-y2,sx=x0-x1+x2-x3,sy=y0-y1+y2-y3,det=dx1*dy2-dx2*dy1;
+  const g=(sx*dy2-dx2*sy)/det,hh=(dx1*sy-sx*dy1)/det,a=x1-x0+g*x1,b=x3-x0+hh*x3,d=y1-y0+g*y1,e=y3-y0+hh*y3;return`matrix3d(${a/w},${d/w},0,${g/w},${b/h},${e/h},0,${hh/h},0,0,1,0,${x0},${y0},0,1)`}
+function tvStart(){TVON=true;requestAnimationFrame(tvLoop);if(TV){try{TV.playVideo()}catch(e){}return}
+  tvApi().then(()=>{if(TV)return;TV=new YT.Player('tvP',{width:480,height:360,videoId:ADS[0],playerVars:{autoplay:1,controls:0,disablekb:1,fs:0,iv_load_policy:3,playsinline:1,rel:0,loop:1,playlist:ADS.join(','),origin:location.origin},
+    events:{onReady:e=>{try{e.target.setVolume(35);if(TVON)e.target.playVideo()}catch(_){}}}})})}
+function tvStop(){TVON=false;$('tvO').style.display='none';try{TV&&TV.pauseVideo()}catch(e){}}
+function tvLoop(){if(!TVON)return;requestAnimationFrame(tvLoop);const q=game.tvQuad&&game.tvQuad(),el=$('tvO');
+  if(!q||INO){el.style.display='none'}else{el.style.display='block';el.style.transform=tvHomog(480,360,q.pts)}
+  // com disco tocando, a TV fica muda (como numa loja de verdade); sem disco, o comercial toca baixinho, mais alto perto
+  if(TV&&TV.setVolume){try{if(SHOP.ai>=0){if(TV.mute)TV.mute()}else{if(TV.unMute)TV.unMute();TV.setVolume(Math.round(Math.max(12,Math.min(55,60-(q?q.dist:9)*4))))}}catch(e){}}}
 function shopTick(){if(SHOP.ai<0)return;let c=shopCur();if(!c)return;
   if(c.a.auto&&c.a.pl&&!(SHOP.req&&performance.now()-SHOP.req.at<4500)){const n=RADIO.plLen();if(n>0&&n!==c.a.faixas.length){c.a.faixas=Array.from({length:n},(_,i)=>c.a.faixas[i]||{t:'Faixa '+(i+1)});c=shopCur()}
-    const tt=cleanT(RADIO.title(),c.a.a);if(tt&&c.a.faixas[c.ti])c.a.faixas[c.ti].t=tt}if(SHOP.over){SHOP.over=0;shopStop();toastC('Fim do disco ♪');return}const f=c.a.faixas[c.ti];game.shopProg(c.p,c.ti);
+    const tt=cleanT(RADIO.title(),c.a.a);if(tt&&c.a.faixas[c.ti])c.a.faixas[c.ti].t=tt}if(SHOP.over){SHOP.over=0;shopStop();toastC('Fim do disco ♪');return}
+  {const dz=!!(c.a.disco&&c.a.disco.includes(c.ti)),vv=dz&&!!(c.a.vava&&c.a.vava.includes(c.ti)),key=dz+'|'+vv;if(key!==SHOP.dz){SHOP.dz=key;game.disco(dz,vv)}}
+  if(!c.a.um){if(c.ti!==SHOP.seenTi){SHOP.seenTi=c.ti;SHOP.seekDone=false}const m=markGet(c.a,c.ti);if(!SHOP.seekDone&&RADIO.ready()&&c.t>0.05){SHOP.seekDone=true;if(m!=null&&c.t<m-0.4)RADIO.seek(m)}}
+  const f=c.a.faixas[c.ti];game.shopProg(c.p,c.ti);
   set($('npT'),'textContent',(SHOP.fmt!=='cd'&&(c.a.um||c.a.faixas.some(x=>x.lado))?'Lado '+(f.lado||'A')+' · ':'')+(c.ti+1)+'. '+f.t);set($('npA'),'textContent',c.a.a+' — '+c.a.t+(SHOP.fmt==='cd'?' (CD)':' (LP)'));$('npBar').style.width=Math.round(c.p*100)+'%';}
 // caixote: folhear os discos um por um
 let DIG={fmt:'lp',list:[],c:0};
@@ -680,7 +707,10 @@ addEventListener('keydown',e=>{const k=e.key.toLowerCase();
   if(game.inside&&!paused&&game.lounging){if(k==='enter'||k==='escape'||k===' '||k==='e'){e.preventDefault();game.release()}return}
   if(game.inside&&!paused&&k==='f'){game.phones();return}
   if(game.inside&&!paused&&k==='q'){game.door();return}
-  if(game.inside&&!paused){if(k==='enter'||k==='e'||k===' '){e.preventDefault();if(!e.repeat)game.interact();return}if(k==='n'){shopSkip(1);return}if(k==='b'){shopSkip(-1);return}if(k==='f'||k==='r'||k==='c')return}
+  if(game.inside&&!paused){if(k==='enter'||k==='e'||k===' '){e.preventDefault();if(!e.repeat)game.interact();return}if(k==='m'&&SHOP.ai>=0){e.preventDefault();if(e.shiftKey){const txt=JSON.stringify(MARK,null,1);try{navigator.clipboard.writeText(txt)}catch(_){}toastC(Object.keys(MARK).length+' marcações copiadas: cola no chat');return}
+    const c=shopCur();if(!c)return;const t=Math.max(0,RADIO.time()-0.3);MARK[markKey(c.a,c.ti)]=Math.round(t*10)/10;if(c.a.um)c.a.faixas[c.ti].s=t;try{localStorage.setItem('plaza-inicio',JSON.stringify(MARK))}catch(_){}
+    toastC('Início de “'+c.a.faixas[c.ti].t+'” marcado em '+Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0'));return}
+    if(k==='n'){shopSkip(1);return}if(k==='b'){shopSkip(-1);return}if(k==='f'||k==='r'||k==='c')return}
   if(dlgOn){if(k==='enter'){e.preventDefault();game.acceptMission();dlg(false);return}if(k==='escape'){e.preventDefault();dlg(false);return}}
   // fita passando: controles do videocassete
   if(game.playing){e.preventDefault();if(k===' ')game.playPause()?$('plSt').textContent='❚❚ PAUSE':$('plSt').textContent='▶ PLAY';else if(k==='arrowleft'||k==='a')game.playSeek(-2);else if(k==='arrowright'||k==='d')game.playSeek(2);else if(k==='r'){game.playRestart();$('pl').classList.remove('ended')}else if(k==='b')downloadVideo();else if(k==='escape'||k==='p')game.stopPlay();return}

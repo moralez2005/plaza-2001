@@ -497,6 +497,20 @@ const INSIDE = (() => {
     }
     S(-W, 12.5, -2.25, D);
     dec(fl, [-3.9, 2.9, D - 0.04], [-1, 0, 0], [0, 1, 0], 2.0, 0.25, T.neonD, [1.6, 1.6, 1.6]);
+    // TV de tubo num suporte de parede (passa os comerciais da loja); a imagem do vídeo vai por cima da tela
+    {
+      const tz0 = D - 0.66, tz1 = D - 0.12, grey = hex(0x3a3a42), bez = hex(0x4e4e58);
+      st.box(-2.19, 2.11, tz0 + 0.07, -1.31, 2.79, tz1, grey, { top: hex(0x45454e) });
+      st.box(-2.19, 2.11, tz0, -1.31, 2.79, tz0 + 0.07, bez);
+      st.box(-2.05, 2.2, tz1, -1.45, 2.68, tz1 + 0.07, grey); // traseira do tubo
+      thin.box(-2.0, 2.18, tz0 - 0.006, -1.38, 2.66, tz0, hex(0x0c1014), { m: 2 });
+      thin.box(-2.15, 2.3, tz0 - 0.008, -2.05, 2.32, tz0, hex(0x8a8a90));
+      for (const ky of [2.46, 2.58]) thin.ball([-2.1, ky, tz0 - 0.012], 0.024, hex(0x9a9aa2), 1, 8, 4);
+      thin.box(-2.13, 2.19, tz0 - 0.008, -2.07, 2.22, tz0, hex(0xff3a3a), { m: 2 }); // luzinha de ligado
+      // suporte: prateleira de ferro presa na parede + mão-francesa
+      st.box(-2.1, 2.06, tz0 + 0.05, -1.4, 2.11, D, C.metal, { m: 1 });
+      st.tube([-1.75, 1.62, D], [-1.75, 2.06, tz0 + 0.3], 0.028, 0.028, 6, C.metal, 1);
+    }
     for (const y of [2.72, 3.08]) st.tube([-4.95, y, D - 0.05], [-2.85, y, D - 0.05], 0.012, 0.012, 4, C.pink, 2);
     // ---- cantinho de audição com caixas de som (fundo, no meio) ----
     const mz = 12.25, TT = [-0.42, 0.82, mz], CDP = [0.42, 0.82, mz];
@@ -589,6 +603,7 @@ const INSIDE = (() => {
     booths.forEach((b) => spots.push({ id: "b" + b.k, x: b.bx, z: (b.z0 + b.z1) / 2 - 0.15, r: 0.36, act: "deck", deck: "b" + b.k, booth: 1, label: "Cabine", face: [b.bx, D] }));
     chairs.forEach((c, i) => spots.push({ id: "chair" + i, x: c.x - 1.15, z: c.z, r: 0.42, act: "lounge", chair: c, label: "Deitar na poltrona", face: [W, c.z] }));
     return {
+      tv: { corners: [[-1.38, 2.66, D - 0.667], [-2.0, 2.66, D - 0.667], [-2.0, 2.18, D - 0.667], [-1.38, 2.18, D - 0.667]], c: [-1.69, 2.42, D - 0.66] },
       id: "discos", name: "VAVÁ DISCOS", W, D, H: 3.4, booths, base: [{ g: up(fl, { outline: false }), tex }, { g: up(st), tex }, { g: up(thin, { outline: false }), tex }], dyn, decks, G, solids, spots, lights, crates, wall, bins,
       npcs: [
         { look: "vava", x: -4.0, z: 12.0, yaw: Math.PI / 2, idle: "calm", who: "vava" },
