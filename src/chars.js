@@ -9,13 +9,17 @@ const CHARS = (() => {
   const lenOf = (look) => (look && look.len ? Object.assign({}, LEN0, look.len) : LEN0);
   const bindOf = (look) => { const L = lenOf(look); return Object.assign({}, BIND, { py: L.thigh + L.shin + 0.16 }); };
   const INK = "#1b1530";
-  const AW = 2048, AH = 2048;
+  const AW = 2048, AH = 4096; // metade de baixo (y >= 2048): rostos e estampas da galera da festa
   const R = (x, y, w, h) => [x / AW, y / AH, (x + w) / AW, (y + h) / AH];
   const FACE = { kf: [1024, 0], kaua: [1280, 0], manu: [1536, 0], gabi: [1792, 0], kauane: [1024, 256], julie: [1280, 256] };
   for (let i = 0; i < 12; i++) FACE["npc" + i] = [1536 + (i % 4) * 128, 640 + Math.floor(i / 4) * 128, 128];
   FACE.dudu = [1920, 512, 128];
   FACE.vava = [1920, 1664, 128];
-  const SPR = { cloud: R(1920, 256, 128, 128), dollar: R(1920, 384, 128, 128), checker: R(1024, 960, 64, 64), cat: R(1088, 960, 64, 64), nerd: R(512, 1920, 128, 128), shark: R(1536, 256, 128, 384), lion: R(1664, 256, 128, 384), crown: R(1792, 256, 128, 384) };
+  FACE.lucas = [0, 2048];
+  FACE.mila = [512, 2048];
+  FACE.diogo = [1024, 2048]; FACE.breno = [1280, 2048]; FACE.cabeca = [1536, 2048]; FACE.analivia = [1792, 2048];
+  for (let i = 0; i < 12; i++) FACE["fx" + i] = [i * 128, 2304, 128];
+  const SPR = { cloud: R(1920, 256, 128, 128), dollar: R(1920, 384, 128, 128), checker: R(1024, 960, 64, 64), cat: R(1088, 960, 64, 64), nerd: R(512, 1920, 128, 128), shark: R(1536, 256, 128, 384), lion: R(1664, 256, 128, 384), crown: R(1792, 256, 128, 384), eq: R(256, 2048, 256, 128), reggae: R(768, 2048, 128, 128), num: R(896, 2048, 128, 128), hib: R(768, 2176, 128, 128), star: R(896, 2176, 128, 128) };
 
   const LOOKS = {
     kf: {
@@ -97,6 +101,72 @@ const CHARS = (() => {
     sleeve: "short", pantsR: 0.78, flare: 0.2, scale: 1.0, headScale: 0.95, npc: { freckles: 1, mouth: "smile", brow: 0xb85a20, iris: "#3a6a8a" } };
   TOWN.forEach((t, i) => (t.face = "npc" + i));
   TOWN.forEach((t, i) => (LOOKS["npc" + i] = Object.assign({ sleeve: "long", pantsR: 0.9, flare: 0.4, shoeToe: t.shoe, sole: 0x2a2630, lace: t.shoe, scale: t.kid ? 0.72 : t.old ? 0.88 : 0.92, headScale: t.kid ? 1.08 : 0.97, pantsR: 0.72, flare: 0.1 }, t)));
+  // DJ Luskinha (Lucas): magrão, cabelo liso texturizado com franja pra frente e laterais baixas no degradê,
+  // óculos escuros, fone grande preto, camiseta preta larga com a faixa de equalizador no peito, relógio e tudo preto
+  LOOKS.lucas = {
+    name: "DJ Luskinha", face: "lucas", skin: 0xe2b48c, hair: 0x2a1a12, hairStyle: "quiff", top: 0x6a4cff, top2: 0x5236d8, jacket: true, inner: 0xf6f6f2, pants: 0x232a3e, shoe: 0xf4f4f4, shoeToe: 0xf4f4f4, sole: 0x6a4cff, lace: 0x6a4cff,
+    tee: "loose", sleeve: "short", backPrint: "eq", phones: 0x15141a, phonesAcc: 0x6a4cff, shades: true, wristband: 0x2a2a30, watch: 0xc8ccd6, chain: 0xd5dbe8,
+    len: { thigh: 0.5, shin: 0.5, torso: 0.5, up: 0.31, fore: 0.29 }, headScale: 0.9, shoulder: 1.04, pantsR: 0.6, flare: 0.0, pyAdd: 0.06,
+    npc: { mouth: "smile", brow: 0x2a1a12, iris: "#3a2414", blush: 0 }, idle: "calm",
+  };
+  // Mila (Camila): skatista meio gótica, 18-19 anos. Franja reta, coque alto bagunçado e mechas soltas
+  // emoldurando o rosto (uma azul). Delineado gatinho, batom escuro, piercing no nariz, brincos de
+  // bolinha preta, choker, colar de cadeado, munhequeira de rebite, pulseirinhas coloridas, corrente de carteira,
+  // cropped preto, calça preta larga e tênis azul
+  LOOKS.mila = {
+    name: "Mila", face: "mila", skin: 0xd9a27e, hair: 0x221822, hairStyle: "mila", streak: 0x2f7bff, top: 0x16141b, top2: 0x221f28, pants: 0x18171d, shoe: 0x2f6fe8, shoeToe: 0xf4f4f4, sole: 0xf4f1ea, lace: 0xf4f4f4,
+    crop: true, sleeve: "short", belt: true, pantsR: 0.84, flare: 0.5, choker: 0x111015, lock: 0xd5dbe8, earrings: 0x111015, studs: true, rubber: [0xff4fa3, 0x2f7bff, 0x5fe08a], chain: 0xd5dbe8,
+    scale: 0.92, shoulder: 0.92, headScale: 0.95, stance: "regular",
+    npc: { lash: 1, wing: 1, lips: 0x5a1e2a, mouth: "flat", nosering: 1, brow: 0x221822, iris: "#3a2214", blush: 0.12 }, idle: "calm",
+  };
+  // Diogo: gente boa e desencanado, puxa papo fácil. Cabelo loiro escuro meio bagunçado, camiseta de uma banda de
+  // reggae inventada, bermuda cáqui, tênis de lona e a pulseira rasta (é por ela que ele puxa conversa com a Gabi)
+  LOOKS.diogo = {
+    name: "Diogo", face: "diogo", skin: 0xeec3a0, hair: 0x9a7440, hairStyle: "shaggy", top: 0x2a6a3a, top2: 0x1f5a2e, pants: 0xb89a6a, bermuda: true, socks: 0xf4f4f4,
+    shoe: 0xe8e0cc, shoeToe: 0xf4f4f4, sole: 0xf4f1ea, lace: 0xf4f4f4, tee: "loose", sleeve: "short", print: "reggae", rasta: true, flare: 0.3, pantsR: 0.9,
+    len: { thigh: 0.49, shin: 0.49, torso: 0.49, up: 0.31, fore: 0.29 }, headScale: 0.92, shoulder: 1.06,
+    npc: { mouth: "smile", brow: 0x7a5a30, iris: "#4a6a3a", blush: 0.1 }, idle: "calm",
+  };
+  // Cabeça (Luiz): o "dono da festa". Boné azul virado pra trás, regata de basquete por cima da camiseta branca,
+  // corrente prata grossa, relógio dourado enorme, bermuda cargo abaixo do joelho, meião branco e tênis branco gigante
+  LOOKS.cabeca = {
+    name: "Cabeça", face: "cabeca", skin: 0xc68e62, hair: 0x1e1410, hairStyle: "cap", capC: 0x2457ff, top: 0xe8262b, top2: 0xb81a20, pants: 0x7a7a5a, bermuda: true, cargo: true, socks: 0xffffff,
+    shoe: 0xf8f8f8, shoeToe: 0xf8f8f8, sole: 0xf4f1ea, lace: 0xd8dce4, shoeScale: 1.15, tee: "loose", sleeve: "short", armC: 0xffffff, print: "num", chainBig: 0xd5dbe8, watch: 0xe8b830, wristband: 0xe8b830,
+    len: { thigh: 0.5, shin: 0.5, torso: 0.5, up: 0.32, fore: 0.3 }, headScale: 0.92, shoulder: 1.1, pantsR: 0.95, flare: 0.3,
+    npc: { mouth: "smile", brow: 0x1e1410, iris: "#3a2214", blush: 0 }, idle: "boss",
+  };
+  // Breno: primo do Cabeça, rico tranquilo. Cabelo com luzes, camisa de linho aberta, colar de conchinha, óculos
+  // escuros pendurado na gola, brinco de argola, bermuda de alfaiataria e tênis branco limpo
+  LOOKS.breno = {
+    name: "Breno", face: "breno", skin: 0xe8b894, hair: 0x6a4a2a, hairTip: 0xe8cf8a, hairStyle: "quiff", top: 0xf2ead8, top2: 0xe2d8c2, jacket: true, inner: 0xe8b894, pants: 0x2a3a5a, bermuda: true, socks: 0xe8b894,
+    shoe: 0xfafafa, shoeToe: 0xfafafa, sole: 0xf4f1ea, lace: 0xfafafa, sleeve: "short", shells: 0xf6efe0, collarShades: true, hoop: 0xe8c860, tee: "loose",
+    len: { thigh: 0.5, shin: 0.5, torso: 0.5, up: 0.31, fore: 0.29 }, headScale: 0.92, shoulder: 1.06, pantsR: 0.85, flare: 0.2,
+    npc: { mouth: "smile", brow: 0x5a3a20, iris: "#5a7a4a", blush: 0 }, idle: "calm",
+  };
+  // Ana Lívia: amiga da Kauane, estilo parecido mas de patricinha. Loira, olhos verdes, óculos de aro fino, jaqueta
+  // felpuda rosa-bebê, blusinha branca, jeans claro boca de sino e tênis branco de plataforma
+  LOOKS.analivia = {
+    name: "Ana Lívia", face: "analivia", skin: 0xf6d6c2, hair: 0xf0d27a, browCol: 0xc8a050, hairStyle: "long", part: "center", top: 0xffd0e4, top2: 0xf4bcd6, jacket: true, inner: 0xffffff,
+    pants: 0x9cc0e8, shoe: 0xfafafa, shoeToe: 0xfafafa, sole: 0xfafafa, lace: 0xffd0e4, platform: 1, glasses: true, glassCol: 0xb07a8a, tee: "loose", flare: 0.5, pantsR: 0.72,
+    scale: 0.88, shoulder: 0.92, headScale: 0.96, hoop: 0xe8c860,
+    npc: { lash: 1, lips: 0xf08aa8, mouth: "smile", noseBig: 1, brow: 0xc8a050, iris: "#3a9a5a", blush: 0.35 }, idle: "calm",
+  };
+  // galera da festa (anos 2000, cada um com seu estilo; todo mundo ganhou colar havaiano na porta)
+  const FX = [
+    { name: "Thaís", skin: 0xf0c7a4, hair: 0x3a2214, hairStyle: "long", part: "side", top: 0xff4fa3, top2: 0xe0308a, crop: true, pants: 0x7a8a5a, flare: 1, pantsR: 0.85, shoe: 0xffffff, scale: 0.88, shoulder: 0.9, lei: [0xffd23f, 0xff4fa3, 0xffffff], npc: { lash: 1, lips: 0xd04a7a, mouth: "smile" } },
+    { name: "Rafa", skin: 0x8a5a3c, hair: 0x1b1210, hairStyle: "cap", capC: 0xffd23f, top: 0x1f5ad8, top2: 0x1a46a8, print: "num", pants: 0x2a2a3a, shoe: 0xffffff, lei: [0xff4fa3, 0x3fd0ff, 0xffd23f], chainBig: 0xe8b830, npc: { mouth: "smile", beard: 0x1b1210 } },
+    { name: "Bruna", skin: 0x6e452c, hair: 0x1b1210, hairStyle: "afro", top: 0xffd23f, top2: 0xffb81f, crop: true, pants: 0xf4f4f4, flare: 1.2, pantsR: 0.8, shoe: 0xff4fa3, scale: 0.9, shoulder: 0.9, lei: [0xff6a1a, 0xffffff, 0xff4fa3], npc: { lash: 1, lips: 0x8a3a4a, mouth: "smile" } },
+    { name: "Léo", skin: 0xf0c49c, hair: 0x8a5a2a, hairTip: 0xf4e0a0, hairStyle: "spiky", top: 0x2fb8c8, top2: 0x1f98a8, print: "hib", pants: 0xc8b896, bermuda: true, socks: 0xf0c49c, shoe: 0x2a2a30, lei: [0xffffff, 0xff4fa3, 0x8c5cff], npc: { mouth: "smile", freckles: 1 } },
+    { name: "Carol", skin: 0xf3cdb4, hair: 0xc84a2a, hairStyle: "bob", top: 0x8c5cff, top2: 0x6a3ee0, pants: 0x1b1a22, flare: 0.8, shoe: 0x1b1530, scale: 0.88, shoulder: 0.9, lei: [0x5fe08a, 0xffd23f, 0xff4fa3], wristband: 0xff4fa3, npc: { lash: 1, lips: 0x9a2a4a, mouth: "flat" } },
+    { name: "Juninho", skin: 0xc98b62, hair: 0x2b170c, hairStyle: "taper", top: 0xff8a1f, top2: 0xe06a10, print: "hib", pants: 0x3a5aa8, flare: 0.6, shoe: 0xf4f4f4, lei: [0xff4fa3, 0xffd23f, 0x3fd0ff], shades: true, npc: { mouth: "smile" } },
+    { name: "Nanda", skin: 0xe8b894, hair: 0xf0d27a, hairStyle: "long", top: 0xf4f4f4, top2: 0xe4e4e4, crop: true, pants: 0x2f6fd8, flare: 1.3, pantsR: 0.85, shoe: 0xffffff, platform: 1, scale: 0.87, shoulder: 0.9, lei: [0xff4fa3, 0xffffff, 0xff8a1f], npc: { lash: 1, lips: 0xe06a8a, mouth: "smile" } },
+    { name: "Tiago", skin: 0x5a3a26, hair: 0x1b1210, hairStyle: "short", top: 0xf4f4f4, top2: 0xdcdcdc, jacket: true, inner: 0x1f1f2a, pants: 0x1b1a22, shoe: 0xe8262b, lei: [0xffd23f, 0x5fe08a, 0xffffff], npc: { mouth: "smile", beard: 0x1b1210 } },
+    { name: "Duda", skin: 0xd8a47e, hair: 0x2a1a10, hairStyle: "bun", top: 0x5fe08a, top2: 0x3fc06a, crop: true, pants: 0x8c5cff, flare: 1, pantsR: 0.85, shoe: 0xfafafa, scale: 0.86, shoulder: 0.88, lei: [0xff4fa3, 0xffd23f, 0x3fd0ff], npc: { lash: 1, lips: 0xb83a5a, mouth: "o" } },
+    { name: "Vini", skin: 0xe8b894, hair: 0x3a2a1a, hairStyle: "quiff", top: 0x1b1530, top2: 0x2a2440, print: "star", pants: 0x5a6a7a, flare: 0.6, shoe: 0x2f6fe8, lei: [0x3fd0ff, 0xffffff, 0xff4fa3], wristband: 0x2f6fe8, npc: { mouth: "smile" } },
+    { name: "Lari", skin: 0xc98d68, hair: 0x2a1810, hairStyle: "chanel", top: 0xff6a6a, top2: 0xe04a4a, pants: 0xe8e0cc, flare: 1.1, pantsR: 0.82, shoe: 0xff6a6a, scale: 0.86, shoulder: 0.88, lei: [0xffffff, 0xffd23f, 0x5fe08a], npc: { lash: 1, lips: 0xc8405a, mouth: "smile", freckles: 1 } },
+    { name: "Fábio", skin: 0xf0c49c, hair: 0x1b1210, hairStyle: "guard", capC: 0x1b1530, top: 0xa8e07a, top2: 0x88c05a, print: "hib", pants: 0x2a2a3a, shoe: 0xf4f4f4, lei: [0xff4fa3, 0xffffff, 0xffd23f], npc: { mouth: "smile", glasses: 0x1b1530 } },
+  ];
+  FX.forEach((t, i) => (LOOKS["fx" + i] = Object.assign({ face: "fx" + i, sleeve: "short", tee: "loose", shoeToe: t.shoe, sole: 0xf4f1ea, lace: t.shoe, socks: t.skin, flare: 0.4, pantsR: 0.8, idle: "calm" }, t)));
   // Neide da Sorveteria Pinguim: atendente de avental rosa e cabelo preso
   LOOKS.neide = Object.assign({}, LOOKS.npc10, { name: "Neide", top: 0xffffff, top2: 0xeeeeee, apron: 0xff8fc8, pants: 0x3a4a7a, hairStyle: "bun", sleeve: "short" });
 
@@ -457,6 +527,9 @@ const CHARS = (() => {
       for (const sd of [-1, 1]) { g.beginPath(); g.moveTo(ex(sd) - sd * 26, ey - 34 - (o.brow2 || 0) * sd); g.quadraticCurveTo(ex(sd), ey - 46, ex(sd) + sd * 30, ey - 36 + (o.frown ? 8 : 0)); g.lineTo(ex(sd) + sd * 30, ey - 30 + (o.frown ? 8 : 0)); g.quadraticCurveTo(ex(sd), ey - 38, ex(sd) - sd * 26, ey - 28); g.fill(); }
       nose();
       blush(o.blush ?? 0.25);
+      if (o.noseBig) { g.strokeStyle = "rgba(60,25,15,.6)"; g.lineWidth = 6; g.beginPath(); g.moveTo(X + 131, Y + 132); g.quadraticCurveTo(X + 150, Y + 168, X + 124, Y + 176); g.stroke(); g.beginPath(); g.arc(X + 112, Y + 168, 6, 0.2, 2.4); g.stroke(); }
+      if (o.wing) { g.strokeStyle = INK; g.lineWidth = 7; for (const sd of [-1, 1]) { g.beginPath(); g.moveTo(ex(sd) + sd * 18, ey - 10); g.lineTo(ex(sd) + sd * 44, ey - 26); g.stroke(); } }
+      if (o.nosering) { g.strokeStyle = "#d5dbe8"; g.lineWidth = 4; g.beginPath(); g.arc(X + 146, my - 40, 7, -0.6, 2.2); g.stroke(); }
       if (o.freckles) { g.fillStyle = "rgba(120,60,30,.5)"; for (const [dx, dy] of [[-56, 40], [-46, 48], [52, 42], [60, 48], [-60, 50], [44, 38]]) { g.beginPath(); g.arc(X + 128 + dx, ey + dy, 3, 0, 7); g.fill(); } }
       if (o.old) { g.strokeStyle = "rgba(80,40,20,.35)"; g.lineWidth = 4; for (const sd of [-1, 1]) { g.beginPath(); g.moveTo(X + 128 + sd * 38, my - 24); g.quadraticCurveTo(X + 128 + sd * 46, my - 8, X + 128 + sd * 40, my + 6); g.stroke(); g.beginPath(); g.moveTo(ex(sd) + sd * 30, ey + 6); g.lineTo(ex(sd) + sd * 40, ey + 2); g.stroke(); } }
       if (o.lips) { g.fillStyle = "#" + o.lips.toString(16).padStart(6, "0"); g.beginPath(); g.moveTo(X + 106, my - 6); g.quadraticCurveTo(X + 128, my - 16, X + 150, my - 6); g.quadraticCurveTo(X + 128, my + 12, X + 106, my - 6); g.fill(); }
@@ -485,6 +558,40 @@ const CHARS = (() => {
   }
   function paint(g) {
     for (const k in FACE) face(g, k, LOOKS[k]);
+    // estampas da galera da festa: banda de reggae (inventada), número de regata, hibisco havaiano, estrela
+    {
+      let x = 768 + 64, y = 2048 + 64;
+      g.save();
+      [["#d62828", 50], ["#f7c531", 38], ["#1f9a4a", 26]].forEach(([col, r]) => { g.fillStyle = col; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); });
+      g.fillStyle = "#1b1530"; g.beginPath(); g.arc(x, y, 14, 0, 7); g.fill();
+      g.font = '900 22px "Arial Black","Impact","DejaVu Sans",sans-serif'; g.textAlign = "center"; g.lineWidth = 5; g.strokeStyle = "#1b1530";
+      g.strokeText("RAÍZES", x, y + 58); g.fillStyle = "#f7c531"; g.fillText("RAÍZES", x, y + 58);
+      x = 896 + 64;
+      g.font = '900 76px "Arial Black","Impact","DejaVu Sans",sans-serif'; g.lineWidth = 10; g.strokeStyle = "#ffffff";
+      g.strokeText("07", x, y + 28); g.fillStyle = "#1b1530"; g.fillText("07", x, y + 28);
+      x = 768 + 64; y = 2176 + 64;
+      for (const [dx, dy, r, col] of [[-30, -26, 26, "#ff4fa3"], [32, 20, 22, "#ffffff"], [-22, 34, 16, "#ffd23f"], [30, -34, 14, "#ffffff"]]) {
+        g.fillStyle = col; for (let k = 0; k < 5; k++) { const a = k * 1.2566; g.beginPath(); g.ellipse(x + dx + Math.cos(a) * r * 0.55, y + dy + Math.sin(a) * r * 0.55, r * 0.55, r * 0.34, a, 0, 7); g.fill(); }
+        g.fillStyle = "#ffd23f"; g.beginPath(); g.arc(x + dx, y + dy, r * 0.18, 0, 7); g.fill();
+      }
+      g.fillStyle = "#2fae6a"; for (const [dx, dy, a] of [[8, -6, 0.6], [-40, 8, 2.4], [12, 46, 1.6]]) { g.beginPath(); g.ellipse(x + dx, y + dy, 20, 7, a, 0, 7); g.fill(); }
+      x = 896 + 64;
+      g.fillStyle = "#ffd23f"; g.strokeStyle = "#1b1530"; g.lineWidth = 6; g.beginPath();
+      for (let k = 0; k < 10; k++) { const a = -Math.PI / 2 + k * Math.PI / 5, r = k % 2 ? 22 : 52; g.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r); }
+      g.closePath(); g.fill(); g.stroke();
+      g.restore();
+    }
+    // faixa de equalizador da camiseta do DJ Luskinha (fundo transparente: aparece só a faixa)
+    {
+      const x = 256, y = 2048;
+      g.save();
+      // nas costas da camisa: "LUSKINHA" e o equalizador embaixo
+      g.font = '900 46px "Arial Black","Impact","DejaVu Sans",sans-serif'; g.textAlign = "center"; g.lineJoin = "round";
+      g.lineWidth = 8; g.strokeStyle = "#1b1530"; g.strokeText("LUSKINHA", x + 128, y + 58); g.fillStyle = "#ffffff"; g.fillText("LUSKINHA", x + 128, y + 58);
+      const H = [10, 18, 26, 14, 30, 20, 12, 24, 32, 18, 12, 28, 16, 22, 10, 16, 30, 20];
+      H.forEach((h, i) => { g.fillStyle = i % 4 === 2 ? "#ffd23f" : "#5fe08a"; g.fillRect(x + 22 + i * 12, y + 100 - h / 2, 8, h); });
+      g.restore();
+    }
     // nuvem da Manu
     {
       const x = 1984, y = 320;
@@ -790,7 +897,7 @@ const CHARS = (() => {
     P(-0.17, 0.11, 0.13, low, FLAT);
     P(-0.08, 0.14, 0.19, low, FLAT);
     P(0.0, 0.135, 0.18, look.belt ? beltC : low, look.belt ? 0 : FLAT);
-    if (look.belt) P(0.075, 0.138, 0.183, top, FLAT);
+    if (look.belt) P(0.075, 0.138, 0.183, look.crop ? skin : top, look.crop ? 0 : FLAT);
     // ressalto da barra: a camiseta cai por cima da cintura
     const hem = look.overall ? 0.02 : loose ? 0.08 : 0.06;
     if (look.flannel) {
@@ -799,6 +906,9 @@ const CHARS = (() => {
       const at = (y) => { let i = 0; while (i < K.length - 2 && K[i + 1][0] <= y) i++; const a = K[i], b = K[i + 1], k = Math.max(0, Math.min(1, (y - a[0]) / (b[0] - a[0]))); return [a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k]; };
       const dark = c(look.top2);
       [hem, 0.1, 0.125, 0.2, 0.225, 0.29, 0.315, 0.37, 0.4].forEach((y, i) => { const [rx, rz] = at(y); P(y, rx, rz, i % 2 ? dark : top, FLAT); });
+    } else if (look.crop) {
+    P(0.17, 0.134, 0.172, skin, 0);
+    P(0.2, 0.138, 0.178, top, FLAT);
     } else {
     P(hem, loose ? 0.168 : 0.142, loose ? 0.215 : 0.185, top, FLAT);
     P(0.2, loose ? 0.158 : 0.132, loose ? 0.208 * SHW : 0.17, top, FLAT);
@@ -815,6 +925,46 @@ const CHARS = (() => {
         t.box(0.163, 0.022, -0.028, 0.172, 0.056, 0.028, beltC);
         shard(t, [0.11, 0.04, 0.13], [0.06, -0.09, 0.17], 0.018, 0.006, beltC);
       }
+      if (look.lei) {
+        // colar havaiano de flores
+        for (let i = 0; i < 16; i++) {
+          const a = (i / 16) * Math.PI * 2, fr = Math.max(0, Math.cos(a));
+          const p2 = [Math.cos(a) * 0.095 + 0.02 + fr * 0.04, TL - 0.02 - fr * fr * 0.11, Math.sin(a) * 0.135];
+          t.ball(p2, 0.026, c(look.lei[i % look.lei.length]), FLAT, 5, 3, { sy: 0.7 });
+        }
+      }
+      if (look.chainBig) {
+        const N3 = [[0.05, TL + 0.0, 0.07], [0.14, TL - 0.08, 0.05], [0.16, TL - 0.13, 0.0], [0.14, TL - 0.08, -0.05], [0.05, TL + 0.0, -0.07]];
+        for (let i = 0; i < N3.length - 1; i++) t.tube(N3[i], N3[i + 1], 0.012, 0.012, 4, c(look.chainBig), 1, { cap: false });
+      }
+      if (look.shells) {
+        for (let i = 0; i < 12; i++) { const a = (i / 12) * Math.PI * 2, fr = Math.max(0, Math.cos(a)); t.ball([Math.cos(a) * 0.075 + fr * 0.03, TL + 0.0 - fr * 0.05, Math.sin(a) * 0.07], 0.012, c(look.shells), 0, 4, 3); }
+      }
+      if (look.collarShades) {
+        for (const sd of [-1, 1]) t.ball([0.15, TL - 0.1, sd * 0.03], 0.026, c(0x17151f), 2, 6, 4, { sx: 0.4, sy: 0.8 });
+        t.tube([0.16, TL - 0.08, -0.01], [0.16, TL - 0.08, 0.01], 0.004, 0.004, 3, c(0x0e0d12), 1);
+      }
+      if (look.choker) {
+        t.tube([0, TL + 0.01, 0], [0, TL + 0.04, 0], 0.066, 0.066, 10, c(look.choker), FLAT, { cap: false });
+        t.tube([0.066, TL + 0.0, -0.012], [0.066, TL + 0.0, 0.012], 0.014, 0.014, 6, c(0xd5dbe8), 1, { cap: false });
+      }
+      if (look.lock) {
+        const L1 = [[0.05, TL + 0.0, 0.07], [0.13, TL - 0.07, 0.05], [0.15, TL - 0.11, 0.0], [0.13, TL - 0.07, -0.05], [0.05, TL + 0.0, -0.07]];
+        for (let i = 0; i < L1.length - 1; i++) t.tube(L1[i], L1[i + 1], 0.004, 0.004, 3, c(look.lock), 1, { cap: false });
+        t.box(0.148, TL - 0.155, -0.018, 0.162, TL - 0.115, 0.018, c(look.lock), { m: 1 });
+        t.tube([0.155, TL - 0.115, -0.01], [0.155, TL - 0.1, 0.0], 0.004, 0.004, 3, c(look.lock), 1);
+        t.tube([0.155, TL - 0.1, 0.0], [0.155, TL - 0.115, 0.01], 0.004, 0.004, 3, c(look.lock), 1);
+      }
+      if (look.chain && !look.jacket) {
+        const W = [[0.1, 0.02, 0.15], [0.07, -0.1, 0.19], [-0.02, -0.13, 0.19], [-0.1, -0.06, 0.15]];
+        for (let i = 0; i < W.length - 1; i++) t.tube(W[i], W[i + 1], 0.006, 0.006, 3, c(look.chain), 1, { cap: false });
+      }
+      if (look.chain && look.jacket) {
+        // corrente prata por cima da camiseta
+        const N2 = [[0.05, TL + 0.0, 0.065], [0.14, TL - 0.08, 0.035], [0.15, TL - 0.1, 0.0], [0.14, TL - 0.08, -0.035], [0.05, TL + 0.0, -0.065]];
+        for (let i = 0; i < N2.length - 1; i++) t.tube(N2[i], N2[i + 1], 0.006, 0.006, 3, c(look.chain), 1, { cap: false });
+      }
+      if (look.backPrint) t.decal([-0.176, 0.3, 0], [0, 0, 1], [0, 1, 0], 0.3, 0.15, SPR[look.backPrint]);
       if (look.print) t.decal(look.overall ? [0.152, 0.17, 0] : [0.168, 0.29, 0], [0, 0, -1], [0, 1, 0], look.overall ? 0.11 : 0.18, look.overall ? 0.11 : 0.18, SPR[look.print]);
       if (look.hood) {
         t.ball([-0.11, TL - 0.02, 0], 0.13, V.mul(top, 0.85), FLAT, 7, 3, { sx: 0.65, sy: 0.55 });
@@ -874,6 +1024,17 @@ const CHARS = (() => {
           sec(SH, 0.22, L7, 0.06, 0.062), sec(SH, LEN.shin - 0.02, L7, 0.05, 0.05, [SH, FT, 0.5]),
         ];
         chain(R, [sh, sh, sh, skin, skin, skin, sock, sock, sock], false, true, [FLAT, FLAT, FLAT, 0, 0, 0, FLAT, FLAT, FLAT]);
+      } else if (look.bermuda) {
+        // bermuda até abaixo do joelho, canela de fora e meia (cano alto se for branca)
+        const pa = pants, sock = c(look.socks || look.skin), L7 = SEC.leg, hi = look.socks === 0xffffff;
+        const R = [
+          sec(TH, -0.05, L7, 0.14, 0.14, [T0, TH, 0.6]), sec(TH, 0.2, L7, 0.15 * (look.pantsR || 1), 0.15 * (look.pantsR || 1)),
+          sec(TH, LEN.thigh - 0.02, L7, 0.148 * (look.pantsR || 1), 0.148 * (look.pantsR || 1), [TH, SH, 0.4]), sec(SH, 0.07, L7, 0.14 * (look.pantsR || 1), 0.14 * (look.pantsR || 1), [TH, SH, 0.85]),
+          sec(SH, 0.075, L7, 0.056, 0.058), sec(SH, 0.2, L7, 0.06, 0.062), sec(SH, hi ? 0.24 : LEN.shin - 0.1, L7, 0.056, 0.058),
+          sec(SH, (hi ? 0.24 : LEN.shin - 0.1) + 0.005, L7, 0.062, 0.064), sec(SH, LEN.shin - 0.02, L7, 0.056, 0.056, [SH, FT, 0.5]),
+        ];
+        chain(R, [pa, pa, pa, pa, skin, skin, sock, sock], false, true, [FLAT, FLAT, FLAT, FLAT, 0, 0, FLAT, FLAT]);
+        if (look.cargo) rigid(TH, (t) => t.box(0.0, 0.2, sg * 0.13, 0.1, 0.32, sg * 0.165, V.mul(pa, 0.85), { m: FLAT }));
       } else {
         // calça larga em trapézio: abre do quadril até o chão e cobre metade do tênis
         const L7 = SEC.leg, pr = look.pantsR || 1, fl = look.flare || 1;
@@ -938,7 +1099,7 @@ const CHARS = (() => {
     for (const s of ["F", "B"]) {
       const UP = BONE["up" + s], FO = BONE["fore" + s], L6 = SEC.limb;
       const short = look.sleeve === "short";
-      const sl = look.overall ? c(look.top) : top;
+      const sl = look.overall ? c(look.top) : look.armC ? c(look.armC) : top;
       const R = [], C = [], MT = [];
       const add = (r, col, mt) => { R.push(r); if (col) { C.push(col); MT.push(mt); } };
       if (short) {
@@ -964,7 +1125,13 @@ const CHARS = (() => {
       rigid(FO, (t) => {
         t.tube([0.0, LEN.fore + 0.02, 0.04], [0.03, LEN.fore + 0.08, 0.058], 0.017, 0.012, 5, hand);
         if (look.rasta && s === "B") [0xd62828, 0xf7c531, 0x1f9a4a].forEach((col, i) => extrude(t, [[-0.05, LEN.fore - 0.07 + i * 0.022], [0.05, LEN.fore - 0.07 + i * 0.022], [0.05, LEN.fore - 0.048 + i * 0.022], [-0.05, LEN.fore - 0.048 + i * 0.022]], () => 0.096, c(col)));
-        if (look.wristband) extrude(t, [[-0.052, LEN.fore - 0.065], [0.052, LEN.fore - 0.065], [0.052, LEN.fore - 0.005], [-0.052, LEN.fore - 0.005]], () => 0.1, c(look.wristband));
+        if (look.studs && s === "F") {
+          extrude(t, [[-0.054, LEN.fore - 0.075], [0.054, LEN.fore - 0.075], [0.054, LEN.fore - 0.02], [-0.054, LEN.fore - 0.02]], () => 0.104, c(0x111015));
+          for (const [x, z] of [[0.056, 0], [-0.056, 0], [0, 0.054], [0, -0.054], [0.04, 0.04], [-0.04, -0.04], [0.04, -0.04], [-0.04, 0.04]]) t.ball([x, LEN.fore - 0.048, z], 0.011, c(0xd5dbe8), 1, 4, 3);
+        }
+        if (look.rubber && s === "B") look.rubber.forEach((col, i) => extrude(t, [[-0.05, LEN.fore - 0.08 + i * 0.02], [0.05, LEN.fore - 0.08 + i * 0.02], [0.05, LEN.fore - 0.068 + i * 0.02], [-0.05, LEN.fore - 0.068 + i * 0.02]], () => 0.098, c(col)));
+        if (look.watch && s === "B") t.box(0.045, LEN.fore - 0.058, -0.024, 0.066, LEN.fore - 0.012, 0.024, c(look.watch), { m: 1 });
+        if (look.wristband && (!look.watch || s === "B")) extrude(t, [[-0.052, LEN.fore - 0.065], [0.052, LEN.fore - 0.065], [0.052, LEN.fore - 0.005], [-0.052, LEN.fore - 0.005]], () => 0.1, c(look.wristband));
       });
     }
     // ----- cabeça (rosto pintado por projeção frontal) -----
@@ -1101,6 +1268,51 @@ const CHARS = (() => {
       }
       // costeleta curtinha
       for (const sd of [-1, 1]) t.box(0.035, 0.2, sd * 0.148 - 0.008, 0.075, 0.3, sd * 0.148 + 0.008, fade, { m: FLAT });
+    } else if (L.hairStyle === "shaggy") {
+      // médio, bagunçado, caindo um pouco na testa e cobrindo a orelha
+      cap({ prof: P(1.06), back: 0.06, bang: 0.3, pow: 2.5 });
+      lump([-0.02, 0.4, 0], 0.15, 1.1, 0.62, 1.1, hair);
+      for (const sd of [-1, 1]) lump([-0.03, 0.25, sd * 0.13], 0.1, 1.0, 1.1, 0.5, sd > 0 ? hair : hairL);
+      lump([-0.13, 0.24, 0], 0.12, 0.8, 1.1, 1.05, hairD);
+      for (let i = 0; i < 7; i++) shard(t, [0.1, 0.38, -0.13 + i * 0.043], [0.17, 0.27 - (i % 3) * 0.02, -0.15 + i * 0.05], 0.04, 0.014, i % 2 ? hairL : hair);
+      for (const [b, tp] of [[[-0.05, 0.46, 0.05], [-0.12, 0.53, 0.12]], [[-0.1, 0.44, -0.05], [-0.2, 0.47, -0.12]], [[0.02, 0.47, -0.02], [0.05, 0.55, -0.08]], [[-0.16, 0.3, 0.08], [-0.24, 0.16, 0.13]], [[-0.16, 0.3, -0.08], [-0.24, 0.16, -0.13]]]) shard(t, b, tp, 0.04, 0.014, hair);
+    } else if (L.hairStyle === "mila") {
+      // cabelo preso: franja reta, coque alto bagunçado e mechas soltas dos dois lados (uma azul)
+      const blue = c(L.streak);
+      cap({ prof: P(1.04), back: 0.1, bang: 0.32, pow: 3 });
+      lump([0.0, 0.41, 0], 0.13, 1.12, 0.6, 1.08, hair);
+      lump([-0.1, 0.36, 0], 0.135, 0.95, 0.85, 1.12, hair);
+      for (const sd of [-1, 1]) lump([-0.01, 0.26, sd * 0.125], 0.1, 1.0, 1.15, 0.45, sd < 0 ? hair : hairD);
+      lump([-0.12, 0.25, 0], 0.11, 0.8, 1.0, 1.0, hairD);
+      // franja reta (vai do lado do cabelo até passar do meio da testa)
+      for (let i = 0; i < 8; i++) shard(t, [0.112, 0.385, -0.14 + i * 0.03], [0.172, 0.275 - (i % 2) * 0.018, -0.146 + i * 0.031], 0.03, 0.012, i % 3 === 1 ? hairL : hair);
+      // coque alto bagunçado, com fios soltos
+      lump([-0.09, 0.53, 0.0], 0.085, 1, 0.9, 1.05, hair);
+      lump([-0.13, 0.51, 0.04], 0.055, 1, 1, 1, hairL);
+      for (const [b, tp] of [[[-0.09, 0.56, 0.0], [-0.15, 0.66, 0.05]], [[-0.11, 0.54, -0.04], [-0.21, 0.6, -0.09]], [[-0.06, 0.55, 0.04], [-0.02, 0.64, 0.09]], [[-0.13, 0.52, 0.02], [-0.22, 0.5, 0.07]]]) shard(t, b, tp, 0.03, 0.01, hair);
+      // mechas que emolduram o rosto: a azul grande e uma escura fininha
+      shard(t, [0.08, 0.37, -0.128], [0.1, 0.0, -0.165], 0.052, 0.016, blue);
+      shard(t, [0.05, 0.34, -0.15], [0.05, 0.04, -0.185], 0.04, 0.014, hair);
+      shard(t, [0.1, 0.36, -0.06], [0.13, 0.12, -0.12], 0.026, 0.01, blue);
+      shard(t, [0.07, 0.36, 0.13], [0.08, 0.06, 0.17], 0.044, 0.014, hair);
+      shard(t, [0.04, 0.34, 0.15], [0.03, 0.1, 0.18], 0.034, 0.012, hairL);
+    } else if (L.hairStyle === "quiff") {
+      const skin = c(L.skin), fade = V.add(V.mul(hair, 0.78), V.mul(skin, 0.22));
+      cap({ prof: P(1.0), back: 0.3, bang: 0.34, pow: 3, col: fade });
+      cap({ prof: P(1.02), back: 0.24, bang: 0.32, pow: 2 });
+      // volume do topo (baixo, liso), um pouco mais alto na frente
+      for (const [x, y, z, r] of [[0.04, 0.42, 0, 0.1], [-0.06, 0.42, 0.055, 0.09], [-0.06, 0.42, -0.055, 0.09], [0.1, 0.4, 0.05, 0.075], [0.1, 0.4, -0.05, 0.075], [-0.15, 0.38, 0, 0.08], [-0.13, 0.37, 0.07, 0.065], [-0.13, 0.37, -0.07, 0.065]])
+        lump([x, y, z], r, 1.08, 0.55, 1.12, hair);
+      // mechas texturizadas penteadas pra frente; as da ponta caem um pouco na testa
+      const MQ = [
+        [0.02, 0.46, 0.0, 1, 0.22, 0.0, 0.12], [0.0, 0.46, 0.06, 1, 0.2, 0.3, 0.11], [0.0, 0.46, -0.06, 1, 0.2, -0.3, 0.11],
+        [-0.08, 0.46, 0.03, 1, 0.3, 0.15, 0.11], [-0.08, 0.46, -0.04, 1, 0.3, -0.2, 0.11], [-0.15, 0.44, 0.0, 1, 0.35, 0.05, 0.1],
+        [0.11, 0.43, 0.07, 1, -0.35, 0.35, 0.075], [0.11, 0.43, -0.07, 1, -0.35, -0.35, 0.075], [0.12, 0.44, 0.0, 1, -0.5, 0.05, 0.08],
+        [0.12, 0.44, 0.035, 1, -0.6, 0.15, 0.07], [0.0, 0.43, 0.11, 0.6, 0.2, 1, 0.07], [0.0, 0.43, -0.11, 0.6, 0.2, -1, 0.07],
+      ];
+      const tip = L.hairTip ? c(L.hairTip) : null;
+      MQ.forEach(([x, y, z, dx, dy, dz, len], i) => { const b = [x, y, z], e = V.add(b, V.mul(V.norm([dx, dy, dz]), len)); shard(t, b, e, 0.05, 0.016, tip && i % 2 === 0 ? tip : i % 3 === 1 ? hairL : i % 3 === 2 ? hairD : hair); });
+      for (const sd of [-1, 1]) t.box(0.035, 0.22, sd * 0.148 - 0.008, 0.07, 0.3, sd * 0.148 + 0.008, fade, { m: FLAT });
     } else if (L.hairStyle === "spiky") {
       cap({ prof: P(1.05), back: 0.13, bang: 0.28, pow: 3 });
       // espetos de tamanhos e direções variados, mais longos atrás e no topo
@@ -1227,10 +1439,18 @@ const CHARS = (() => {
       }
     } else if (L.phones) {
       for (const s of [-1, 1]) t.tube([0, 0.2, s * 0.15], [0, 0.2, s * 0.21], 0.075, 0.075, 8, c(L.phones), FLAT);
+      if (L.phonesAcc) for (const s of [-1, 1]) t.tube([0, 0.2, s * 0.21], [0, 0.2, s * 0.216], 0.045, 0.045, 8, c(L.phonesAcc), 2);
       for (let i = 0; i < 6; i++) {
         const a0 = (i / 6) * Math.PI, a1 = ((i + 1) / 6) * Math.PI;
         t.tube([0, 0.2 + Math.sin(a0) * 0.22, Math.cos(a0) * 0.18], [0, 0.2 + Math.sin(a1) * 0.22, Math.cos(a1) * 0.18], 0.022, 0.022, 4, c(L.phones), 0, { cap: false });
       }
+    }
+    if (L.hoop) for (const sd of [-1, 1]) for (let i = 0; i < 6; i++) { const a0 = (i / 6) * Math.PI * 2, a1 = ((i + 1) / 6) * Math.PI * 2; t.tube([Math.sin(a0) * 0.016, 0.135 - Math.cos(a0) * 0.016, sd * 0.152], [Math.sin(a1) * 0.016, 0.135 - Math.cos(a1) * 0.016, sd * 0.152], 0.003, 0.003, 3, c(L.hoop), 1, { cap: false }); }
+    if (L.earrings) for (const sd of [-1, 1]) {
+      t.ball([0.0, 0.155, sd * 0.152], 0.011, c(0xd5dbe8), 1, 4, 3);
+      t.tube([0.0, 0.15, sd * 0.152], [0.0, 0.12, sd * 0.152], 0.003, 0.003, 3, c(0xd5dbe8), 1);
+      t.ball([0.0, 0.112, sd * 0.152], 0.014, c(L.earrings), 1, 5, 4);
+      t.ball([0.0, 0.078, sd * 0.152], 0.019, c(L.earrings), 1, 5, 4);
     }
     if (L.shades) {
       // óculos esportivos pretos anos 2000: duas lentes ovais envolventes, aro fino em cima, haste reta
@@ -1261,7 +1481,7 @@ const CHARS = (() => {
       t.tube(at(-0.08, 0.238, 0.162), at(0.08, 0.238, 0.162), 0.009, 0.009, 4, frame, 0, { cap: false });
     }
     if (L.glasses) {
-      const fr = c(0x1b1530);
+      const fr = c(L.glassCol || 0x1b1530);
       for (const s of [-1, 1]) {
         const cz = s * 0.056, cx = 0.152 - Math.abs(cz) * 0.25, cy = 0.218;
         const pts = [];

@@ -5,7 +5,7 @@ const ART = (() => {
   const { V, M, hex, Mesh, seg, ik } = E;
 
   // ---------- atlas ----------
-  const AW = 2048, AH = 2048;
+  const AW = 2048, AH = 4096; // metade de baixo (y >= 2048): rostos e estampas da galera da festa
   const R = (x, y, w, h) => [x / AW, y / AH, (x + w) / AW, (y + h) / AH];
   const RECT = {
     piece: [0, 1, 2, 3, 4, 5, 6, 7].map((i) => R((i % 2) * 512 + 4, Math.floor(i / 2) * 256 + 4, 504, 248)),
@@ -20,7 +20,7 @@ const ART = (() => {
     bill: [R(0, 1280, 512, 256), R(512, 1280, 512, 256)],
     poster: [0, 1, 2, 3].map((i) => R(i * 256, 1536, 256, 384)),
     // Itaberá: letreiros de loja, placas de rua, placa verde e porta de aço
-    town: [...[0, 1, 2, 3].map((i) => R(1024, 512 + i * 112, 512, 104)), R(1152, 962, 384, 60), R(768, 1922, 256, 60), R(768, 1986, 256, 60)],
+    town: [...[0, 1, 2, 3].map((i) => R(1024, 512 + i * 112, 512, 104)), R(1152, 962, 384, 60), R(768, 1922, 256, 60), R(768, 1986, 256, 60), R(1024, 2560, 512, 104)],
     shop: [...[0, 1, 2, 3, 4, 5, 6, 7].map((i) => R(1024 + (i % 2) * 512, 1024 + Math.floor(i / 2) * 112, 512, 104)), R(1536, 1792, 512, 104), R(1024, 1920, 512, 104), R(1536, 1920, 512, 104)],
     plate: [0, 1, 2, 3].map((i) => R(1024 + (i % 2) * 512, 1472 + Math.floor(i / 2) * 96, 512, 88)),
     road: R(1024, 1664, 512, 256),
@@ -420,6 +420,7 @@ const ART = (() => {
       big(1536, 1792, "ESCOLA ESTADUAL", "#ffffff", "#2457c8", "#123a7a");
       big(1024, 1920, "SUPERMERCADO", "#e0302b", "#ffffff", "#5a0f0a");
       big(1536, 1920, "BANCO", "#123a7a", "#ffd23f", "#0a1f4a");
+      big(1024, 2560, "ALOHA CLUB", "#2a1a4a", "#ffd6ee", "#ff4fa3");
       // placas da cidade nova (fora do bloco limpo acima: y 512-960)
       g.clearRect(1024, 512, 512, 448);
       big(1024, 512, "PREFEITURA MUNICIPAL", "#f3e6c8", "#123a7a", "#0a1f4a");

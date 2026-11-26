@@ -9,13 +9,19 @@ Anotações do que ainda vai entrar no PLAZA 2001. Nada disso está no jogo aind
 - **Turma da Rua jogável:** colocar o outro projeto, "Turma da Rua", pra jogar num dos PCs.
 - **Chat da lan (talvez):** colocar o projeto de chat como um dos programas dos PCs.
 
-## DJ Luskinha e as festas
+## Festa no Aloha Club (versão de teste já no jogo)
 
-- **Personagem novo:** o DJ Luskinha.
-- **Missão da Gabi:** depois que o Seu Vavá doa alguns vinis pros meninos, a Gabi sai pela cidade resgatando vinis perdidos e leva pra festa do DJ e da galera à noite.
-- **A ver antes de fazer:**
-  - como vai funcionar o remix (o DJ mexendo nos discos);
-  - onde fica a festa: um lugar próprio pras festas da cidade ou um lugar que já existe.
+Já tem: o Aloha Club (dois andares, decoração havaiana), DJ Luskinha, Mila, Diogo, Cabeça, Breno, Ana Lívia, a galera
+dançando, o set do DJ, as conversas de cada personagem, o esbarrão do Kauã na Mila e a música lenta.
+
+Falta:
+- **Gol bolinha vermelho** do Kauã, cena da carteira nova (o K.F. convencendo ele) e a chegada de carro à noite.
+- **Carros da cidade:** melhorar o visual de todos.
+- **Cidade maior** (se der).
+- **Mais 6 músicas no set:** CeCe Peniston, Ultra Naté, Livin' Joy, Everything But The Girl, Snap! e Lasgo.
+- **Ana Lívia:** visual definitivo.
+- **Missão do desafio da ladeira** (Kauane x Cabeça) e a manobra nova da Kauane.
+- **Missão da Gabi:** resgatar vinis perdidos pra festa; remix do DJ.
 
 ## Mais pra frente
 

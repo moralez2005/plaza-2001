@@ -636,6 +636,28 @@ const RADIO = (() => {
       ],
     },
   ];
+  // set do DJ Luskinha no Aloha Club (house dos anos 90, eurodance e paradas de 2000) e a música lenta
+  const FESTA = {
+    set: [
+      { a: "Spiller", t: "Groovejet (If This Ain't Love)", id: "Cc_nUcKYlAs" },
+      { a: "Modjo", t: "Lady (Hear Me Tonight)", id: "mMfxI3r_LyA" },
+      { a: "Stardust", t: "Music Sounds Better With You", id: "Hf244LCkkLc" },
+      { a: "Daft Punk", t: "One More Time", id: "fa5IWHDbftI" },
+      { a: "Kylie Minogue", t: "Can't Get You Out Of My Head", id: "c18441Eh_WE" },
+      { a: "Robin S", t: "Show Me Love", id: "Wx7I4yWJnXI" },
+      { a: "Crystal Waters", t: "Gypsy Woman (She's Homeless)", id: "_KztNIg4cvE" },
+      { a: "Corona", t: "The Rhythm Of The Night", id: "LL8zTK1Ffu0" },
+      { a: "Haddaway", t: "What Is Love", id: "HEXWRTEbj1I" },
+      { a: "Gala", t: "Freed From Desire", id: "AxmzkDqndtM" },
+      { a: "Alice Deejay", t: "Better Off Alone", id: "Ck0LO6b6OQc" },
+      { a: "Eiffel 65", t: "Blue (Da Ba Dee)", id: "XgztfRBc2jM" },
+      { a: "ATB", t: "9 PM (Till I Come)", id: "QFGMQZyvnmY" },
+      { a: "Bomfunk MC's", t: "Freestyler", id: "pQICGZd9-SA" },
+      { a: "Darude", t: "Sandstorm", id: "y6120QOlsfU" },
+      { a: "Rouge", t: "Ragatanga", id: "QsG8gMARRyw" },
+    ],
+    lenta: { a: "3 Doors Down", t: "Here Without You (Acoustic)", id: "ZNVylYnrHsA" },
+  };
   const SPECIAL = { juntos: { id: "iGbPR36zGx4", t: "Wherever You Will Go", a: "The Calling", s: 0 } };
   let spec = null, ALB_CACHE = null, holdOn = false;
   const VOLUME = 60;
@@ -781,6 +803,7 @@ const RADIO = (() => {
     if (player) play();
   }
   return {
+    festa: () => FESTA,
     has: (look) => !!STATIONS[look],
     station: (look) => STATIONS[look] || null,
     get active() {

@@ -6,7 +6,7 @@
 const INSIDE = (() => {
   const { V, M, hex, Mesh } = E;
   // textura 2048 × 1024: a metade esquerda tem móveis, placas e cartazes; a direita, capas e rótulos (até 40 discos)
-  const TW = 2048, TH = 1024, NCOV = 40, NLAB = 48;
+  const TW = 2048, TH = 2048, NCOV = 40, NLAB = 48; // metade de baixo (y >= 1024): placas do Aloha Club
   const RR = (x, y, w, h) => [x / TW, y / TH, (x + w) / TW, (y + h) / TH];
   const T = {
     covers: Array.from({ length: NCOV }, (_, i) => RR(1024 + (i % 8) * 128 + 2, Math.floor(i / 8) * 128 + 2, 124, 124)),
@@ -21,6 +21,7 @@ const INSIDE = (() => {
     ouca: RR(0, 800, 512, 96), precos: RR(512, 800, 512, 96),
     neonD: RR(0, 896, 512, 64), semana: RR(512, 896, 256, 64), neonL: RR(768, 896, 256, 64),
     tags: Array.from({ length: 8 }, (_, i) => RR(i * 128 + 2, 962, 124, 60)),
+    fNeon: RR(0, 1024, 1024, 192), fBar: RR(1024, 1024, 512, 256), fDJ: RR(1536, 1024, 512, 128), fSnack: RR(1536, 1152, 512, 64), fWelcome: RR(1536, 1216, 512, 64),
     sMenu: RR(1024, 832, 512, 192), sNeon: RR(1536, 832, 512, 64), sPicole: RR(1536, 896, 512, 64), sSabor: RR(1536, 960, 512, 64),
   };
   const FONT = (px, w = 900) => `${w} ${px}px Rubik, "Arial Black", Arial, sans-serif`;
@@ -201,6 +202,18 @@ const INSIDE = (() => {
     { const [x, y, w, h] = P(T.sNeon); sign(g, x, y, w, h, "SORVETERIA PINGUIM", null, "#e6fbff", 42, "#3fd0ff"); }
     { const [x, y, w, h] = P(T.sPicole); sign(g, x, y, w, h, "PICOLÉ GELADINHO", "#2457c8", "#ffffff", 34); }
     { const [x, y, w, h] = P(T.sSabor); sign(g, x, y, w, h, "FLOCOS · CHOCOLATE · MORANGO · LIMÃO · CREME", "#fff7e8", "#c8287a", 22); }
+    // Aloha Club: neon da casa, quadro do bar, faixa da cabine do DJ e plaquinhas
+    { const [x, y, w, h] = P(T.fNeon); sign(g, x, y, w, h * 0.62, "ALOHA CLUB", null, "#fff0fa", 120, "#ff4fa3"); sign(g, x, y + h * 0.6, w, h * 0.4, "✿ LUAU TODA SEXTA ✿", null, "#e6fbff", 52, "#3fd0ff"); }
+    {
+      const [x, y, w, h] = P(T.fBar);
+      g.fillStyle = "#6a4422"; g.fillRect(x, y, w, h); g.fillStyle = "#1e2a24"; g.fillRect(x + 10, y + 10, w - 20, h - 20);
+      g.textBaseline = "middle"; g.textAlign = "center"; g.fillStyle = "#ffd23f"; g.font = "900 36px Rubik, Arial Black, sans-serif"; g.fillText("BAR DO KIKO", x + w / 2, y + 42);
+      g.font = "700 24px Rubik, Arial, sans-serif";
+      [["Refri lata", "1,50"], ["Suco de maracujá", "2,00"], ["Água de coco", "2,50"], ["Coquetel de frutas", "3,00"], ["Pastel / coxinha", "1,00"]].forEach(([n, v], i) => { const cy = y + 92 + i * 32; g.textAlign = "left"; g.fillStyle = "#f4f1e6"; g.fillText(n, x + 34, cy); g.textAlign = "right"; g.fillStyle = "#7dff9a"; g.fillText(v, x + w - 34, cy); });
+    }
+    { const [x, y, w, h] = P(T.fDJ); g.fillStyle = "#14121c"; g.fillRect(x, y, w, h); sign(g, x, y, w, h, "DJ LUSKINHA", null, "#f0ecff", 70, "#8c5cff"); }
+    { const [x, y, w, h] = P(T.fSnack); sign(g, x, y, w, h, "SALGADINHOS · PODE PEGAR", "#ffd23f", "#1b1530", 30); }
+    { const [x, y, w, h] = P(T.fWelcome); sign(g, x, y, w, h, "ALOHA! ✿ BEM-VINDOS", "#2fae6a", "#ffffff", 32); }
     // fotos de capa chegam depois (decodificar a imagem é assíncrono)
     albs.forEach((a, i) => {
       if (!a.capa || a.img) return;
@@ -843,5 +856,176 @@ const INSIDE = (() => {
       scene: { sun: V.norm([0.18, 0.95, 0.22]), top: hex(0xfde6ef), mid: hex(0xfde6ef), hz: hex(0xfde6ef), fog: hex(0xfde6ef), fogd: 0.004, shade: hex(0xd4b4cc), ink: hex(0x1b1530), ink_w: 1.5, amb: [0.92, 0.88, 0.88], night: 0.36, wet: 0, winc: [9, 9, 9] },
     };
   }
-  return { T, makeTex, buildDiscos, buildLan, buildSorveteria, coverURL, labelURL, drawCover, palOf, LINES, phoneMesh };
+  // ---------- Aloha Club: a festa do DJ Luskinha (dois andares, decoração havaiana) ----------
+  // térreo: entrada com tochas, pista de luz no meio, palco com a cabine do DJ no fundo, bar embaixo do mezanino da
+  // direita, mesa de salgadinhos embaixo do da esquerda; em cima, mezanino em U com guarda-corpo, mesinhas altas e
+  // gente olhando a pista. Teto alto com cordão de luzinhas, folhas de palmeira penduradas e o globo.
+  function buildFesta(Rn, tex) {
+    const st = new Mesh(), fl = new Mesh(), thin = new Mesh();
+    const W = 6.5, D = 15, H = 6.4, MY = 3.2, MX = 4.4, MZ0 = 6.0, MZB = 13.6, solids = [];
+    const S = (x0, z0, x1, z1) => solids.push([x0, z0, x1, z1]);
+    const bamboo = hex(0xc8a05a), bambooD = hex(0x8a6a32), wood = hex(0x5a3a22), woodD = hex(0x3a2416), straw = hex(0xd8b870), leaf = hex(0x2f9a4a), leafD = hex(0x1f7a3a);
+    const pink = hex(0xff4fa3), cyan = hex(0x3fd0ff), yel = hex(0xffd23f), purple = hex(0x8c5cff), blk = hex(0x16141c);
+    shell(st, fl, { wallLo: bambooD, wallHi: hex(0x2a1f4a), floorA: hex(0x3a2418), floorB: hex(0x4a2e1e), tile: 1.0, W, D, H, outside: [hex(0x14123a), hex(0x221c4a), hex(0x2e2a3e)] });
+    // bambu no rodapé das paredes
+    for (const sx of [-1, 1]) for (let z = 0.15; z < D; z += 0.22) st.tube([sx * (W - 0.03), 0, z], [sx * (W - 0.03), 1.0, z], 0.06, 0.06, 5, ((z * 10) | 0) % 2 ? bamboo : bambooD, 0, { cap: false });
+    const leafQ = (m, a, b, w, col) => {
+      const d = V.sub(b, a), side = V.mul(V.norm(V.cross(d, [0, 1, 0.01])), w), mid = V.add(a, V.mul(d, 0.45));
+      m.tri(a, V.add(mid, side), b, col, 0); m.tri(a, b, V.sub(mid, side), V.mul(col, 0.8), 0);
+    };
+    // ---- mezanino em U ----
+    const deck = (x0, z0, x1, z1) => { st.box(x0, MY - 0.25, z0, x1, MY, z1, woodD, { top: wood }); };
+    deck(-W, MZ0, -MX, D); deck(MX, MZ0, W, D); deck(-MX, MZB, MX, D);
+    for (const [x, z] of [[-MX, MZ0], [-MX, 9.8], [-MX, MZB], [MX, MZ0], [MX, 9.8], [MX, MZB], [-1.6, MZB], [1.6, MZB]]) { st.tube([x, 0, z], [x, MY - 0.25, z], 0.11, 0.11, 7, bamboo); S(x - 0.15, z - 0.15, x + 0.15, z + 0.15); }
+    // guarda-corpo (borda de dentro do U e as pontas da frente)
+    const rail = (a, b) => {
+      const L = Math.hypot(b[0] - a[0], b[2] - a[2]), n = Math.max(1, Math.round(L / 0.6));
+      for (let i = 0; i <= n; i++) { const p = V.lerp(a, b, i / n); st.tube(p, [p[0], MY + 1.0, p[2]], 0.025, 0.025, 4, bamboo); }
+      st.tube([a[0], MY + 1.0, a[2]], [b[0], MY + 1.0, b[2]], 0.045, 0.045, 6, bambooD); st.tube([a[0], MY + 0.5, a[2]], [b[0], MY + 0.5, b[2]], 0.025, 0.025, 4, bamboo);
+    };
+    rail([-MX, MY, MZ0], [-MX, MY, MZB]); rail([-MX, MY, MZB], [MX, MY, MZB]); rail([MX, MY, MZB], [MX, MY, MZ0]); rail([MX, MY, MZ0], [W, MY, MZ0]);
+    // franja de palha embaixo da borda do mezanino (cara de quiosque) e colares de flor pendurados no guarda-corpo
+    for (const [a, b] of [[[-MX, MZ0], [-MX, MZB]], [[-MX, MZB], [MX, MZB]], [[MX, MZB], [MX, MZ0]]]) {
+      const L = Math.hypot(b[0] - a[0], b[1] - a[1]), n = Math.round(L / 0.12);
+      for (let i = 0; i < n; i++) { const u = i / n, x = a[0] + (b[0] - a[0]) * u, z = a[1] + (b[1] - a[1]) * u; st.box(x - 0.05, MY - 0.55 - (i % 3) * 0.06, z - 0.05, x + 0.05, MY - 0.25, z + 0.05, i % 2 ? straw : V.mul(straw, 0.85)); }
+      for (let k = 0; k < L / 1.6; k++) for (let j = 0; j <= 8; j++) {
+        const u = (k * 1.6 + j * 0.15) / L; if (u > 1) break;
+        const x = a[0] + (b[0] - a[0]) * u, z = a[1] + (b[1] - a[1]) * u, sag = Math.sin((j / 8) * Math.PI) * 0.28;
+        st.ball([x, MY + 0.98 - sag, z], 0.045, [pink, yel, hex(0xffffff), hex(0xff8a1f)][(j + k) % 4], 0, 5, 3);
+      }
+    }
+    // escada pro mezanino (parede esquerda, sobe da entrada até a ponta do mezanino)
+    {
+      const n = 13, z0 = 0.95, z1 = MZ0, x0 = -W, x1 = -W + 1.15;
+      for (let i = 0; i < n; i++) { const za = z0 + ((z1 - z0) * i) / n, zb = z0 + ((z1 - z0) * (i + 1)) / n, y = (MY * (i + 1)) / n; st.box(x0, 0, za, x1, y, zb, i % 2 ? wood : woodD, { top: hex(0x7a5232) }); }
+      for (let i = 0; i <= 6; i++) { const u = i / 6, z = z0 + (z1 - z0) * u, y = MY * u; st.tube([x1, y, z], [x1, y + 0.95, z], 0.022, 0.022, 4, bamboo); }
+      st.tube([x1, 0.95, z0], [x1, MY + 0.95, z1], 0.035, 0.035, 5, bambooD);
+      S(x0, z0, x1 + 0.05, z1);
+    }
+    // ---- pista com piso de luz (as placas acendem pelo jogo) ----
+    const PX0 = -3, PZ0 = 5.0, TS = 0.75, NX = 8, NZ = 7;
+    st.box(PX0 - 0.12, 0, PZ0 - 0.12, PX0 + NX * TS + 0.12, 0.03, PZ0 + NZ * TS + 0.12, hex(0xb8bcc4), { m: 1 });
+    const tileG = new Mesh(); tileG.box(-TS / 2 + 0.03, 0.03, -TS / 2 + 0.03, TS / 2 - 0.03, 0.05, TS / 2 - 0.03, hex(0xffffff), { m: 2 });
+    // ---- palco e cabine do DJ ----
+    st.box(-2.8, 0, 11.2, 2.8, 0.4, 13.5, blk, { top: hex(0x24202e) });
+    st.box(-2.8, 0.04, 11.17, 2.8, 0.1, 11.2, pink, { m: 2 });
+    S(-2.8, 11.2, 2.8, 13.5);
+    st.box(-1.5, 0.4, 11.55, 1.5, 1.32, 12.05, hex(0x1c1a24), { top: hex(0x2a2632) });
+    dec(fl, [0, 0.9, 11.54], [-1, 0, 0], [0, 1, 0], 2.6, 0.65, T.fDJ);
+    for (const sx of [-0.78, 0.78]) {
+      st.tf = M.T(sx, 1.32, 11.8);
+      st.box(-0.3, 0, -0.22, 0.3, 0.08, 0.22, hex(0x2a2a32)); st.tube([0, 0.08, 0], [0, 0.095, 0], 0.17, 0.17, 18, hex(0x101014));
+      st.tube([0, 0.095, 0], [0, 0.1, 0], 0.06, 0.06, 10, sx < 0 ? pink : cyan); st.box(0.2, 0.08, 0.1, 0.26, 0.12, 0.16, C.metal, { m: 1 });
+      st.tf = null;
+    }
+    st.box(-0.24, 1.32, 11.62, 0.24, 1.42, 11.98, hex(0x2a2a32));
+    for (let k = 0; k < 4; k++) st.box(-0.18 + k * 0.1, 1.42, 11.7, -0.14 + k * 0.1, 1.45, 11.9, [pink, cyan, yel, hex(0x7dff9a)][k], { m: 2 });
+    for (const sx of [-1, 1]) {
+      const x = sx * 2.35;
+      st.box(x - 0.38, 0.4, 11.3, x + 0.38, 2.3, 12.0, blk);
+      for (const [y, r] of [[0.85, 0.26], [1.55, 0.26], [2.05, 0.1]]) { st.tube([x, y, 11.29], [x, y, 11.27], r, r, 14, hex(0x2a2832)); st.tube([x, y, 11.27], [x, y, 11.26], r * 0.35, r * 0.35, 10, hex(0x4a4652), 1); }
+    }
+    // neon da casa no fundo (embaixo do mezanino de trás) e coqueiros de neon dos lados
+    dec(fl, [0, 2.3, D - 0.04], [-1, 0, 0], [0, 1, 0], 4.6, 0.86, T.fNeon, [1.6, 1.6, 1.6]);
+    const neonPalm = (m, x, y, z, nx, s = 1) => {
+      // tronco curvo verde-água e folhas cor-de-rosa (tubos acesos)
+      let p = [x, y, z];
+      for (let i = 0; i < 6; i++) { const q = [x + Math.sin(i * 0.25) * 0.12 * s, y + (i + 1) * 0.28 * s, z]; m.tube(p, q, 0.03, 0.03, 5, hex(0x5fe0c0), 2, { cap: false }); p = q; }
+      for (let k = 0; k < 6; k++) { const tip = [p[0] + (k - 2.5) * 0.24 * s, p[1] + Math.sin(k * 1.1) * 0.12 - 0.15 * s, p[2] - 0.04], mid = [(p[0] + tip[0]) / 2, p[1] + 0.12 * s, p[2] - 0.04]; m.tube(p, mid, 0.025, 0.025, 4, pink, 2); m.tube(mid, tip, 0.025, 0.02, 4, pink, 2); }
+      void nx;
+    };
+    neonPalm(thin, 3.6, 0.45, D - 0.08, 0, 1.0); neonPalm(thin, -3.6, 0.45, D - 0.08, 0, 1.0);
+    // ---- bar do Kiko (embaixo do mezanino da direita) ----
+    {
+      const x0 = 4.6, x1 = 5.15, z0 = 6.7, z1 = 12.0;
+      st.box(x0, 0, z0, x1, 1.08, z1, bamboo, { top: hex(0x6a4422) });
+      for (let z = z0 + 0.1; z < z1; z += 0.16) st.tube([x0 - 0.01, 0, z], [x0 - 0.01, 1.0, z], 0.045, 0.045, 5, ((z * 7) | 0) % 2 ? bamboo : bambooD, 0, { cap: false });
+      S(x0, z0, x1, z1);
+      st.box(W - 0.45, 0, z0, W, 0.9, z1, woodD, { top: wood });
+      for (let k = 0; k < 2; k++) st.box(W - 0.4, 1.4 + k * 0.5, z0, W, 1.44 + k * 0.5, z1, wood);
+      const bc = [0x2fae6a, 0xff8a1f, 0xffd23f, 0x3fd0ff, 0xff4fa3, 0x8a5a2a, 0xe0302b, 0xf4f4f4];
+      for (let k = 0; k < 2; k++) for (let i = 0; i < 24; i++) { const z = z0 + 0.15 + i * 0.22, y = 1.44 + k * 0.5, c = hex(bc[(i * 3 + k) % bc.length]); st.tube([W - 0.22, y, z], [W - 0.22, y + 0.22, z], 0.04, 0.04, 6, c, 3); st.tube([W - 0.22, y + 0.22, z], [W - 0.22, y + 0.3, z], 0.04, 0.014, 6, c, 3); }
+      // coco com canudinho, copos e abacaxi no balcão
+      for (const [z, k] of [[7.4, 0], [8.6, 1], [10.1, 2], [11.3, 0]]) {
+        if (k === 0) { st.ball([4.88, 1.17, z], 0.09, hex(0x5a8a2a), 0, 7, 5); st.tube([4.88, 1.22, z], [4.82, 1.36, z + 0.03], 0.008, 0.008, 3, pink); }
+        else if (k === 1) for (let j = 0; j < 3; j++) st.tube([4.85, 1.08, z + j * 0.12], [4.85, 1.22, z + j * 0.12], 0.035, 0.04, 7, [yel, pink, hex(0xff8a1f)][j], 3);
+        else { st.ball([4.88, 1.2, z], 0.1, hex(0xf0b030), 0, 7, 5, { sy: 1.3 }); for (let j = 0; j < 5; j++) leafQ(st, [4.88, 1.3, z], [4.88 + Math.cos(j * 1.25) * 0.08, 1.48, z + Math.sin(j * 1.25) * 0.08], 0.03, leaf); }
+      }
+      dec(fl, [W - 0.04, 2.45, 9.35], [0, 0, 1], [0, 1, 0], 1.6, 0.8, T.fBar);
+      for (const z of [7.2, 9.3, 11.4]) pendant(st, 5.0, 2.35, z, [pink, yel, cyan][(z | 0) % 3]);
+    }
+    // ---- mesa de salgadinhos e refri (embaixo do mezanino da esquerda) ----
+    {
+      const x0 = -W, x1 = -5.55, z0 = 7.0, z1 = 10.2;
+      st.box(x0, 0, z0, x1, 0.82, z1, hex(0xff4fa3), { top: hex(0xfff0f6) });
+      for (let z = z0; z < z1; z += 0.3) st.box(x1 - 0.005, 0.5, z, x1 + 0.005, 0.82, z + 0.15, hex(0xffffff));
+      S(x0, z0, x1, z1);
+      for (const [z, c] of [[7.35, 0xd88a3a], [8.0, 0xe8b840], [8.7, 0xc8702a], [9.4, 0xe8c860]]) {
+        st.tube([-6.0, 0.82, z], [-6.0, 0.9, z], 0.14, 0.2, 10, hex(0xf4f4f4));
+        for (let j = 0; j < 6; j++) st.ball([-6.0 + Math.cos(j * 1.05) * 0.09, 0.93, z + Math.sin(j * 1.05) * 0.09], 0.045, hex(c), 0, 5, 3);
+      }
+      for (let j = 0; j < 4; j++) { const z = 9.75 + (j % 2) * 0.16, x = -6.2 + ((j / 2) | 0) * 0.16, c = hex([0x3a1a10, 0x2fae6a, 0xff8a1f, 0x3a1a10][j]); st.tube([x, 0.82, z], [x, 1.1, z], 0.045, 0.045, 7, c, 3); st.tube([x, 1.1, z], [x, 1.2, z], 0.045, 0.018, 7, c, 3); }
+      for (let j = 0; j < 4; j++) st.tube([-5.75, 0.82 + j * 0.03, 7.0 + 0.1], [-5.75, 0.85 + j * 0.03, 7.1], 0.04, 0.045, 7, hex(0xf4f4f4));
+      dec(fl, [-W + 0.04, 1.4, 8.6], [0, 0, -1], [0, 1, 0], 2.0, 0.25, T.fSnack);
+    }
+    // ---- entrada: tochas tiki, plantas grandes, mesinhas altas e boas-vindas ----
+    for (const sx of [-1, 1]) {
+      const x = sx * 2.1, z = 0.9;
+      st.tube([x, 0, z], [x, 1.55, z], 0.045, 0.04, 6, bamboo); st.tube([x, 1.5, z], [x, 1.72, z], 0.08, 0.11, 8, woodD);
+      thin.ball([x, 1.85, z], 0.08, hex(0xff9a2a), 2, 7, 5, { sy: 1.7 }); thin.ball([x, 1.8, z], 0.05, hex(0xffe14d), 2, 6, 4, { sy: 1.4 });
+      S(x - 0.12, z - 0.12, x + 0.12, z + 0.12);
+    }
+    const plant = (x, z, s = 1) => {
+      st.tube([x, 0, z], [x, 0.55 * s, z], 0.22 * s, 0.3 * s, 10, hex(0xb8603a)); st.tube([x, 0.5 * s, z], [x, 0.56 * s, z], 0.31 * s, 0.31 * s, 10, hex(0x9a4a2a));
+      for (let k = 0; k < 9; k++) { const a = k * 0.7, r = (0.5 + (k % 3) * 0.18) * s, h = (1.1 + (k % 4) * 0.25) * s; leafQ(st, [x, 0.55 * s, z], [x + Math.cos(a) * r, h, z + Math.sin(a) * r], 0.16 * s, k % 2 ? leaf : leafD); }
+      S(x - 0.32 * s, z - 0.32 * s, x + 0.32 * s, z + 0.32 * s);
+    };
+    plant(-5.4, 0.7); plant(5.6, 0.7); plant(-3.3, 12.9, 0.9); plant(3.3, 12.9, 0.9); plant(5.85, 13.2, 1.1);
+    const tables = [[-2.9, 3.0], [2.9, 3.0]];
+    for (const [x, z] of tables) { st.tube([x, 0, z], [x, 1.05, z], 0.035, 0.035, 6, C.metal, 1); st.tube([x, 0, z], [x, 0.03, z], 0.22, 0.22, 10, C.metal, 1); st.tube([x, 1.05, z], [x, 1.08, z], 0.32, 0.32, 14, bamboo); S(x - 0.34, z - 0.34, x + 0.34, z + 0.34); }
+    dec(fl, [0, 2.65, 0.04], [1, 0, 0], [0, 1, 0], 2.2, 0.28, T.fWelcome);
+    // ---- pranchas de surfe nas paredes (lá em cima, acima do mezanino) ----
+    for (const sx of [-1, 1]) for (const [k, z] of [[0, 7.4], [1, 9.6], [2, 11.8]]) {
+      const x = sx * (W - 0.1), c = [hex(0xff8a1f), cyan, pink][(k + (sx > 0 ? 1 : 0)) % 3];
+      st.ball([x, 4.6, z], 0.5, c, 0, 10, 6, { sx: 0.06, sy: 2.4, sz: 0.55 });
+      st.box(x - 0.035, 3.55, z - 0.04, x + 0.035, 5.65, z + 0.04, hex(0xffffff));
+    }
+    // ---- mezanino: mesinhas altas com banquinhos ----
+    for (const [x, z] of [[-5.5, 8.0], [-5.5, 11.4], [5.5, 8.0], [5.5, 11.4], [-2.6, 14.3], [2.6, 14.3]]) {
+      st.tube([x, MY, z], [x, MY + 1.0, z], 0.03, 0.03, 6, C.metal, 1); st.tube([x, MY + 1.0, z], [x, MY + 1.03, z], 0.28, 0.28, 12, bamboo);
+      for (const d of [-0.45, 0.45]) { st.tube([x + (Math.abs(x) > 5 ? 0 : d), MY, z + (Math.abs(x) > 5 ? d : 0)], [x + (Math.abs(x) > 5 ? 0 : d), MY + 0.66, z + (Math.abs(x) > 5 ? d : 0)], 0.025, 0.025, 4, C.metal, 1); st.tube([x + (Math.abs(x) > 5 ? 0 : d), MY + 0.66, z + (Math.abs(x) > 5 ? d : 0)], [x + (Math.abs(x) > 5 ? 0 : d), MY + 0.7, z + (Math.abs(x) > 5 ? d : 0)], 0.16, 0.16, 10, pink); }
+    }
+    // ---- teto: folhas de palmeira penduradas e o cordão de luzinhas em zigue-zague ----
+    for (let k = 0; k < 14; k++) {
+      const x = -MX + 0.4 + (k % 7) * 1.25, z = k < 7 ? 5.2 : 11.0, a = k * 1.7;
+      for (let j = 0; j < 4; j++) { const b = a + j * 1.57; leafQ(thin, [x, H, z], [x + Math.cos(b) * 0.9, H - 0.75 - (j % 2) * 0.3, z + Math.sin(b) * 0.9], 0.22, j % 2 ? leaf : leafD); }
+    }
+    const bulbs = [];
+    for (let k = 0; k < 6; k++) {
+      const z = 4.2 + k * 1.75, a = [-MX, H - 0.5, z], b = [MX, H - 0.5, z + 0.9];
+      for (let j = 0; j <= 16; j++) { const u = j / 16, p = V.lerp(a, b, u); p[1] -= Math.sin(u * Math.PI) * 0.6; if (j) thin.tube(V.lerp(a, b, (j - 1) / 16).map((v, i) => (i === 1 ? H - 0.5 - Math.sin(((j - 1) / 16) * Math.PI) * 0.6 : v)), p, 0.006, 0.006, 3, blk, 0, { cap: false }); thin.ball(p, 0.04, [pink, yel, cyan, hex(0x7dff9a), purple][(j + k) % 5], 2, 5, 3); bulbs.push(p); }
+    }
+    const up = (m, o) => Rn.upload(m, o);
+    const tileUp = up(tileG, { outline: false });
+    const floor = [];
+    for (let i = 0; i < NX; i++) for (let j = 0; j < NZ; j++) floor.push({ g: tileUp, mo: M.T(PX0 + (i + 0.5) * TS, 0, PZ0 + (j + 0.5) * TS), tint: [1, 1, 1], i, j });
+    const lights = [[-2, 5.4, 6.2], [2, 5.4, 6.2], [-2, 5.4, 9.8], [2, 5.4, 9.8], [0, 3.0, 12.2], [5.2, 2.3, 7.6], [5.2, 2.3, 11.0], [-5.6, 2.3, 8.6], [0, 2.4, 1.6], [-2.1, 1.9, 0.9], [2.1, 1.9, 0.9], [-5.5, 5.0, 10.0], [5.5, 5.0, 10.0], [0, 5.0, 14.3], [0, 2.3, 14.6]];
+    const P2 = (x, z) => ({ x, z });
+    const spots = [
+      { id: "door", x: 0, z: 0.55, r: 0.62, act: "door", label: "Sair da festa" },
+      { id: "snack", x: -5.05, z: 8.4, r: 0.6, act: "snack", label: "Pegar um salgadinho", face: [-6.2, 8.4] },
+      { id: "bar", x: 4.1, z: 9.3, r: 0.6, act: "drink", label: "Pedir um refri no bar", face: [5.2, 9.3] },
+      { id: "dance", x: 0, z: 7.6, r: 1.3, act: "dance", label: "Dançar" },
+      { id: "dj", x: 0, z: 10.75, r: 0.55, act: "talk", who: "lucas", label: "Falar com o DJ Luskinha", face: [0, 12.5] },
+    ];
+    void P2;
+    return {
+      id: "festa", name: "ALOHA CLUB", W, D, H, MY, base: [{ g: up(fl, { outline: false }), tex }, { g: up(st), tex }, { g: up(thin, { outline: false }), tex }],
+      dyn: { floor }, decks: [], solids, spots, lights, tables, ball: [0, 7.6], floorRect: [PX0, PZ0, NX, NZ, TS],
+      npcs: [],
+      spawn: [0, 1.5, 0],
+      scene: { sun: V.norm([0.18, 0.95, 0.22]), top: hex(0x14102a), mid: hex(0x14102a), hz: hex(0x14102a), fog: hex(0x14102a), fogd: 0.012, shade: hex(0x3a2a6a), ink: hex(0x0a0814), ink_w: 1.5, amb: [0.62, 0.52, 0.8], night: 0.75, wet: 0, winc: [9, 9, 9] },
+    };
+  }
+  return { T, makeTex, buildDiscos, buildLan, buildSorveteria, buildFesta, coverURL, labelURL, drawCover, palOf, LINES, phoneMesh };
 })();

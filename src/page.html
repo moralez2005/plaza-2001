@@ -479,6 +479,13 @@ const sides=(a)=>{const A=a.faixas.map((f,i)=>Object.assign({i},f));if(A.some(f=
 function inOpen(id){INO=id;$('say').classList.remove('on');for(const o of ['digO','insO'])$(o).classList.toggle('on',o===id)}
 function inClose(){INO=null;for(const o of ['digO','insO'])$(o).classList.remove('on');game.release();$('cv').focus()}
 for(const b of document.querySelectorAll('[data-inclose]'))b.addEventListener('click',()=>{if(INO==='insO'&&INS.from==='dig'){inOpen('digO');drawDig()}else inClose()});
+// festa no Aloha Club: o set do DJ toca em sequência (pula a faixa que não abrir) e a música lenta entra na hora certa
+const FEST={on:0,i:0,slow:0};
+function festPlay(i){const S=RADIO.festa(),n=S.set.length;FEST.i=((i%n)+n)%n;FEST.slow=0;const f=S.set[FEST.i];
+  RADIO.playTrack({a:f.a,t:f.t,id:f.id,s:f.s||0,once:1,onEnd:()=>{if(FEST.on&&!FEST.slow)festPlay(FEST.i+1)},onFail:()=>{if(FEST.on&&!FEST.slow)setTimeout(()=>festPlay(FEST.i+1),400)}});
+  toastC('♪ DJ Luskinha: '+f.a+' — '+f.t)}
+function festSlow(){const L=RADIO.festa().lenta;FEST.slow=1;RADIO.playTrack({a:L.a,t:L.t,id:L.id,s:0,once:1,onEnd:()=>{FEST.slow=0;if(FEST.on)festPlay(FEST.i+1)},onFail:()=>{FEST.slow=0;if(FEST.on)festPlay(FEST.i+1)}});toastC('♪ '+L.a+' — '+L.t)}
+ui.festa=(ev,d)=>{if(ev==='on'){FEST.on=1;festPlay((d&&d.i)||0)}else if(ev==='slow')festSlow();else if(ev==='next'&&FEST.on&&!FEST.slow)festPlay(FEST.i+1);else if(ev==='off'){FEST.on=0;FEST.slow=0}};
 ui.inside=(ev,d)=>{
   if(ev==='enter'){$('screen').classList.add('inside');if(d.name==='VAVÁ DISCOS')tvStart();$('inName').textContent=d.name;$('mmBox').classList.remove('on');clearTimeout(dmQ);clearTimeout(dmMini);$('dm').className='dm';DISC.set('');SHOP.radioWas=RADIO.active;RADIO.hold(true);if(RADIO.active)RADIO.pause(true);clearInterval(SHOP.tm);SHOP.tm=setInterval(shopTick,400);inSpot(null);if(d.skates)setTimeout(()=>toastC('Patins na porta, chinelo no pé 🩴'),900)}
   else if(ev==='spot')inSpot(d);
@@ -491,7 +498,7 @@ ui.inside=(ev,d)=>{
   else if(ev==='lounge'){inSpot(d.on?{label:d.seat?'Sentado na mesinha… Enter levanta':'Curtindo o som… Enter levanta'}:null);if(d.on)$('inPL').parentNode.querySelector('kbd').textContent='Enter';}
   else if(ev==='lift')shopStop();
   else if(ev==='leave'){inSpot(null);fadeDo(()=>game.exitPlace())}
-  else if(ev==='exit'){$('screen').classList.remove('inside');tvStop();SHOP.dz=null;$('mmBox').classList.add('on');inSpot(null);$('say').classList.remove('on');clearInterval(SHOP.tm);for(const o of ['digO','insO','lanO'])$(o).classList.remove('on');INO=null;placeOn=null;MG.stop();
+  else if(ev==='exit'){if(FEST.on){FEST.on=0;FEST.slow=0;SHOP.ai=0}$('screen').classList.remove('inside');tvStop();SHOP.dz=null;$('mmBox').classList.add('on');inSpot(null);$('say').classList.remove('on');clearInterval(SHOP.tm);for(const o of ['digO','insO','lanO'])$(o).classList.remove('on');INO=null;placeOn=null;MG.stop();
     if(d.reset){RADIO.hold(false);RADIO.setVol(null);if(SHOP.ai>=0){SHOP.ai=-1;$('np').classList.remove('on');RADIO.stopTrack()}return}
     $('ndl').classList.remove('on');
     RADIO.setVol(null);RADIO.hold(false);
@@ -715,7 +722,7 @@ addEventListener('keydown',e=>{const k=e.key.toLowerCase();
   if(game.inside&&!paused&&game.lounging){if(k==='enter'||k==='escape'||k===' '||k==='e'){e.preventDefault();game.release()}return}
   if(game.inside&&!paused&&k==='f'){game.phones();return}
   if(game.inside&&!paused&&k==='q'){game.door();return}
-  if(game.inside&&!paused){if(k==='enter'||k==='e'||k===' '){e.preventDefault();if(!e.repeat)game.interact();return}if(k==='n'){shopSkip(1);return}if(k==='b'){shopSkip(-1);return}if(k==='f'||k==='r'||k==='c')return}
+  if(game.inside&&!paused){if(k==='enter'||k==='e'||k===' '){e.preventDefault();if(!e.repeat)game.interact();return}if(k==='n'){if(FEST.on)ui.festa('next');else shopSkip(1);return}if(k==='b'){shopSkip(-1);return}if(k==='f'||k==='r'||k==='c')return}
   if(dlgOn){if(k==='enter'){e.preventDefault();game.acceptMission();dlg(false);return}if(k==='escape'){e.preventDefault();dlg(false);return}}
   // fita passando: controles do videocassete
   if(game.playing){e.preventDefault();if(k===' ')game.playPause()?$('plSt').textContent='❚❚ PAUSE':$('plSt').textContent='▶ PLAY';else if(k==='arrowleft'||k==='a')game.playSeek(-2);else if(k==='arrowright'||k==='d')game.playSeek(2);else if(k==='r'){game.playRestart();$('pl').classList.remove('ended')}else if(k==='b')downloadVideo();else if(k==='escape'||k==='p')game.stopPlay();return}

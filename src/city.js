@@ -511,8 +511,8 @@ const CITY = (() => {
     block(-38, 41, 36, Z1, "wne", "comércio", "#d8cbbb");
     // lan house e loja de discos: no plano, de frente pra pista (do lado da sorveteria)
     row("-z", 44, -35, -6, 12, [{ w: 10, style: "loja", sign: RECT.town[5], signW: 4.6, signA: 4.27, col: 0x2b2a55 }, { w: 9, style: "loja", sign: RECT.town[6], signW: 4.6, signA: 4.27, col: 0xf2c14e }, { w: 10, h: 10, col: 0xffd166 }]);
-    // sorveteria Pinguim (ponto de encontro com a Julie), do outro lado da rua da pista
-    row("-z", 44, 10, 33, 12, [{ w: 11, style: "loja", sign: RECT.town[4], col: 0xff9ccf, h: 7.6 }, { w: 12, style: "loja", shop: 7 }]);
+    // sorveteria Pinguim (ponto de encontro com a Julie) e o Aloha Club (a casa de festas), do outro lado da rua da pista
+    row("-z", 44, 10, 33, 12, [{ w: 11, style: "loja", sign: RECT.town[4], col: 0xff9ccf, h: 7.6 }, { w: 12, style: "loja", sign: RECT.town[7], col: 0x3a2a6a, h: 8.6 }]);
     // pontos de ônibus: banco + placa (o circular para aqui)
     const STOPS = [[0, 43.55, 0], [-4, 111.0, 0], [-20, -199.3, -10]];
     for (const [x, z, y] of STOPS) {

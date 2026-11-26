@@ -859,7 +859,7 @@ const ART = (() => {
   const { V, M, hex, Mesh, seg, ik } = E;
 
   // ---------- atlas ----------
-  const AW = 2048, AH = 2048;
+  const AW = 2048, AH = 4096; // metade de baixo (y >= 2048): rostos e estampas da galera da festa
   const R = (x, y, w, h) => [x / AW, y / AH, (x + w) / AW, (y + h) / AH];
   const RECT = {
     piece: [0, 1, 2, 3, 4, 5, 6, 7].map((i) => R((i % 2) * 512 + 4, Math.floor(i / 2) * 256 + 4, 504, 248)),
@@ -874,7 +874,7 @@ const ART = (() => {
     bill: [R(0, 1280, 512, 256), R(512, 1280, 512, 256)],
     poster: [0, 1, 2, 3].map((i) => R(i * 256, 1536, 256, 384)),
     // Itaberá: letreiros de loja, placas de rua, placa verde e porta de aço
-    town: [...[0, 1, 2, 3].map((i) => R(1024, 512 + i * 112, 512, 104)), R(1152, 962, 384, 60), R(768, 1922, 256, 60), R(768, 1986, 256, 60)],
+    town: [...[0, 1, 2, 3].map((i) => R(1024, 512 + i * 112, 512, 104)), R(1152, 962, 384, 60), R(768, 1922, 256, 60), R(768, 1986, 256, 60), R(1024, 2560, 512, 104)],
     shop: [...[0, 1, 2, 3, 4, 5, 6, 7].map((i) => R(1024 + (i % 2) * 512, 1024 + Math.floor(i / 2) * 112, 512, 104)), R(1536, 1792, 512, 104), R(1024, 1920, 512, 104), R(1536, 1920, 512, 104)],
     plate: [0, 1, 2, 3].map((i) => R(1024 + (i % 2) * 512, 1472 + Math.floor(i / 2) * 96, 512, 88)),
     road: R(1024, 1664, 512, 256),
@@ -1274,6 +1274,7 @@ const ART = (() => {
       big(1536, 1792, "ESCOLA ESTADUAL", "#ffffff", "#2457c8", "#123a7a");
       big(1024, 1920, "SUPERMERCADO", "#e0302b", "#ffffff", "#5a0f0a");
       big(1536, 1920, "BANCO", "#123a7a", "#ffd23f", "#0a1f4a");
+      big(1024, 2560, "ALOHA CLUB", "#2a1a4a", "#ffd6ee", "#ff4fa3");
       // placas da cidade nova (fora do bloco limpo acima: y 512-960)
       g.clearRect(1024, 512, 512, 448);
       big(1024, 512, "PREFEITURA MUNICIPAL", "#f3e6c8", "#123a7a", "#0a1f4a");
@@ -1447,13 +1448,17 @@ const CHARS = (() => {
   const lenOf = (look) => (look && look.len ? Object.assign({}, LEN0, look.len) : LEN0);
   const bindOf = (look) => { const L = lenOf(look); return Object.assign({}, BIND, { py: L.thigh + L.shin + 0.16 }); };
   const INK = "#1b1530";
-  const AW = 2048, AH = 2048;
+  const AW = 2048, AH = 4096; // metade de baixo (y >= 2048): rostos e estampas da galera da festa
   const R = (x, y, w, h) => [x / AW, y / AH, (x + w) / AW, (y + h) / AH];
   const FACE = { kf: [1024, 0], kaua: [1280, 0], manu: [1536, 0], gabi: [1792, 0], kauane: [1024, 256], julie: [1280, 256] };
   for (let i = 0; i < 12; i++) FACE["npc" + i] = [1536 + (i % 4) * 128, 640 + Math.floor(i / 4) * 128, 128];
   FACE.dudu = [1920, 512, 128];
   FACE.vava = [1920, 1664, 128];
-  const SPR = { cloud: R(1920, 256, 128, 128), dollar: R(1920, 384, 128, 128), checker: R(1024, 960, 64, 64), cat: R(1088, 960, 64, 64), nerd: R(512, 1920, 128, 128), shark: R(1536, 256, 128, 384), lion: R(1664, 256, 128, 384), crown: R(1792, 256, 128, 384) };
+  FACE.lucas = [0, 2048];
+  FACE.mila = [512, 2048];
+  FACE.diogo = [1024, 2048]; FACE.breno = [1280, 2048]; FACE.cabeca = [1536, 2048]; FACE.analivia = [1792, 2048];
+  for (let i = 0; i < 12; i++) FACE["fx" + i] = [i * 128, 2304, 128];
+  const SPR = { cloud: R(1920, 256, 128, 128), dollar: R(1920, 384, 128, 128), checker: R(1024, 960, 64, 64), cat: R(1088, 960, 64, 64), nerd: R(512, 1920, 128, 128), shark: R(1536, 256, 128, 384), lion: R(1664, 256, 128, 384), crown: R(1792, 256, 128, 384), eq: R(256, 2048, 256, 128), reggae: R(768, 2048, 128, 128), num: R(896, 2048, 128, 128), hib: R(768, 2176, 128, 128), star: R(896, 2176, 128, 128) };
 
   const LOOKS = {
     kf: {
@@ -1535,6 +1540,72 @@ const CHARS = (() => {
     sleeve: "short", pantsR: 0.78, flare: 0.2, scale: 1.0, headScale: 0.95, npc: { freckles: 1, mouth: "smile", brow: 0xb85a20, iris: "#3a6a8a" } };
   TOWN.forEach((t, i) => (t.face = "npc" + i));
   TOWN.forEach((t, i) => (LOOKS["npc" + i] = Object.assign({ sleeve: "long", pantsR: 0.9, flare: 0.4, shoeToe: t.shoe, sole: 0x2a2630, lace: t.shoe, scale: t.kid ? 0.72 : t.old ? 0.88 : 0.92, headScale: t.kid ? 1.08 : 0.97, pantsR: 0.72, flare: 0.1 }, t)));
+  // DJ Luskinha (Lucas): magrão, cabelo liso texturizado com franja pra frente e laterais baixas no degradê,
+  // óculos escuros, fone grande preto, camiseta preta larga com a faixa de equalizador no peito, relógio e tudo preto
+  LOOKS.lucas = {
+    name: "DJ Luskinha", face: "lucas", skin: 0xe2b48c, hair: 0x2a1a12, hairStyle: "quiff", top: 0x6a4cff, top2: 0x5236d8, jacket: true, inner: 0xf6f6f2, pants: 0x232a3e, shoe: 0xf4f4f4, shoeToe: 0xf4f4f4, sole: 0x6a4cff, lace: 0x6a4cff,
+    tee: "loose", sleeve: "short", backPrint: "eq", phones: 0x15141a, phonesAcc: 0x6a4cff, shades: true, wristband: 0x2a2a30, watch: 0xc8ccd6, chain: 0xd5dbe8,
+    len: { thigh: 0.5, shin: 0.5, torso: 0.5, up: 0.31, fore: 0.29 }, headScale: 0.9, shoulder: 1.04, pantsR: 0.6, flare: 0.0, pyAdd: 0.06,
+    npc: { mouth: "smile", brow: 0x2a1a12, iris: "#3a2414", blush: 0 }, idle: "calm",
+  };
+  // Mila (Camila): skatista meio gótica, 18-19 anos. Franja reta, coque alto bagunçado e mechas soltas
+  // emoldurando o rosto (uma azul). Delineado gatinho, batom escuro, piercing no nariz, brincos de
+  // bolinha preta, choker, colar de cadeado, munhequeira de rebite, pulseirinhas coloridas, corrente de carteira,
+  // cropped preto, calça preta larga e tênis azul
+  LOOKS.mila = {
+    name: "Mila", face: "mila", skin: 0xd9a27e, hair: 0x221822, hairStyle: "mila", streak: 0x2f7bff, top: 0x16141b, top2: 0x221f28, pants: 0x18171d, shoe: 0x2f6fe8, shoeToe: 0xf4f4f4, sole: 0xf4f1ea, lace: 0xf4f4f4,
+    crop: true, sleeve: "short", belt: true, pantsR: 0.84, flare: 0.5, choker: 0x111015, lock: 0xd5dbe8, earrings: 0x111015, studs: true, rubber: [0xff4fa3, 0x2f7bff, 0x5fe08a], chain: 0xd5dbe8,
+    scale: 0.92, shoulder: 0.92, headScale: 0.95, stance: "regular",
+    npc: { lash: 1, wing: 1, lips: 0x5a1e2a, mouth: "flat", nosering: 1, brow: 0x221822, iris: "#3a2214", blush: 0.12 }, idle: "calm",
+  };
+  // Diogo: gente boa e desencanado, puxa papo fácil. Cabelo loiro escuro meio bagunçado, camiseta de uma banda de
+  // reggae inventada, bermuda cáqui, tênis de lona e a pulseira rasta (é por ela que ele puxa conversa com a Gabi)
+  LOOKS.diogo = {
+    name: "Diogo", face: "diogo", skin: 0xeec3a0, hair: 0x9a7440, hairStyle: "shaggy", top: 0x2a6a3a, top2: 0x1f5a2e, pants: 0xb89a6a, bermuda: true, socks: 0xf4f4f4,
+    shoe: 0xe8e0cc, shoeToe: 0xf4f4f4, sole: 0xf4f1ea, lace: 0xf4f4f4, tee: "loose", sleeve: "short", print: "reggae", rasta: true, flare: 0.3, pantsR: 0.9,
+    len: { thigh: 0.49, shin: 0.49, torso: 0.49, up: 0.31, fore: 0.29 }, headScale: 0.92, shoulder: 1.06,
+    npc: { mouth: "smile", brow: 0x7a5a30, iris: "#4a6a3a", blush: 0.1 }, idle: "calm",
+  };
+  // Cabeça (Luiz): o "dono da festa". Boné azul virado pra trás, regata de basquete por cima da camiseta branca,
+  // corrente prata grossa, relógio dourado enorme, bermuda cargo abaixo do joelho, meião branco e tênis branco gigante
+  LOOKS.cabeca = {
+    name: "Cabeça", face: "cabeca", skin: 0xc68e62, hair: 0x1e1410, hairStyle: "cap", capC: 0x2457ff, top: 0xe8262b, top2: 0xb81a20, pants: 0x7a7a5a, bermuda: true, cargo: true, socks: 0xffffff,
+    shoe: 0xf8f8f8, shoeToe: 0xf8f8f8, sole: 0xf4f1ea, lace: 0xd8dce4, shoeScale: 1.15, tee: "loose", sleeve: "short", armC: 0xffffff, print: "num", chainBig: 0xd5dbe8, watch: 0xe8b830, wristband: 0xe8b830,
+    len: { thigh: 0.5, shin: 0.5, torso: 0.5, up: 0.32, fore: 0.3 }, headScale: 0.92, shoulder: 1.1, pantsR: 0.95, flare: 0.3,
+    npc: { mouth: "smile", brow: 0x1e1410, iris: "#3a2214", blush: 0 }, idle: "boss",
+  };
+  // Breno: primo do Cabeça, rico tranquilo. Cabelo com luzes, camisa de linho aberta, colar de conchinha, óculos
+  // escuros pendurado na gola, brinco de argola, bermuda de alfaiataria e tênis branco limpo
+  LOOKS.breno = {
+    name: "Breno", face: "breno", skin: 0xe8b894, hair: 0x6a4a2a, hairTip: 0xe8cf8a, hairStyle: "quiff", top: 0xf2ead8, top2: 0xe2d8c2, jacket: true, inner: 0xe8b894, pants: 0x2a3a5a, bermuda: true, socks: 0xe8b894,
+    shoe: 0xfafafa, shoeToe: 0xfafafa, sole: 0xf4f1ea, lace: 0xfafafa, sleeve: "short", shells: 0xf6efe0, collarShades: true, hoop: 0xe8c860, tee: "loose",
+    len: { thigh: 0.5, shin: 0.5, torso: 0.5, up: 0.31, fore: 0.29 }, headScale: 0.92, shoulder: 1.06, pantsR: 0.85, flare: 0.2,
+    npc: { mouth: "smile", brow: 0x5a3a20, iris: "#5a7a4a", blush: 0 }, idle: "calm",
+  };
+  // Ana Lívia: amiga da Kauane, estilo parecido mas de patricinha. Loira, olhos verdes, óculos de aro fino, jaqueta
+  // felpuda rosa-bebê, blusinha branca, jeans claro boca de sino e tênis branco de plataforma
+  LOOKS.analivia = {
+    name: "Ana Lívia", face: "analivia", skin: 0xf6d6c2, hair: 0xf0d27a, browCol: 0xc8a050, hairStyle: "long", part: "center", top: 0xffd0e4, top2: 0xf4bcd6, jacket: true, inner: 0xffffff,
+    pants: 0x9cc0e8, shoe: 0xfafafa, shoeToe: 0xfafafa, sole: 0xfafafa, lace: 0xffd0e4, platform: 1, glasses: true, glassCol: 0xb07a8a, tee: "loose", flare: 0.5, pantsR: 0.72,
+    scale: 0.88, shoulder: 0.92, headScale: 0.96, hoop: 0xe8c860,
+    npc: { lash: 1, lips: 0xf08aa8, mouth: "smile", noseBig: 1, brow: 0xc8a050, iris: "#3a9a5a", blush: 0.35 }, idle: "calm",
+  };
+  // galera da festa (anos 2000, cada um com seu estilo; todo mundo ganhou colar havaiano na porta)
+  const FX = [
+    { name: "Thaís", skin: 0xf0c7a4, hair: 0x3a2214, hairStyle: "long", part: "side", top: 0xff4fa3, top2: 0xe0308a, crop: true, pants: 0x7a8a5a, flare: 1, pantsR: 0.85, shoe: 0xffffff, scale: 0.88, shoulder: 0.9, lei: [0xffd23f, 0xff4fa3, 0xffffff], npc: { lash: 1, lips: 0xd04a7a, mouth: "smile" } },
+    { name: "Rafa", skin: 0x8a5a3c, hair: 0x1b1210, hairStyle: "cap", capC: 0xffd23f, top: 0x1f5ad8, top2: 0x1a46a8, print: "num", pants: 0x2a2a3a, shoe: 0xffffff, lei: [0xff4fa3, 0x3fd0ff, 0xffd23f], chainBig: 0xe8b830, npc: { mouth: "smile", beard: 0x1b1210 } },
+    { name: "Bruna", skin: 0x6e452c, hair: 0x1b1210, hairStyle: "afro", top: 0xffd23f, top2: 0xffb81f, crop: true, pants: 0xf4f4f4, flare: 1.2, pantsR: 0.8, shoe: 0xff4fa3, scale: 0.9, shoulder: 0.9, lei: [0xff6a1a, 0xffffff, 0xff4fa3], npc: { lash: 1, lips: 0x8a3a4a, mouth: "smile" } },
+    { name: "Léo", skin: 0xf0c49c, hair: 0x8a5a2a, hairTip: 0xf4e0a0, hairStyle: "spiky", top: 0x2fb8c8, top2: 0x1f98a8, print: "hib", pants: 0xc8b896, bermuda: true, socks: 0xf0c49c, shoe: 0x2a2a30, lei: [0xffffff, 0xff4fa3, 0x8c5cff], npc: { mouth: "smile", freckles: 1 } },
+    { name: "Carol", skin: 0xf3cdb4, hair: 0xc84a2a, hairStyle: "bob", top: 0x8c5cff, top2: 0x6a3ee0, pants: 0x1b1a22, flare: 0.8, shoe: 0x1b1530, scale: 0.88, shoulder: 0.9, lei: [0x5fe08a, 0xffd23f, 0xff4fa3], wristband: 0xff4fa3, npc: { lash: 1, lips: 0x9a2a4a, mouth: "flat" } },
+    { name: "Juninho", skin: 0xc98b62, hair: 0x2b170c, hairStyle: "taper", top: 0xff8a1f, top2: 0xe06a10, print: "hib", pants: 0x3a5aa8, flare: 0.6, shoe: 0xf4f4f4, lei: [0xff4fa3, 0xffd23f, 0x3fd0ff], shades: true, npc: { mouth: "smile" } },
+    { name: "Nanda", skin: 0xe8b894, hair: 0xf0d27a, hairStyle: "long", top: 0xf4f4f4, top2: 0xe4e4e4, crop: true, pants: 0x2f6fd8, flare: 1.3, pantsR: 0.85, shoe: 0xffffff, platform: 1, scale: 0.87, shoulder: 0.9, lei: [0xff4fa3, 0xffffff, 0xff8a1f], npc: { lash: 1, lips: 0xe06a8a, mouth: "smile" } },
+    { name: "Tiago", skin: 0x5a3a26, hair: 0x1b1210, hairStyle: "short", top: 0xf4f4f4, top2: 0xdcdcdc, jacket: true, inner: 0x1f1f2a, pants: 0x1b1a22, shoe: 0xe8262b, lei: [0xffd23f, 0x5fe08a, 0xffffff], npc: { mouth: "smile", beard: 0x1b1210 } },
+    { name: "Duda", skin: 0xd8a47e, hair: 0x2a1a10, hairStyle: "bun", top: 0x5fe08a, top2: 0x3fc06a, crop: true, pants: 0x8c5cff, flare: 1, pantsR: 0.85, shoe: 0xfafafa, scale: 0.86, shoulder: 0.88, lei: [0xff4fa3, 0xffd23f, 0x3fd0ff], npc: { lash: 1, lips: 0xb83a5a, mouth: "o" } },
+    { name: "Vini", skin: 0xe8b894, hair: 0x3a2a1a, hairStyle: "quiff", top: 0x1b1530, top2: 0x2a2440, print: "star", pants: 0x5a6a7a, flare: 0.6, shoe: 0x2f6fe8, lei: [0x3fd0ff, 0xffffff, 0xff4fa3], wristband: 0x2f6fe8, npc: { mouth: "smile" } },
+    { name: "Lari", skin: 0xc98d68, hair: 0x2a1810, hairStyle: "chanel", top: 0xff6a6a, top2: 0xe04a4a, pants: 0xe8e0cc, flare: 1.1, pantsR: 0.82, shoe: 0xff6a6a, scale: 0.86, shoulder: 0.88, lei: [0xffffff, 0xffd23f, 0x5fe08a], npc: { lash: 1, lips: 0xc8405a, mouth: "smile", freckles: 1 } },
+    { name: "Fábio", skin: 0xf0c49c, hair: 0x1b1210, hairStyle: "guard", capC: 0x1b1530, top: 0xa8e07a, top2: 0x88c05a, print: "hib", pants: 0x2a2a3a, shoe: 0xf4f4f4, lei: [0xff4fa3, 0xffffff, 0xffd23f], npc: { mouth: "smile", glasses: 0x1b1530 } },
+  ];
+  FX.forEach((t, i) => (LOOKS["fx" + i] = Object.assign({ face: "fx" + i, sleeve: "short", tee: "loose", shoeToe: t.shoe, sole: 0xf4f1ea, lace: t.shoe, socks: t.skin, flare: 0.4, pantsR: 0.8, idle: "calm" }, t)));
   // Neide da Sorveteria Pinguim: atendente de avental rosa e cabelo preso
   LOOKS.neide = Object.assign({}, LOOKS.npc10, { name: "Neide", top: 0xffffff, top2: 0xeeeeee, apron: 0xff8fc8, pants: 0x3a4a7a, hairStyle: "bun", sleeve: "short" });
 
@@ -1895,6 +1966,9 @@ const CHARS = (() => {
       for (const sd of [-1, 1]) { g.beginPath(); g.moveTo(ex(sd) - sd * 26, ey - 34 - (o.brow2 || 0) * sd); g.quadraticCurveTo(ex(sd), ey - 46, ex(sd) + sd * 30, ey - 36 + (o.frown ? 8 : 0)); g.lineTo(ex(sd) + sd * 30, ey - 30 + (o.frown ? 8 : 0)); g.quadraticCurveTo(ex(sd), ey - 38, ex(sd) - sd * 26, ey - 28); g.fill(); }
       nose();
       blush(o.blush ?? 0.25);
+      if (o.noseBig) { g.strokeStyle = "rgba(60,25,15,.6)"; g.lineWidth = 6; g.beginPath(); g.moveTo(X + 131, Y + 132); g.quadraticCurveTo(X + 150, Y + 168, X + 124, Y + 176); g.stroke(); g.beginPath(); g.arc(X + 112, Y + 168, 6, 0.2, 2.4); g.stroke(); }
+      if (o.wing) { g.strokeStyle = INK; g.lineWidth = 7; for (const sd of [-1, 1]) { g.beginPath(); g.moveTo(ex(sd) + sd * 18, ey - 10); g.lineTo(ex(sd) + sd * 44, ey - 26); g.stroke(); } }
+      if (o.nosering) { g.strokeStyle = "#d5dbe8"; g.lineWidth = 4; g.beginPath(); g.arc(X + 146, my - 40, 7, -0.6, 2.2); g.stroke(); }
       if (o.freckles) { g.fillStyle = "rgba(120,60,30,.5)"; for (const [dx, dy] of [[-56, 40], [-46, 48], [52, 42], [60, 48], [-60, 50], [44, 38]]) { g.beginPath(); g.arc(X + 128 + dx, ey + dy, 3, 0, 7); g.fill(); } }
       if (o.old) { g.strokeStyle = "rgba(80,40,20,.35)"; g.lineWidth = 4; for (const sd of [-1, 1]) { g.beginPath(); g.moveTo(X + 128 + sd * 38, my - 24); g.quadraticCurveTo(X + 128 + sd * 46, my - 8, X + 128 + sd * 40, my + 6); g.stroke(); g.beginPath(); g.moveTo(ex(sd) + sd * 30, ey + 6); g.lineTo(ex(sd) + sd * 40, ey + 2); g.stroke(); } }
       if (o.lips) { g.fillStyle = "#" + o.lips.toString(16).padStart(6, "0"); g.beginPath(); g.moveTo(X + 106, my - 6); g.quadraticCurveTo(X + 128, my - 16, X + 150, my - 6); g.quadraticCurveTo(X + 128, my + 12, X + 106, my - 6); g.fill(); }
@@ -1923,6 +1997,40 @@ const CHARS = (() => {
   }
   function paint(g) {
     for (const k in FACE) face(g, k, LOOKS[k]);
+    // estampas da galera da festa: banda de reggae (inventada), número de regata, hibisco havaiano, estrela
+    {
+      let x = 768 + 64, y = 2048 + 64;
+      g.save();
+      [["#d62828", 50], ["#f7c531", 38], ["#1f9a4a", 26]].forEach(([col, r]) => { g.fillStyle = col; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); });
+      g.fillStyle = "#1b1530"; g.beginPath(); g.arc(x, y, 14, 0, 7); g.fill();
+      g.font = '900 22px "Arial Black","Impact","DejaVu Sans",sans-serif'; g.textAlign = "center"; g.lineWidth = 5; g.strokeStyle = "#1b1530";
+      g.strokeText("RAÍZES", x, y + 58); g.fillStyle = "#f7c531"; g.fillText("RAÍZES", x, y + 58);
+      x = 896 + 64;
+      g.font = '900 76px "Arial Black","Impact","DejaVu Sans",sans-serif'; g.lineWidth = 10; g.strokeStyle = "#ffffff";
+      g.strokeText("07", x, y + 28); g.fillStyle = "#1b1530"; g.fillText("07", x, y + 28);
+      x = 768 + 64; y = 2176 + 64;
+      for (const [dx, dy, r, col] of [[-30, -26, 26, "#ff4fa3"], [32, 20, 22, "#ffffff"], [-22, 34, 16, "#ffd23f"], [30, -34, 14, "#ffffff"]]) {
+        g.fillStyle = col; for (let k = 0; k < 5; k++) { const a = k * 1.2566; g.beginPath(); g.ellipse(x + dx + Math.cos(a) * r * 0.55, y + dy + Math.sin(a) * r * 0.55, r * 0.55, r * 0.34, a, 0, 7); g.fill(); }
+        g.fillStyle = "#ffd23f"; g.beginPath(); g.arc(x + dx, y + dy, r * 0.18, 0, 7); g.fill();
+      }
+      g.fillStyle = "#2fae6a"; for (const [dx, dy, a] of [[8, -6, 0.6], [-40, 8, 2.4], [12, 46, 1.6]]) { g.beginPath(); g.ellipse(x + dx, y + dy, 20, 7, a, 0, 7); g.fill(); }
+      x = 896 + 64;
+      g.fillStyle = "#ffd23f"; g.strokeStyle = "#1b1530"; g.lineWidth = 6; g.beginPath();
+      for (let k = 0; k < 10; k++) { const a = -Math.PI / 2 + k * Math.PI / 5, r = k % 2 ? 22 : 52; g.lineTo(x + Math.cos(a) * r, y + Math.sin(a) * r); }
+      g.closePath(); g.fill(); g.stroke();
+      g.restore();
+    }
+    // faixa de equalizador da camiseta do DJ Luskinha (fundo transparente: aparece só a faixa)
+    {
+      const x = 256, y = 2048;
+      g.save();
+      // nas costas da camisa: "LUSKINHA" e o equalizador embaixo
+      g.font = '900 46px "Arial Black","Impact","DejaVu Sans",sans-serif'; g.textAlign = "center"; g.lineJoin = "round";
+      g.lineWidth = 8; g.strokeStyle = "#1b1530"; g.strokeText("LUSKINHA", x + 128, y + 58); g.fillStyle = "#ffffff"; g.fillText("LUSKINHA", x + 128, y + 58);
+      const H = [10, 18, 26, 14, 30, 20, 12, 24, 32, 18, 12, 28, 16, 22, 10, 16, 30, 20];
+      H.forEach((h, i) => { g.fillStyle = i % 4 === 2 ? "#ffd23f" : "#5fe08a"; g.fillRect(x + 22 + i * 12, y + 100 - h / 2, 8, h); });
+      g.restore();
+    }
     // nuvem da Manu
     {
       const x = 1984, y = 320;
@@ -2228,7 +2336,7 @@ const CHARS = (() => {
     P(-0.17, 0.11, 0.13, low, FLAT);
     P(-0.08, 0.14, 0.19, low, FLAT);
     P(0.0, 0.135, 0.18, look.belt ? beltC : low, look.belt ? 0 : FLAT);
-    if (look.belt) P(0.075, 0.138, 0.183, top, FLAT);
+    if (look.belt) P(0.075, 0.138, 0.183, look.crop ? skin : top, look.crop ? 0 : FLAT);
     // ressalto da barra: a camiseta cai por cima da cintura
     const hem = look.overall ? 0.02 : loose ? 0.08 : 0.06;
     if (look.flannel) {
@@ -2237,6 +2345,9 @@ const CHARS = (() => {
       const at = (y) => { let i = 0; while (i < K.length - 2 && K[i + 1][0] <= y) i++; const a = K[i], b = K[i + 1], k = Math.max(0, Math.min(1, (y - a[0]) / (b[0] - a[0]))); return [a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k]; };
       const dark = c(look.top2);
       [hem, 0.1, 0.125, 0.2, 0.225, 0.29, 0.315, 0.37, 0.4].forEach((y, i) => { const [rx, rz] = at(y); P(y, rx, rz, i % 2 ? dark : top, FLAT); });
+    } else if (look.crop) {
+    P(0.17, 0.134, 0.172, skin, 0);
+    P(0.2, 0.138, 0.178, top, FLAT);
     } else {
     P(hem, loose ? 0.168 : 0.142, loose ? 0.215 : 0.185, top, FLAT);
     P(0.2, loose ? 0.158 : 0.132, loose ? 0.208 * SHW : 0.17, top, FLAT);
@@ -2253,6 +2364,46 @@ const CHARS = (() => {
         t.box(0.163, 0.022, -0.028, 0.172, 0.056, 0.028, beltC);
         shard(t, [0.11, 0.04, 0.13], [0.06, -0.09, 0.17], 0.018, 0.006, beltC);
       }
+      if (look.lei) {
+        // colar havaiano de flores
+        for (let i = 0; i < 16; i++) {
+          const a = (i / 16) * Math.PI * 2, fr = Math.max(0, Math.cos(a));
+          const p2 = [Math.cos(a) * 0.095 + 0.02 + fr * 0.04, TL - 0.02 - fr * fr * 0.11, Math.sin(a) * 0.135];
+          t.ball(p2, 0.026, c(look.lei[i % look.lei.length]), FLAT, 5, 3, { sy: 0.7 });
+        }
+      }
+      if (look.chainBig) {
+        const N3 = [[0.05, TL + 0.0, 0.07], [0.14, TL - 0.08, 0.05], [0.16, TL - 0.13, 0.0], [0.14, TL - 0.08, -0.05], [0.05, TL + 0.0, -0.07]];
+        for (let i = 0; i < N3.length - 1; i++) t.tube(N3[i], N3[i + 1], 0.012, 0.012, 4, c(look.chainBig), 1, { cap: false });
+      }
+      if (look.shells) {
+        for (let i = 0; i < 12; i++) { const a = (i / 12) * Math.PI * 2, fr = Math.max(0, Math.cos(a)); t.ball([Math.cos(a) * 0.075 + fr * 0.03, TL + 0.0 - fr * 0.05, Math.sin(a) * 0.07], 0.012, c(look.shells), 0, 4, 3); }
+      }
+      if (look.collarShades) {
+        for (const sd of [-1, 1]) t.ball([0.15, TL - 0.1, sd * 0.03], 0.026, c(0x17151f), 2, 6, 4, { sx: 0.4, sy: 0.8 });
+        t.tube([0.16, TL - 0.08, -0.01], [0.16, TL - 0.08, 0.01], 0.004, 0.004, 3, c(0x0e0d12), 1);
+      }
+      if (look.choker) {
+        t.tube([0, TL + 0.01, 0], [0, TL + 0.04, 0], 0.066, 0.066, 10, c(look.choker), FLAT, { cap: false });
+        t.tube([0.066, TL + 0.0, -0.012], [0.066, TL + 0.0, 0.012], 0.014, 0.014, 6, c(0xd5dbe8), 1, { cap: false });
+      }
+      if (look.lock) {
+        const L1 = [[0.05, TL + 0.0, 0.07], [0.13, TL - 0.07, 0.05], [0.15, TL - 0.11, 0.0], [0.13, TL - 0.07, -0.05], [0.05, TL + 0.0, -0.07]];
+        for (let i = 0; i < L1.length - 1; i++) t.tube(L1[i], L1[i + 1], 0.004, 0.004, 3, c(look.lock), 1, { cap: false });
+        t.box(0.148, TL - 0.155, -0.018, 0.162, TL - 0.115, 0.018, c(look.lock), { m: 1 });
+        t.tube([0.155, TL - 0.115, -0.01], [0.155, TL - 0.1, 0.0], 0.004, 0.004, 3, c(look.lock), 1);
+        t.tube([0.155, TL - 0.1, 0.0], [0.155, TL - 0.115, 0.01], 0.004, 0.004, 3, c(look.lock), 1);
+      }
+      if (look.chain && !look.jacket) {
+        const W = [[0.1, 0.02, 0.15], [0.07, -0.1, 0.19], [-0.02, -0.13, 0.19], [-0.1, -0.06, 0.15]];
+        for (let i = 0; i < W.length - 1; i++) t.tube(W[i], W[i + 1], 0.006, 0.006, 3, c(look.chain), 1, { cap: false });
+      }
+      if (look.chain && look.jacket) {
+        // corrente prata por cima da camiseta
+        const N2 = [[0.05, TL + 0.0, 0.065], [0.14, TL - 0.08, 0.035], [0.15, TL - 0.1, 0.0], [0.14, TL - 0.08, -0.035], [0.05, TL + 0.0, -0.065]];
+        for (let i = 0; i < N2.length - 1; i++) t.tube(N2[i], N2[i + 1], 0.006, 0.006, 3, c(look.chain), 1, { cap: false });
+      }
+      if (look.backPrint) t.decal([-0.176, 0.3, 0], [0, 0, 1], [0, 1, 0], 0.3, 0.15, SPR[look.backPrint]);
       if (look.print) t.decal(look.overall ? [0.152, 0.17, 0] : [0.168, 0.29, 0], [0, 0, -1], [0, 1, 0], look.overall ? 0.11 : 0.18, look.overall ? 0.11 : 0.18, SPR[look.print]);
       if (look.hood) {
         t.ball([-0.11, TL - 0.02, 0], 0.13, V.mul(top, 0.85), FLAT, 7, 3, { sx: 0.65, sy: 0.55 });
@@ -2312,6 +2463,17 @@ const CHARS = (() => {
           sec(SH, 0.22, L7, 0.06, 0.062), sec(SH, LEN.shin - 0.02, L7, 0.05, 0.05, [SH, FT, 0.5]),
         ];
         chain(R, [sh, sh, sh, skin, skin, skin, sock, sock, sock], false, true, [FLAT, FLAT, FLAT, 0, 0, 0, FLAT, FLAT, FLAT]);
+      } else if (look.bermuda) {
+        // bermuda até abaixo do joelho, canela de fora e meia (cano alto se for branca)
+        const pa = pants, sock = c(look.socks || look.skin), L7 = SEC.leg, hi = look.socks === 0xffffff;
+        const R = [
+          sec(TH, -0.05, L7, 0.14, 0.14, [T0, TH, 0.6]), sec(TH, 0.2, L7, 0.15 * (look.pantsR || 1), 0.15 * (look.pantsR || 1)),
+          sec(TH, LEN.thigh - 0.02, L7, 0.148 * (look.pantsR || 1), 0.148 * (look.pantsR || 1), [TH, SH, 0.4]), sec(SH, 0.07, L7, 0.14 * (look.pantsR || 1), 0.14 * (look.pantsR || 1), [TH, SH, 0.85]),
+          sec(SH, 0.075, L7, 0.056, 0.058), sec(SH, 0.2, L7, 0.06, 0.062), sec(SH, hi ? 0.24 : LEN.shin - 0.1, L7, 0.056, 0.058),
+          sec(SH, (hi ? 0.24 : LEN.shin - 0.1) + 0.005, L7, 0.062, 0.064), sec(SH, LEN.shin - 0.02, L7, 0.056, 0.056, [SH, FT, 0.5]),
+        ];
+        chain(R, [pa, pa, pa, pa, skin, skin, sock, sock], false, true, [FLAT, FLAT, FLAT, FLAT, 0, 0, FLAT, FLAT]);
+        if (look.cargo) rigid(TH, (t) => t.box(0.0, 0.2, sg * 0.13, 0.1, 0.32, sg * 0.165, V.mul(pa, 0.85), { m: FLAT }));
       } else {
         // calça larga em trapézio: abre do quadril até o chão e cobre metade do tênis
         const L7 = SEC.leg, pr = look.pantsR || 1, fl = look.flare || 1;
@@ -2376,7 +2538,7 @@ const CHARS = (() => {
     for (const s of ["F", "B"]) {
       const UP = BONE["up" + s], FO = BONE["fore" + s], L6 = SEC.limb;
       const short = look.sleeve === "short";
-      const sl = look.overall ? c(look.top) : top;
+      const sl = look.overall ? c(look.top) : look.armC ? c(look.armC) : top;
       const R = [], C = [], MT = [];
       const add = (r, col, mt) => { R.push(r); if (col) { C.push(col); MT.push(mt); } };
       if (short) {
@@ -2402,7 +2564,13 @@ const CHARS = (() => {
       rigid(FO, (t) => {
         t.tube([0.0, LEN.fore + 0.02, 0.04], [0.03, LEN.fore + 0.08, 0.058], 0.017, 0.012, 5, hand);
         if (look.rasta && s === "B") [0xd62828, 0xf7c531, 0x1f9a4a].forEach((col, i) => extrude(t, [[-0.05, LEN.fore - 0.07 + i * 0.022], [0.05, LEN.fore - 0.07 + i * 0.022], [0.05, LEN.fore - 0.048 + i * 0.022], [-0.05, LEN.fore - 0.048 + i * 0.022]], () => 0.096, c(col)));
-        if (look.wristband) extrude(t, [[-0.052, LEN.fore - 0.065], [0.052, LEN.fore - 0.065], [0.052, LEN.fore - 0.005], [-0.052, LEN.fore - 0.005]], () => 0.1, c(look.wristband));
+        if (look.studs && s === "F") {
+          extrude(t, [[-0.054, LEN.fore - 0.075], [0.054, LEN.fore - 0.075], [0.054, LEN.fore - 0.02], [-0.054, LEN.fore - 0.02]], () => 0.104, c(0x111015));
+          for (const [x, z] of [[0.056, 0], [-0.056, 0], [0, 0.054], [0, -0.054], [0.04, 0.04], [-0.04, -0.04], [0.04, -0.04], [-0.04, 0.04]]) t.ball([x, LEN.fore - 0.048, z], 0.011, c(0xd5dbe8), 1, 4, 3);
+        }
+        if (look.rubber && s === "B") look.rubber.forEach((col, i) => extrude(t, [[-0.05, LEN.fore - 0.08 + i * 0.02], [0.05, LEN.fore - 0.08 + i * 0.02], [0.05, LEN.fore - 0.068 + i * 0.02], [-0.05, LEN.fore - 0.068 + i * 0.02]], () => 0.098, c(col)));
+        if (look.watch && s === "B") t.box(0.045, LEN.fore - 0.058, -0.024, 0.066, LEN.fore - 0.012, 0.024, c(look.watch), { m: 1 });
+        if (look.wristband && (!look.watch || s === "B")) extrude(t, [[-0.052, LEN.fore - 0.065], [0.052, LEN.fore - 0.065], [0.052, LEN.fore - 0.005], [-0.052, LEN.fore - 0.005]], () => 0.1, c(look.wristband));
       });
     }
     // ----- cabeça (rosto pintado por projeção frontal) -----
@@ -2539,6 +2707,51 @@ const CHARS = (() => {
       }
       // costeleta curtinha
       for (const sd of [-1, 1]) t.box(0.035, 0.2, sd * 0.148 - 0.008, 0.075, 0.3, sd * 0.148 + 0.008, fade, { m: FLAT });
+    } else if (L.hairStyle === "shaggy") {
+      // médio, bagunçado, caindo um pouco na testa e cobrindo a orelha
+      cap({ prof: P(1.06), back: 0.06, bang: 0.3, pow: 2.5 });
+      lump([-0.02, 0.4, 0], 0.15, 1.1, 0.62, 1.1, hair);
+      for (const sd of [-1, 1]) lump([-0.03, 0.25, sd * 0.13], 0.1, 1.0, 1.1, 0.5, sd > 0 ? hair : hairL);
+      lump([-0.13, 0.24, 0], 0.12, 0.8, 1.1, 1.05, hairD);
+      for (let i = 0; i < 7; i++) shard(t, [0.1, 0.38, -0.13 + i * 0.043], [0.17, 0.27 - (i % 3) * 0.02, -0.15 + i * 0.05], 0.04, 0.014, i % 2 ? hairL : hair);
+      for (const [b, tp] of [[[-0.05, 0.46, 0.05], [-0.12, 0.53, 0.12]], [[-0.1, 0.44, -0.05], [-0.2, 0.47, -0.12]], [[0.02, 0.47, -0.02], [0.05, 0.55, -0.08]], [[-0.16, 0.3, 0.08], [-0.24, 0.16, 0.13]], [[-0.16, 0.3, -0.08], [-0.24, 0.16, -0.13]]]) shard(t, b, tp, 0.04, 0.014, hair);
+    } else if (L.hairStyle === "mila") {
+      // cabelo preso: franja reta, coque alto bagunçado e mechas soltas dos dois lados (uma azul)
+      const blue = c(L.streak);
+      cap({ prof: P(1.04), back: 0.1, bang: 0.32, pow: 3 });
+      lump([0.0, 0.41, 0], 0.13, 1.12, 0.6, 1.08, hair);
+      lump([-0.1, 0.36, 0], 0.135, 0.95, 0.85, 1.12, hair);
+      for (const sd of [-1, 1]) lump([-0.01, 0.26, sd * 0.125], 0.1, 1.0, 1.15, 0.45, sd < 0 ? hair : hairD);
+      lump([-0.12, 0.25, 0], 0.11, 0.8, 1.0, 1.0, hairD);
+      // franja reta (vai do lado do cabelo até passar do meio da testa)
+      for (let i = 0; i < 8; i++) shard(t, [0.112, 0.385, -0.14 + i * 0.03], [0.172, 0.275 - (i % 2) * 0.018, -0.146 + i * 0.031], 0.03, 0.012, i % 3 === 1 ? hairL : hair);
+      // coque alto bagunçado, com fios soltos
+      lump([-0.09, 0.53, 0.0], 0.085, 1, 0.9, 1.05, hair);
+      lump([-0.13, 0.51, 0.04], 0.055, 1, 1, 1, hairL);
+      for (const [b, tp] of [[[-0.09, 0.56, 0.0], [-0.15, 0.66, 0.05]], [[-0.11, 0.54, -0.04], [-0.21, 0.6, -0.09]], [[-0.06, 0.55, 0.04], [-0.02, 0.64, 0.09]], [[-0.13, 0.52, 0.02], [-0.22, 0.5, 0.07]]]) shard(t, b, tp, 0.03, 0.01, hair);
+      // mechas que emolduram o rosto: a azul grande e uma escura fininha
+      shard(t, [0.08, 0.37, -0.128], [0.1, 0.0, -0.165], 0.052, 0.016, blue);
+      shard(t, [0.05, 0.34, -0.15], [0.05, 0.04, -0.185], 0.04, 0.014, hair);
+      shard(t, [0.1, 0.36, -0.06], [0.13, 0.12, -0.12], 0.026, 0.01, blue);
+      shard(t, [0.07, 0.36, 0.13], [0.08, 0.06, 0.17], 0.044, 0.014, hair);
+      shard(t, [0.04, 0.34, 0.15], [0.03, 0.1, 0.18], 0.034, 0.012, hairL);
+    } else if (L.hairStyle === "quiff") {
+      const skin = c(L.skin), fade = V.add(V.mul(hair, 0.78), V.mul(skin, 0.22));
+      cap({ prof: P(1.0), back: 0.3, bang: 0.34, pow: 3, col: fade });
+      cap({ prof: P(1.02), back: 0.24, bang: 0.32, pow: 2 });
+      // volume do topo (baixo, liso), um pouco mais alto na frente
+      for (const [x, y, z, r] of [[0.04, 0.42, 0, 0.1], [-0.06, 0.42, 0.055, 0.09], [-0.06, 0.42, -0.055, 0.09], [0.1, 0.4, 0.05, 0.075], [0.1, 0.4, -0.05, 0.075], [-0.15, 0.38, 0, 0.08], [-0.13, 0.37, 0.07, 0.065], [-0.13, 0.37, -0.07, 0.065]])
+        lump([x, y, z], r, 1.08, 0.55, 1.12, hair);
+      // mechas texturizadas penteadas pra frente; as da ponta caem um pouco na testa
+      const MQ = [
+        [0.02, 0.46, 0.0, 1, 0.22, 0.0, 0.12], [0.0, 0.46, 0.06, 1, 0.2, 0.3, 0.11], [0.0, 0.46, -0.06, 1, 0.2, -0.3, 0.11],
+        [-0.08, 0.46, 0.03, 1, 0.3, 0.15, 0.11], [-0.08, 0.46, -0.04, 1, 0.3, -0.2, 0.11], [-0.15, 0.44, 0.0, 1, 0.35, 0.05, 0.1],
+        [0.11, 0.43, 0.07, 1, -0.35, 0.35, 0.075], [0.11, 0.43, -0.07, 1, -0.35, -0.35, 0.075], [0.12, 0.44, 0.0, 1, -0.5, 0.05, 0.08],
+        [0.12, 0.44, 0.035, 1, -0.6, 0.15, 0.07], [0.0, 0.43, 0.11, 0.6, 0.2, 1, 0.07], [0.0, 0.43, -0.11, 0.6, 0.2, -1, 0.07],
+      ];
+      const tip = L.hairTip ? c(L.hairTip) : null;
+      MQ.forEach(([x, y, z, dx, dy, dz, len], i) => { const b = [x, y, z], e = V.add(b, V.mul(V.norm([dx, dy, dz]), len)); shard(t, b, e, 0.05, 0.016, tip && i % 2 === 0 ? tip : i % 3 === 1 ? hairL : i % 3 === 2 ? hairD : hair); });
+      for (const sd of [-1, 1]) t.box(0.035, 0.22, sd * 0.148 - 0.008, 0.07, 0.3, sd * 0.148 + 0.008, fade, { m: FLAT });
     } else if (L.hairStyle === "spiky") {
       cap({ prof: P(1.05), back: 0.13, bang: 0.28, pow: 3 });
       // espetos de tamanhos e direções variados, mais longos atrás e no topo
@@ -2665,10 +2878,18 @@ const CHARS = (() => {
       }
     } else if (L.phones) {
       for (const s of [-1, 1]) t.tube([0, 0.2, s * 0.15], [0, 0.2, s * 0.21], 0.075, 0.075, 8, c(L.phones), FLAT);
+      if (L.phonesAcc) for (const s of [-1, 1]) t.tube([0, 0.2, s * 0.21], [0, 0.2, s * 0.216], 0.045, 0.045, 8, c(L.phonesAcc), 2);
       for (let i = 0; i < 6; i++) {
         const a0 = (i / 6) * Math.PI, a1 = ((i + 1) / 6) * Math.PI;
         t.tube([0, 0.2 + Math.sin(a0) * 0.22, Math.cos(a0) * 0.18], [0, 0.2 + Math.sin(a1) * 0.22, Math.cos(a1) * 0.18], 0.022, 0.022, 4, c(L.phones), 0, { cap: false });
       }
+    }
+    if (L.hoop) for (const sd of [-1, 1]) for (let i = 0; i < 6; i++) { const a0 = (i / 6) * Math.PI * 2, a1 = ((i + 1) / 6) * Math.PI * 2; t.tube([Math.sin(a0) * 0.016, 0.135 - Math.cos(a0) * 0.016, sd * 0.152], [Math.sin(a1) * 0.016, 0.135 - Math.cos(a1) * 0.016, sd * 0.152], 0.003, 0.003, 3, c(L.hoop), 1, { cap: false }); }
+    if (L.earrings) for (const sd of [-1, 1]) {
+      t.ball([0.0, 0.155, sd * 0.152], 0.011, c(0xd5dbe8), 1, 4, 3);
+      t.tube([0.0, 0.15, sd * 0.152], [0.0, 0.12, sd * 0.152], 0.003, 0.003, 3, c(0xd5dbe8), 1);
+      t.ball([0.0, 0.112, sd * 0.152], 0.014, c(L.earrings), 1, 5, 4);
+      t.ball([0.0, 0.078, sd * 0.152], 0.019, c(L.earrings), 1, 5, 4);
     }
     if (L.shades) {
       // óculos esportivos pretos anos 2000: duas lentes ovais envolventes, aro fino em cima, haste reta
@@ -2699,7 +2920,7 @@ const CHARS = (() => {
       t.tube(at(-0.08, 0.238, 0.162), at(0.08, 0.238, 0.162), 0.009, 0.009, 4, frame, 0, { cap: false });
     }
     if (L.glasses) {
-      const fr = c(0x1b1530);
+      const fr = c(L.glassCol || 0x1b1530);
       for (const s of [-1, 1]) {
         const cz = s * 0.056, cx = 0.152 - Math.abs(cz) * 0.25, cy = 0.218;
         const pts = [];
@@ -3344,8 +3565,8 @@ const CITY = (() => {
     block(-38, 41, 36, Z1, "wne", "comércio", "#d8cbbb");
     // lan house e loja de discos: no plano, de frente pra pista (do lado da sorveteria)
     row("-z", 44, -35, -6, 12, [{ w: 10, style: "loja", sign: RECT.town[5], signW: 4.6, signA: 4.27, col: 0x2b2a55 }, { w: 9, style: "loja", sign: RECT.town[6], signW: 4.6, signA: 4.27, col: 0xf2c14e }, { w: 10, h: 10, col: 0xffd166 }]);
-    // sorveteria Pinguim (ponto de encontro com a Julie), do outro lado da rua da pista
-    row("-z", 44, 10, 33, 12, [{ w: 11, style: "loja", sign: RECT.town[4], col: 0xff9ccf, h: 7.6 }, { w: 12, style: "loja", shop: 7 }]);
+    // sorveteria Pinguim (ponto de encontro com a Julie) e o Aloha Club (a casa de festas), do outro lado da rua da pista
+    row("-z", 44, 10, 33, 12, [{ w: 11, style: "loja", sign: RECT.town[4], col: 0xff9ccf, h: 7.6 }, { w: 12, style: "loja", sign: RECT.town[7], col: 0x3a2a6a, h: 8.6 }]);
     // pontos de ônibus: banco + placa (o circular para aqui)
     const STOPS = [[0, 43.55, 0], [-4, 111.0, 0], [-20, -199.3, -10]];
     for (const [x, z, y] of STOPS) {
@@ -5558,6 +5779,28 @@ const RADIO = (() => {
       ],
     },
   ];
+  // set do DJ Luskinha no Aloha Club (house dos anos 90, eurodance e paradas de 2000) e a música lenta
+  const FESTA = {
+    set: [
+      { a: "Spiller", t: "Groovejet (If This Ain't Love)", id: "Cc_nUcKYlAs" },
+      { a: "Modjo", t: "Lady (Hear Me Tonight)", id: "mMfxI3r_LyA" },
+      { a: "Stardust", t: "Music Sounds Better With You", id: "Hf244LCkkLc" },
+      { a: "Daft Punk", t: "One More Time", id: "fa5IWHDbftI" },
+      { a: "Kylie Minogue", t: "Can't Get You Out Of My Head", id: "c18441Eh_WE" },
+      { a: "Robin S", t: "Show Me Love", id: "Wx7I4yWJnXI" },
+      { a: "Crystal Waters", t: "Gypsy Woman (She's Homeless)", id: "_KztNIg4cvE" },
+      { a: "Corona", t: "The Rhythm Of The Night", id: "LL8zTK1Ffu0" },
+      { a: "Haddaway", t: "What Is Love", id: "HEXWRTEbj1I" },
+      { a: "Gala", t: "Freed From Desire", id: "AxmzkDqndtM" },
+      { a: "Alice Deejay", t: "Better Off Alone", id: "Ck0LO6b6OQc" },
+      { a: "Eiffel 65", t: "Blue (Da Ba Dee)", id: "XgztfRBc2jM" },
+      { a: "ATB", t: "9 PM (Till I Come)", id: "QFGMQZyvnmY" },
+      { a: "Bomfunk MC's", t: "Freestyler", id: "pQICGZd9-SA" },
+      { a: "Darude", t: "Sandstorm", id: "y6120QOlsfU" },
+      { a: "Rouge", t: "Ragatanga", id: "QsG8gMARRyw" },
+    ],
+    lenta: { a: "3 Doors Down", t: "Here Without You (Acoustic)", id: "ZNVylYnrHsA" },
+  };
   const SPECIAL = { juntos: { id: "iGbPR36zGx4", t: "Wherever You Will Go", a: "The Calling", s: 0 } };
   let spec = null, ALB_CACHE = null, holdOn = false;
   const VOLUME = 60;
@@ -5703,6 +5946,7 @@ const RADIO = (() => {
     if (player) play();
   }
   return {
+    festa: () => FESTA,
     has: (look) => !!STATIONS[look],
     station: (look) => STATIONS[look] || null,
     get active() {
@@ -5819,7 +6063,7 @@ const RADIO = (() => {
 const INSIDE = (() => {
   const { V, M, hex, Mesh } = E;
   // textura 2048 × 1024: a metade esquerda tem móveis, placas e cartazes; a direita, capas e rótulos (até 40 discos)
-  const TW = 2048, TH = 1024, NCOV = 40, NLAB = 48;
+  const TW = 2048, TH = 2048, NCOV = 40, NLAB = 48; // metade de baixo (y >= 1024): placas do Aloha Club
   const RR = (x, y, w, h) => [x / TW, y / TH, (x + w) / TW, (y + h) / TH];
   const T = {
     covers: Array.from({ length: NCOV }, (_, i) => RR(1024 + (i % 8) * 128 + 2, Math.floor(i / 8) * 128 + 2, 124, 124)),
@@ -5834,6 +6078,7 @@ const INSIDE = (() => {
     ouca: RR(0, 800, 512, 96), precos: RR(512, 800, 512, 96),
     neonD: RR(0, 896, 512, 64), semana: RR(512, 896, 256, 64), neonL: RR(768, 896, 256, 64),
     tags: Array.from({ length: 8 }, (_, i) => RR(i * 128 + 2, 962, 124, 60)),
+    fNeon: RR(0, 1024, 1024, 192), fBar: RR(1024, 1024, 512, 256), fDJ: RR(1536, 1024, 512, 128), fSnack: RR(1536, 1152, 512, 64), fWelcome: RR(1536, 1216, 512, 64),
     sMenu: RR(1024, 832, 512, 192), sNeon: RR(1536, 832, 512, 64), sPicole: RR(1536, 896, 512, 64), sSabor: RR(1536, 960, 512, 64),
   };
   const FONT = (px, w = 900) => `${w} ${px}px Rubik, "Arial Black", Arial, sans-serif`;
@@ -6014,6 +6259,18 @@ const INSIDE = (() => {
     { const [x, y, w, h] = P(T.sNeon); sign(g, x, y, w, h, "SORVETERIA PINGUIM", null, "#e6fbff", 42, "#3fd0ff"); }
     { const [x, y, w, h] = P(T.sPicole); sign(g, x, y, w, h, "PICOLÉ GELADINHO", "#2457c8", "#ffffff", 34); }
     { const [x, y, w, h] = P(T.sSabor); sign(g, x, y, w, h, "FLOCOS · CHOCOLATE · MORANGO · LIMÃO · CREME", "#fff7e8", "#c8287a", 22); }
+    // Aloha Club: neon da casa, quadro do bar, faixa da cabine do DJ e plaquinhas
+    { const [x, y, w, h] = P(T.fNeon); sign(g, x, y, w, h * 0.62, "ALOHA CLUB", null, "#fff0fa", 120, "#ff4fa3"); sign(g, x, y + h * 0.6, w, h * 0.4, "✿ LUAU TODA SEXTA ✿", null, "#e6fbff", 52, "#3fd0ff"); }
+    {
+      const [x, y, w, h] = P(T.fBar);
+      g.fillStyle = "#6a4422"; g.fillRect(x, y, w, h); g.fillStyle = "#1e2a24"; g.fillRect(x + 10, y + 10, w - 20, h - 20);
+      g.textBaseline = "middle"; g.textAlign = "center"; g.fillStyle = "#ffd23f"; g.font = "900 36px Rubik, Arial Black, sans-serif"; g.fillText("BAR DO KIKO", x + w / 2, y + 42);
+      g.font = "700 24px Rubik, Arial, sans-serif";
+      [["Refri lata", "1,50"], ["Suco de maracujá", "2,00"], ["Água de coco", "2,50"], ["Coquetel de frutas", "3,00"], ["Pastel / coxinha", "1,00"]].forEach(([n, v], i) => { const cy = y + 92 + i * 32; g.textAlign = "left"; g.fillStyle = "#f4f1e6"; g.fillText(n, x + 34, cy); g.textAlign = "right"; g.fillStyle = "#7dff9a"; g.fillText(v, x + w - 34, cy); });
+    }
+    { const [x, y, w, h] = P(T.fDJ); g.fillStyle = "#14121c"; g.fillRect(x, y, w, h); sign(g, x, y, w, h, "DJ LUSKINHA", null, "#f0ecff", 70, "#8c5cff"); }
+    { const [x, y, w, h] = P(T.fSnack); sign(g, x, y, w, h, "SALGADINHOS · PODE PEGAR", "#ffd23f", "#1b1530", 30); }
+    { const [x, y, w, h] = P(T.fWelcome); sign(g, x, y, w, h, "ALOHA! ✿ BEM-VINDOS", "#2fae6a", "#ffffff", 32); }
     // fotos de capa chegam depois (decodificar a imagem é assíncrono)
     albs.forEach((a, i) => {
       if (!a.capa || a.img) return;
@@ -6656,7 +6913,178 @@ const INSIDE = (() => {
       scene: { sun: V.norm([0.18, 0.95, 0.22]), top: hex(0xfde6ef), mid: hex(0xfde6ef), hz: hex(0xfde6ef), fog: hex(0xfde6ef), fogd: 0.004, shade: hex(0xd4b4cc), ink: hex(0x1b1530), ink_w: 1.5, amb: [0.92, 0.88, 0.88], night: 0.36, wet: 0, winc: [9, 9, 9] },
     };
   }
-  return { T, makeTex, buildDiscos, buildLan, buildSorveteria, coverURL, labelURL, drawCover, palOf, LINES, phoneMesh };
+  // ---------- Aloha Club: a festa do DJ Luskinha (dois andares, decoração havaiana) ----------
+  // térreo: entrada com tochas, pista de luz no meio, palco com a cabine do DJ no fundo, bar embaixo do mezanino da
+  // direita, mesa de salgadinhos embaixo do da esquerda; em cima, mezanino em U com guarda-corpo, mesinhas altas e
+  // gente olhando a pista. Teto alto com cordão de luzinhas, folhas de palmeira penduradas e o globo.
+  function buildFesta(Rn, tex) {
+    const st = new Mesh(), fl = new Mesh(), thin = new Mesh();
+    const W = 6.5, D = 15, H = 6.4, MY = 3.2, MX = 4.4, MZ0 = 6.0, MZB = 13.6, solids = [];
+    const S = (x0, z0, x1, z1) => solids.push([x0, z0, x1, z1]);
+    const bamboo = hex(0xc8a05a), bambooD = hex(0x8a6a32), wood = hex(0x5a3a22), woodD = hex(0x3a2416), straw = hex(0xd8b870), leaf = hex(0x2f9a4a), leafD = hex(0x1f7a3a);
+    const pink = hex(0xff4fa3), cyan = hex(0x3fd0ff), yel = hex(0xffd23f), purple = hex(0x8c5cff), blk = hex(0x16141c);
+    shell(st, fl, { wallLo: bambooD, wallHi: hex(0x2a1f4a), floorA: hex(0x3a2418), floorB: hex(0x4a2e1e), tile: 1.0, W, D, H, outside: [hex(0x14123a), hex(0x221c4a), hex(0x2e2a3e)] });
+    // bambu no rodapé das paredes
+    for (const sx of [-1, 1]) for (let z = 0.15; z < D; z += 0.22) st.tube([sx * (W - 0.03), 0, z], [sx * (W - 0.03), 1.0, z], 0.06, 0.06, 5, ((z * 10) | 0) % 2 ? bamboo : bambooD, 0, { cap: false });
+    const leafQ = (m, a, b, w, col) => {
+      const d = V.sub(b, a), side = V.mul(V.norm(V.cross(d, [0, 1, 0.01])), w), mid = V.add(a, V.mul(d, 0.45));
+      m.tri(a, V.add(mid, side), b, col, 0); m.tri(a, b, V.sub(mid, side), V.mul(col, 0.8), 0);
+    };
+    // ---- mezanino em U ----
+    const deck = (x0, z0, x1, z1) => { st.box(x0, MY - 0.25, z0, x1, MY, z1, woodD, { top: wood }); };
+    deck(-W, MZ0, -MX, D); deck(MX, MZ0, W, D); deck(-MX, MZB, MX, D);
+    for (const [x, z] of [[-MX, MZ0], [-MX, 9.8], [-MX, MZB], [MX, MZ0], [MX, 9.8], [MX, MZB], [-1.6, MZB], [1.6, MZB]]) { st.tube([x, 0, z], [x, MY - 0.25, z], 0.11, 0.11, 7, bamboo); S(x - 0.15, z - 0.15, x + 0.15, z + 0.15); }
+    // guarda-corpo (borda de dentro do U e as pontas da frente)
+    const rail = (a, b) => {
+      const L = Math.hypot(b[0] - a[0], b[2] - a[2]), n = Math.max(1, Math.round(L / 0.6));
+      for (let i = 0; i <= n; i++) { const p = V.lerp(a, b, i / n); st.tube(p, [p[0], MY + 1.0, p[2]], 0.025, 0.025, 4, bamboo); }
+      st.tube([a[0], MY + 1.0, a[2]], [b[0], MY + 1.0, b[2]], 0.045, 0.045, 6, bambooD); st.tube([a[0], MY + 0.5, a[2]], [b[0], MY + 0.5, b[2]], 0.025, 0.025, 4, bamboo);
+    };
+    rail([-MX, MY, MZ0], [-MX, MY, MZB]); rail([-MX, MY, MZB], [MX, MY, MZB]); rail([MX, MY, MZB], [MX, MY, MZ0]); rail([MX, MY, MZ0], [W, MY, MZ0]);
+    // franja de palha embaixo da borda do mezanino (cara de quiosque) e colares de flor pendurados no guarda-corpo
+    for (const [a, b] of [[[-MX, MZ0], [-MX, MZB]], [[-MX, MZB], [MX, MZB]], [[MX, MZB], [MX, MZ0]]]) {
+      const L = Math.hypot(b[0] - a[0], b[1] - a[1]), n = Math.round(L / 0.12);
+      for (let i = 0; i < n; i++) { const u = i / n, x = a[0] + (b[0] - a[0]) * u, z = a[1] + (b[1] - a[1]) * u; st.box(x - 0.05, MY - 0.55 - (i % 3) * 0.06, z - 0.05, x + 0.05, MY - 0.25, z + 0.05, i % 2 ? straw : V.mul(straw, 0.85)); }
+      for (let k = 0; k < L / 1.6; k++) for (let j = 0; j <= 8; j++) {
+        const u = (k * 1.6 + j * 0.15) / L; if (u > 1) break;
+        const x = a[0] + (b[0] - a[0]) * u, z = a[1] + (b[1] - a[1]) * u, sag = Math.sin((j / 8) * Math.PI) * 0.28;
+        st.ball([x, MY + 0.98 - sag, z], 0.045, [pink, yel, hex(0xffffff), hex(0xff8a1f)][(j + k) % 4], 0, 5, 3);
+      }
+    }
+    // escada pro mezanino (parede esquerda, sobe da entrada até a ponta do mezanino)
+    {
+      const n = 13, z0 = 0.95, z1 = MZ0, x0 = -W, x1 = -W + 1.15;
+      for (let i = 0; i < n; i++) { const za = z0 + ((z1 - z0) * i) / n, zb = z0 + ((z1 - z0) * (i + 1)) / n, y = (MY * (i + 1)) / n; st.box(x0, 0, za, x1, y, zb, i % 2 ? wood : woodD, { top: hex(0x7a5232) }); }
+      for (let i = 0; i <= 6; i++) { const u = i / 6, z = z0 + (z1 - z0) * u, y = MY * u; st.tube([x1, y, z], [x1, y + 0.95, z], 0.022, 0.022, 4, bamboo); }
+      st.tube([x1, 0.95, z0], [x1, MY + 0.95, z1], 0.035, 0.035, 5, bambooD);
+      S(x0, z0, x1 + 0.05, z1);
+    }
+    // ---- pista com piso de luz (as placas acendem pelo jogo) ----
+    const PX0 = -3, PZ0 = 5.0, TS = 0.75, NX = 8, NZ = 7;
+    st.box(PX0 - 0.12, 0, PZ0 - 0.12, PX0 + NX * TS + 0.12, 0.03, PZ0 + NZ * TS + 0.12, hex(0xb8bcc4), { m: 1 });
+    const tileG = new Mesh(); tileG.box(-TS / 2 + 0.03, 0.03, -TS / 2 + 0.03, TS / 2 - 0.03, 0.05, TS / 2 - 0.03, hex(0xffffff), { m: 2 });
+    // ---- palco e cabine do DJ ----
+    st.box(-2.8, 0, 11.2, 2.8, 0.4, 13.5, blk, { top: hex(0x24202e) });
+    st.box(-2.8, 0.04, 11.17, 2.8, 0.1, 11.2, pink, { m: 2 });
+    S(-2.8, 11.2, 2.8, 13.5);
+    st.box(-1.5, 0.4, 11.55, 1.5, 1.32, 12.05, hex(0x1c1a24), { top: hex(0x2a2632) });
+    dec(fl, [0, 0.9, 11.54], [-1, 0, 0], [0, 1, 0], 2.6, 0.65, T.fDJ);
+    for (const sx of [-0.78, 0.78]) {
+      st.tf = M.T(sx, 1.32, 11.8);
+      st.box(-0.3, 0, -0.22, 0.3, 0.08, 0.22, hex(0x2a2a32)); st.tube([0, 0.08, 0], [0, 0.095, 0], 0.17, 0.17, 18, hex(0x101014));
+      st.tube([0, 0.095, 0], [0, 0.1, 0], 0.06, 0.06, 10, sx < 0 ? pink : cyan); st.box(0.2, 0.08, 0.1, 0.26, 0.12, 0.16, C.metal, { m: 1 });
+      st.tf = null;
+    }
+    st.box(-0.24, 1.32, 11.62, 0.24, 1.42, 11.98, hex(0x2a2a32));
+    for (let k = 0; k < 4; k++) st.box(-0.18 + k * 0.1, 1.42, 11.7, -0.14 + k * 0.1, 1.45, 11.9, [pink, cyan, yel, hex(0x7dff9a)][k], { m: 2 });
+    for (const sx of [-1, 1]) {
+      const x = sx * 2.35;
+      st.box(x - 0.38, 0.4, 11.3, x + 0.38, 2.3, 12.0, blk);
+      for (const [y, r] of [[0.85, 0.26], [1.55, 0.26], [2.05, 0.1]]) { st.tube([x, y, 11.29], [x, y, 11.27], r, r, 14, hex(0x2a2832)); st.tube([x, y, 11.27], [x, y, 11.26], r * 0.35, r * 0.35, 10, hex(0x4a4652), 1); }
+    }
+    // neon da casa no fundo (embaixo do mezanino de trás) e coqueiros de neon dos lados
+    dec(fl, [0, 2.3, D - 0.04], [-1, 0, 0], [0, 1, 0], 4.6, 0.86, T.fNeon, [1.6, 1.6, 1.6]);
+    const neonPalm = (m, x, y, z, nx, s = 1) => {
+      // tronco curvo verde-água e folhas cor-de-rosa (tubos acesos)
+      let p = [x, y, z];
+      for (let i = 0; i < 6; i++) { const q = [x + Math.sin(i * 0.25) * 0.12 * s, y + (i + 1) * 0.28 * s, z]; m.tube(p, q, 0.03, 0.03, 5, hex(0x5fe0c0), 2, { cap: false }); p = q; }
+      for (let k = 0; k < 6; k++) { const tip = [p[0] + (k - 2.5) * 0.24 * s, p[1] + Math.sin(k * 1.1) * 0.12 - 0.15 * s, p[2] - 0.04], mid = [(p[0] + tip[0]) / 2, p[1] + 0.12 * s, p[2] - 0.04]; m.tube(p, mid, 0.025, 0.025, 4, pink, 2); m.tube(mid, tip, 0.025, 0.02, 4, pink, 2); }
+      void nx;
+    };
+    neonPalm(thin, 3.6, 0.45, D - 0.08, 0, 1.0); neonPalm(thin, -3.6, 0.45, D - 0.08, 0, 1.0);
+    // ---- bar do Kiko (embaixo do mezanino da direita) ----
+    {
+      const x0 = 4.6, x1 = 5.15, z0 = 6.7, z1 = 12.0;
+      st.box(x0, 0, z0, x1, 1.08, z1, bamboo, { top: hex(0x6a4422) });
+      for (let z = z0 + 0.1; z < z1; z += 0.16) st.tube([x0 - 0.01, 0, z], [x0 - 0.01, 1.0, z], 0.045, 0.045, 5, ((z * 7) | 0) % 2 ? bamboo : bambooD, 0, { cap: false });
+      S(x0, z0, x1, z1);
+      st.box(W - 0.45, 0, z0, W, 0.9, z1, woodD, { top: wood });
+      for (let k = 0; k < 2; k++) st.box(W - 0.4, 1.4 + k * 0.5, z0, W, 1.44 + k * 0.5, z1, wood);
+      const bc = [0x2fae6a, 0xff8a1f, 0xffd23f, 0x3fd0ff, 0xff4fa3, 0x8a5a2a, 0xe0302b, 0xf4f4f4];
+      for (let k = 0; k < 2; k++) for (let i = 0; i < 24; i++) { const z = z0 + 0.15 + i * 0.22, y = 1.44 + k * 0.5, c = hex(bc[(i * 3 + k) % bc.length]); st.tube([W - 0.22, y, z], [W - 0.22, y + 0.22, z], 0.04, 0.04, 6, c, 3); st.tube([W - 0.22, y + 0.22, z], [W - 0.22, y + 0.3, z], 0.04, 0.014, 6, c, 3); }
+      // coco com canudinho, copos e abacaxi no balcão
+      for (const [z, k] of [[7.4, 0], [8.6, 1], [10.1, 2], [11.3, 0]]) {
+        if (k === 0) { st.ball([4.88, 1.17, z], 0.09, hex(0x5a8a2a), 0, 7, 5); st.tube([4.88, 1.22, z], [4.82, 1.36, z + 0.03], 0.008, 0.008, 3, pink); }
+        else if (k === 1) for (let j = 0; j < 3; j++) st.tube([4.85, 1.08, z + j * 0.12], [4.85, 1.22, z + j * 0.12], 0.035, 0.04, 7, [yel, pink, hex(0xff8a1f)][j], 3);
+        else { st.ball([4.88, 1.2, z], 0.1, hex(0xf0b030), 0, 7, 5, { sy: 1.3 }); for (let j = 0; j < 5; j++) leafQ(st, [4.88, 1.3, z], [4.88 + Math.cos(j * 1.25) * 0.08, 1.48, z + Math.sin(j * 1.25) * 0.08], 0.03, leaf); }
+      }
+      dec(fl, [W - 0.04, 2.45, 9.35], [0, 0, 1], [0, 1, 0], 1.6, 0.8, T.fBar);
+      for (const z of [7.2, 9.3, 11.4]) pendant(st, 5.0, 2.35, z, [pink, yel, cyan][(z | 0) % 3]);
+    }
+    // ---- mesa de salgadinhos e refri (embaixo do mezanino da esquerda) ----
+    {
+      const x0 = -W, x1 = -5.55, z0 = 7.0, z1 = 10.2;
+      st.box(x0, 0, z0, x1, 0.82, z1, hex(0xff4fa3), { top: hex(0xfff0f6) });
+      for (let z = z0; z < z1; z += 0.3) st.box(x1 - 0.005, 0.5, z, x1 + 0.005, 0.82, z + 0.15, hex(0xffffff));
+      S(x0, z0, x1, z1);
+      for (const [z, c] of [[7.35, 0xd88a3a], [8.0, 0xe8b840], [8.7, 0xc8702a], [9.4, 0xe8c860]]) {
+        st.tube([-6.0, 0.82, z], [-6.0, 0.9, z], 0.14, 0.2, 10, hex(0xf4f4f4));
+        for (let j = 0; j < 6; j++) st.ball([-6.0 + Math.cos(j * 1.05) * 0.09, 0.93, z + Math.sin(j * 1.05) * 0.09], 0.045, hex(c), 0, 5, 3);
+      }
+      for (let j = 0; j < 4; j++) { const z = 9.75 + (j % 2) * 0.16, x = -6.2 + ((j / 2) | 0) * 0.16, c = hex([0x3a1a10, 0x2fae6a, 0xff8a1f, 0x3a1a10][j]); st.tube([x, 0.82, z], [x, 1.1, z], 0.045, 0.045, 7, c, 3); st.tube([x, 1.1, z], [x, 1.2, z], 0.045, 0.018, 7, c, 3); }
+      for (let j = 0; j < 4; j++) st.tube([-5.75, 0.82 + j * 0.03, 7.0 + 0.1], [-5.75, 0.85 + j * 0.03, 7.1], 0.04, 0.045, 7, hex(0xf4f4f4));
+      dec(fl, [-W + 0.04, 1.4, 8.6], [0, 0, -1], [0, 1, 0], 2.0, 0.25, T.fSnack);
+    }
+    // ---- entrada: tochas tiki, plantas grandes, mesinhas altas e boas-vindas ----
+    for (const sx of [-1, 1]) {
+      const x = sx * 2.1, z = 0.9;
+      st.tube([x, 0, z], [x, 1.55, z], 0.045, 0.04, 6, bamboo); st.tube([x, 1.5, z], [x, 1.72, z], 0.08, 0.11, 8, woodD);
+      thin.ball([x, 1.85, z], 0.08, hex(0xff9a2a), 2, 7, 5, { sy: 1.7 }); thin.ball([x, 1.8, z], 0.05, hex(0xffe14d), 2, 6, 4, { sy: 1.4 });
+      S(x - 0.12, z - 0.12, x + 0.12, z + 0.12);
+    }
+    const plant = (x, z, s = 1) => {
+      st.tube([x, 0, z], [x, 0.55 * s, z], 0.22 * s, 0.3 * s, 10, hex(0xb8603a)); st.tube([x, 0.5 * s, z], [x, 0.56 * s, z], 0.31 * s, 0.31 * s, 10, hex(0x9a4a2a));
+      for (let k = 0; k < 9; k++) { const a = k * 0.7, r = (0.5 + (k % 3) * 0.18) * s, h = (1.1 + (k % 4) * 0.25) * s; leafQ(st, [x, 0.55 * s, z], [x + Math.cos(a) * r, h, z + Math.sin(a) * r], 0.16 * s, k % 2 ? leaf : leafD); }
+      S(x - 0.32 * s, z - 0.32 * s, x + 0.32 * s, z + 0.32 * s);
+    };
+    plant(-5.4, 0.7); plant(5.6, 0.7); plant(-3.3, 12.9, 0.9); plant(3.3, 12.9, 0.9); plant(5.85, 13.2, 1.1);
+    const tables = [[-2.9, 3.0], [2.9, 3.0]];
+    for (const [x, z] of tables) { st.tube([x, 0, z], [x, 1.05, z], 0.035, 0.035, 6, C.metal, 1); st.tube([x, 0, z], [x, 0.03, z], 0.22, 0.22, 10, C.metal, 1); st.tube([x, 1.05, z], [x, 1.08, z], 0.32, 0.32, 14, bamboo); S(x - 0.34, z - 0.34, x + 0.34, z + 0.34); }
+    dec(fl, [0, 2.65, 0.04], [1, 0, 0], [0, 1, 0], 2.2, 0.28, T.fWelcome);
+    // ---- pranchas de surfe nas paredes (lá em cima, acima do mezanino) ----
+    for (const sx of [-1, 1]) for (const [k, z] of [[0, 7.4], [1, 9.6], [2, 11.8]]) {
+      const x = sx * (W - 0.1), c = [hex(0xff8a1f), cyan, pink][(k + (sx > 0 ? 1 : 0)) % 3];
+      st.ball([x, 4.6, z], 0.5, c, 0, 10, 6, { sx: 0.06, sy: 2.4, sz: 0.55 });
+      st.box(x - 0.035, 3.55, z - 0.04, x + 0.035, 5.65, z + 0.04, hex(0xffffff));
+    }
+    // ---- mezanino: mesinhas altas com banquinhos ----
+    for (const [x, z] of [[-5.5, 8.0], [-5.5, 11.4], [5.5, 8.0], [5.5, 11.4], [-2.6, 14.3], [2.6, 14.3]]) {
+      st.tube([x, MY, z], [x, MY + 1.0, z], 0.03, 0.03, 6, C.metal, 1); st.tube([x, MY + 1.0, z], [x, MY + 1.03, z], 0.28, 0.28, 12, bamboo);
+      for (const d of [-0.45, 0.45]) { st.tube([x + (Math.abs(x) > 5 ? 0 : d), MY, z + (Math.abs(x) > 5 ? d : 0)], [x + (Math.abs(x) > 5 ? 0 : d), MY + 0.66, z + (Math.abs(x) > 5 ? d : 0)], 0.025, 0.025, 4, C.metal, 1); st.tube([x + (Math.abs(x) > 5 ? 0 : d), MY + 0.66, z + (Math.abs(x) > 5 ? d : 0)], [x + (Math.abs(x) > 5 ? 0 : d), MY + 0.7, z + (Math.abs(x) > 5 ? d : 0)], 0.16, 0.16, 10, pink); }
+    }
+    // ---- teto: folhas de palmeira penduradas e o cordão de luzinhas em zigue-zague ----
+    for (let k = 0; k < 14; k++) {
+      const x = -MX + 0.4 + (k % 7) * 1.25, z = k < 7 ? 5.2 : 11.0, a = k * 1.7;
+      for (let j = 0; j < 4; j++) { const b = a + j * 1.57; leafQ(thin, [x, H, z], [x + Math.cos(b) * 0.9, H - 0.75 - (j % 2) * 0.3, z + Math.sin(b) * 0.9], 0.22, j % 2 ? leaf : leafD); }
+    }
+    const bulbs = [];
+    for (let k = 0; k < 6; k++) {
+      const z = 4.2 + k * 1.75, a = [-MX, H - 0.5, z], b = [MX, H - 0.5, z + 0.9];
+      for (let j = 0; j <= 16; j++) { const u = j / 16, p = V.lerp(a, b, u); p[1] -= Math.sin(u * Math.PI) * 0.6; if (j) thin.tube(V.lerp(a, b, (j - 1) / 16).map((v, i) => (i === 1 ? H - 0.5 - Math.sin(((j - 1) / 16) * Math.PI) * 0.6 : v)), p, 0.006, 0.006, 3, blk, 0, { cap: false }); thin.ball(p, 0.04, [pink, yel, cyan, hex(0x7dff9a), purple][(j + k) % 5], 2, 5, 3); bulbs.push(p); }
+    }
+    const up = (m, o) => Rn.upload(m, o);
+    const tileUp = up(tileG, { outline: false });
+    const floor = [];
+    for (let i = 0; i < NX; i++) for (let j = 0; j < NZ; j++) floor.push({ g: tileUp, mo: M.T(PX0 + (i + 0.5) * TS, 0, PZ0 + (j + 0.5) * TS), tint: [1, 1, 1], i, j });
+    const lights = [[-2, 5.4, 6.2], [2, 5.4, 6.2], [-2, 5.4, 9.8], [2, 5.4, 9.8], [0, 3.0, 12.2], [5.2, 2.3, 7.6], [5.2, 2.3, 11.0], [-5.6, 2.3, 8.6], [0, 2.4, 1.6], [-2.1, 1.9, 0.9], [2.1, 1.9, 0.9], [-5.5, 5.0, 10.0], [5.5, 5.0, 10.0], [0, 5.0, 14.3], [0, 2.3, 14.6]];
+    const P2 = (x, z) => ({ x, z });
+    const spots = [
+      { id: "door", x: 0, z: 0.55, r: 0.62, act: "door", label: "Sair da festa" },
+      { id: "snack", x: -5.05, z: 8.4, r: 0.6, act: "snack", label: "Pegar um salgadinho", face: [-6.2, 8.4] },
+      { id: "bar", x: 4.1, z: 9.3, r: 0.6, act: "drink", label: "Pedir um refri no bar", face: [5.2, 9.3] },
+      { id: "dance", x: 0, z: 7.6, r: 1.3, act: "dance", label: "Dançar" },
+      { id: "dj", x: 0, z: 10.75, r: 0.55, act: "talk", who: "lucas", label: "Falar com o DJ Luskinha", face: [0, 12.5] },
+    ];
+    void P2;
+    return {
+      id: "festa", name: "ALOHA CLUB", W, D, H, MY, base: [{ g: up(fl, { outline: false }), tex }, { g: up(st), tex }, { g: up(thin, { outline: false }), tex }],
+      dyn: { floor }, decks: [], solids, spots, lights, tables, ball: [0, 7.6], floorRect: [PX0, PZ0, NX, NZ, TS],
+      npcs: [],
+      spawn: [0, 1.5, 0],
+      scene: { sun: V.norm([0.18, 0.95, 0.22]), top: hex(0x14102a), mid: hex(0x14102a), hz: hex(0x14102a), fog: hex(0x14102a), fogd: 0.012, shade: hex(0x3a2a6a), ink: hex(0x0a0814), ink_w: 1.5, amb: [0.62, 0.52, 0.8], night: 0.75, wet: 0, winc: [9, 9, 9] },
+    };
+  }
+  return { T, makeTex, buildDiscos, buildLan, buildSorveteria, buildFesta, coverURL, labelURL, drawCover, palOf, LINES, phoneMesh };
 })();
 </script>
 <script>// Jogabilidade: física arcade de skate (ollie carregado, vert com 180 automático, flips e
@@ -7152,13 +7580,16 @@ const STREET = (() => {
     const PLACES = [
       { id: "lan", at: [-30, 42.4], who: "Dudu da Lan", line: "E aí, mano! Bora jogar um pouco? Pra vocês a ficha é por minha conta... só não conta pro meu chefe, kkkk.", title: "Entrar na Lan House" },
       { id: "sorveteria", at: [15.5, 42.4], who: "Neide da Sorveteria", line: "Entra que tá fresquinho aqui dentro! Hoje o flocos tá caprichado.", title: "Entrar na Sorveteria Pinguim" },
+      { id: "festa", at: [27, 42.4], who: "Lucas (DJ Luskinha)", line: "Chega mais! A festa tá começando... hoje o som vai ser pesado, só pedrada dos anos 90!", title: "Entrar no Aloha Club" },
       { id: "discos", at: [-20.5, 42.4], who: "Seu Vavá dos Discos", line: "Chegou coisa nova! Pode escutar à vontade na cabine, só não risca meus vinis, hein.", title: "Entrar na Vavá Discos" },
     ];
     let poffer = null;
     function placeFrame() {
       const iceOn = SA && SA.def.kind === "ice";
       if ((SA && !iceOn) || soffer || PH || REC || CUT || offer) { if (poffer && (offer || soffer)) poffer = null; return; }
-      const p = PLACES.find((q) => (!iceOn || q.id === "sorveteria") && Math.hypot(S.x - q.at[0], S.z - q.at[1]) < 2.4) || null;
+      const manu = /^manu/.test(lookKey() || "");
+      const p = PLACES.find((q) => (!iceOn || q.id === "sorveteria") && !(manu && q.id === "festa") && Math.hypot(S.x - q.at[0], S.z - q.at[1]) < 2.4) || null;
+      if (manu && Math.hypot(S.x - 27, S.z - 42.4) < 2.4 && S.speed < 4) { if (!placeFrame.mn) { placeFrame.mn = 1; say("A MANU PREFERE FICAR EM CASA (VIDEOGAME E SORVETE)", 2.6, true); } } else placeFrame.mn = 0;
       if (p && S.speed < 4 && poffer !== p) { poffer = p; ui.mission && ui.mission("offer", { who: p.who, line: p.line, title: p.title, place: 1 }); }
       if (!p && poffer) { poffer = null; ui.mission && ui.mission("hide"); if (MA) ui.mission && ui.mission("start", { title: MA.m.title }); }
     }
@@ -7187,7 +7618,8 @@ const STREET = (() => {
         inCv = INSIDE.makeTex(shopAlbums(), (cv) => { inTex = Rn.texture(cv, inTex); });
         inTex = Rn.texture(inCv, inTex);
       }
-      const R = id === "lan" ? INSIDE.buildLan(Rn, inTex) : id === "sorveteria" ? INSIDE.buildSorveteria(Rn, inTex) : INSIDE.buildDiscos(shopAlbums(), Rn, inTex);
+      const R = id === "lan" ? INSIDE.buildLan(Rn, inTex) : id === "sorveteria" ? INSIDE.buildSorveteria(Rn, inTex) : id === "festa" ? INSIDE.buildFesta(Rn, inTex) : INSIDE.buildDiscos(shopAlbums(), Rn, inTex);
+      if (id === "festa") R.npcs = FESTA_CAST.map((c) => Object.assign({}, c));
       R.npcR = R.npcs.map((d, i) => Object.assign({ rig: ART.makeRig(Rn, ART.LOOKS[d.look] || ART.LOOKS.npc0), ph: i * 1.9 }, d));
       R.scene.lights = new Float32Array(R.lights.flat());
       R.notes = Array.from({ length: 8 }, (_, i) => ({ g: noteG, mo: M.I(), hidden: true, t: i * 0.45, sp: i % 2 }));
@@ -7207,6 +7639,7 @@ const STREET = (() => {
       const ck = lookKey() + "_chinelo";
       if ((id === "discos" || id === "sorveteria") && look.skates && ART.LOOKS[ck]) { IN.skates = { prev: lookKey(), key: ck }; setLook(ck); IN.change = 0; }
       ui.inside && ui.inside("enter", { id, name: R.name, skates: !!IN.skates });
+      if (id === "festa") festaEnter(R);
       return true;
     }
     function exitPlace() {
@@ -7229,7 +7662,7 @@ const STREET = (() => {
       if (x < -RW || x > RW || z < 0.28 || z > RD) return true;
       const r = 0.27;
       for (const [x0, z0, x1, z1] of IN.R.solids) if (x > x0 - r && x < x1 + r && z > z0 - r && z < z1 + r) return true;
-      for (const n of IN.R.npcR) if (!n.off && Math.hypot(x - n.x, z - n.z) < 0.5) return true;
+      for (const n of IN.R.npcR) if (!n.off && !n.hide && !((n.y || 0) > 1) && Math.hypot(x - n.x, z - n.z) < 0.5) return true;
       // portas das cabines: fechada tranca a frente; aberta fica pra fora, do lado da dobradiça
       for (const b of IN.R.booths || []) {
         const d = b.door, Q = d.a < 0.6 ? [b.bx - b.w, b.z0 - 0.06, b.bx + b.w, b.z0 + 0.06] : [b.bx - b.w - 0.25, b.z0 - 1.1, b.bx - b.w + 0.02, b.z0 - 0.02];
@@ -7249,9 +7682,11 @@ const STREET = (() => {
       return true;
     }
     function inInteract() {
+      if (IN && IN.cut) { cutEnd(); return true; }
       if (!IN || IN.hold || IN.sit || !S.running) return false;
       const s = IN.spot;
       if (!s) return false;
+      if (IN.R.id === "festa" && s.act !== "door") { if (s.face) IN.yawT = Math.atan2(-(s.face[1] - IN.z), s.face[0] - IN.x); return festaAct(s); }
       if (s.act === "door") {
         if (IN.carry) { IN.carry = null; vavaSay("Ô, menino! Disco só sai daqui pago, hein. Deixa que eu guardo."); return true; }
         ui.inside && ui.inside("leave");
@@ -7381,7 +7816,7 @@ const STREET = (() => {
           ...Array.from({ length: 8 }, (_, i) => ({ g: spotG[i % 6], mo: M.I(), hidden: true })), ...Array.from({ length: 28 }, () => ({ g: sparkG, mo: M.I(), hidden: true }))];
         R.ambBase = R.scene.amb.slice();
       }
-      const [ball, chain] = D.disco, BX = 0, BZ = 6.4, H = R.H || 3.4, hide = k <= 0.001;
+      const [ball, chain] = D.disco, [BX, BZ] = R.ball || [0, 6.4], H = R.H || 3.4, hide = k <= 0.001;
       const by = H + 0.35 - e * 0.95;
       ball.hidden = chain.hidden = hide;
       ball.mo = M.mul(M.T(BX, by, BZ), M.RY(t * 1.1));
@@ -7606,10 +8041,281 @@ const STREET = (() => {
       Dy.headP.hidden = !IN.phones || !rig.F;
       if (IN.phones && rig.F) { Dy.headP.g = phoneG(); Dy.headP.mo = M.mul(rig.F[CHARS.BONE.head], M.S(look.headScale || 1, look.headScale || 1, look.headScale || 1)); }
     }
+    // ================= festa no Aloha Club =================
+    // elenco: a turma (quem você não está jogando aparece como NPC), Julie, DJ Luskinha, Mila, Diogo, os primos
+    // Cabeça e Breno, Ana Lívia e a galera dançando (alguns lá em cima no mezanino)
+    const FESTA_CAST = [
+      { look: "lucas", who: "lucas", x: 0, z: 12.55, y: 0.4, yaw: Math.PI / 2, idle: "dj" },
+      { look: "julie", who: "julie", x: 3.25, z: 8.25, yaw: Math.PI * 0.62 },
+      { look: "kf", who: "kf", x: 3.0, z: 9.2, yaw: -Math.PI * 0.4 },
+      { look: "kaua", who: "kaua", x: -4.95, z: 8.9, yaw: Math.PI, idle: "shy" },
+      { look: "mila", who: "mila", x: -1.9, z: 9.75, yaw: Math.PI * 0.55, dance: 3 },
+      { look: "gabi", who: "gabi", x: 2.2, z: 3.0, yaw: 0.1 },
+      { look: "diogo", who: "diogo", x: 3.4, z: 3.65, yaw: Math.PI * 0.85 },
+      { look: "kauane", who: "kauane", x: -2.2, z: 3.05, yaw: Math.PI },
+      { look: "cabeca", who: "cabeca", x: -3.45, z: 3.7, yaw: -0.5 },
+      { look: "breno", who: "breno", x: -3.55, z: 2.4, yaw: 0.5 },
+      { look: "analivia", who: "analivia", x: -2.45, z: 2.3, yaw: 2.6 },
+      { look: "fx0", who: "fx", x: -2.2, z: 5.9, yaw: 0.4, dance: 0 },
+      { look: "fx1", who: "fx", x: -0.6, z: 5.6, yaw: -1.2, dance: 1 },
+      { look: "fx2", who: "fx", x: 1.0, z: 6.1, yaw: 2.2, dance: 3 },
+      { look: "fx3", who: "fx", x: 2.3, z: 5.7, yaw: 1.4, dance: 2 },
+      { look: "fx4", who: "fx", x: -1.4, z: 7.3, yaw: -0.6, dance: 5 },
+      { look: "fx5", who: "fx", x: 1.6, z: 7.6, yaw: 2.8, dance: 6 },
+      { look: "fx6", who: "fx", x: -0.2, z: 7.1, yaw: 0.9, dance: 4 },
+      { look: "fx7", who: "fx", x: 0.3, z: 8.9, yaw: -2.0, dance: 0 },
+      { look: "fx8", who: "fx", x: 2.2, z: 6.6, yaw: 2.1, dance: 3 },
+      { look: "fx9", who: "fx", x: 0.9, z: 10.0, yaw: 1.6, dance: 1 },
+      { look: "fx10", who: "fx", x: -4.7, z: 9.0, y: 3.2, yaw: 0, idle: "rail" },
+      { look: "fx11", who: "fx", x: 1.2, z: 13.85, y: 3.2, yaw: Math.PI / 2, idle: "rail" },
+    ];
+    Object.assign(WHO, { lucas: "DJ Luskinha", mila: "Mila", diogo: "Diogo", cabeca: "Cabeça", breno: "Breno", analivia: "Ana Lívia", kaua: "Kauã", gabi: "Gabi", kauane: "Kauane", fx: "" });
+    const FLINES = {
+      lucas: ["Fala, parceiro! Tá curtindo o set?", "Hoje eu trouxe só pedrada dos anos 90. Segura essa!", "Quer outra? Aperta N que eu solto a próxima.", "Daqui a pouco tem surpresa... fica ligado."],
+      julie: ["Esse DJ é muito bom, né?", "Você dança, garoto tubarão? Hehe.", "Que bom que você veio."],
+      kf: ["Olha a pista, mano! Tá lotada.", "O Lucas é brabo demais, falei pra você.", "Bora dançar, sem vergonha!"],
+      kaua: ["Essa coxinha tá muito boa...", "Tá cheio, né? Nunca vi tanta gente junta.", "Eu tô de boa aqui, sério."],
+      mila: ["Essa música é muito boa!", "Gostei do seu estilo.", "O Lucas manda bem demais."],
+      diogo: ["Fala aí! Curtindo a festa?", "Esse som tá demais, mas falta um reggaezinho, hein.", "Já pegou água de coco? Tá geladinha."],
+      cabeca: ["E aí, firmeza?", "Essa festa tá pegando fogo!", "Ó o meu tênis novo, nem pisa."],
+      breno: ["Fala, tudo certo?", "Ambiente maneiro, né?", "O Kiko do bar faz um coquetel de frutas brabo."],
+      analivia: ["Ai, amei a decoração!", "Você viu a Kauane? Ela tá linda hoje.", "Esse colar de flor combina com tudo, né?"],
+      gabi: ["Que festa massa!", "Já foi no bar? Tem água de coco.", "Olha a decoração... parece praia."],
+      kauane: ["Hmpf. Até que tá legal.", "Se alguém pisar no meu tênis, briga.", "O Lucas manda bem, vai."],
+      fx: ["Essa música é muito boa!", "Já pegou um colar de flor? Deram na porta!", "O DJ tá on fire hoje!", "Bora pra pista!", "Aloha! Hahaha."],
+    };
+    // passinhos (no tempo da música, ~125 bpm): 0 dois-pra-lá, 1 sobe-e-desce com a mão pra cima, 2 corridinha,
+    // 3 balanço de quadril com mão no cabelo, 4 dedo pro alto (discoteca), 5 robô, 6 pulinho eurodance, 7 só balança a cabeça
+    function DANCE(k, t, ph) {
+      const b = (t + ph * 0.13) * Math.PI * 2 * 2.08, s = Math.sin(b), c = Math.cos(b), h = Math.sin(b / 2), up = Math.abs(s);
+      switch (k % 8) {
+        case 0: return POSE({ py: 0.92 + up * 0.03, twist: h * 0.25, hy: h * 0.2, hp: 0.04, fzF: 0.12 + Math.max(0, h) * 0.12, fzB: -0.12 + Math.min(0, h) * 0.12, hF: [0.25, 1.05 + up * 0.08, 0.22], hB: [0.25, 1.05 + up * 0.08, -0.22], lf: Math.max(0, s) * 0.05, lb: Math.max(0, -s) * 0.05 });
+        case 1: return POSE({ py: 0.9 + up * 0.05, lean: -0.04, hp: -0.12, twist: h * 0.12, hF: [0.12, 1.75 + up * 0.15, 0.22], hB: [0.12, 1.75 + up * 0.15, -0.22] });
+        case 2: return POSE({ py: 0.92 + up * 0.03, lean: 0.12, fxF: s * 0.18, fxB: -s * 0.18, lf: Math.max(0, c) * 0.12, lb: Math.max(0, -c) * 0.12, hF: [-s * 0.2 + 0.1, 1.1, 0.25], hB: [s * 0.2 + 0.1, 1.1, -0.25] });
+        case 3: return POSE({ py: 0.92 + up * 0.02, twist: h * 0.35, roll: h * 0.08, hy: -h * 0.3, hp: 0.0, hF: [0.05, 1.72, 0.12], hB: [0.05, 1.0 + up * 0.1, -0.28] });
+        case 4: { const hi = h > -0.2; return POSE({ py: 0.92 + up * 0.035, lean: 0.06, twist: h * 0.28, hy: h * 0.35, hp: -0.04, hF: hi ? [0.2, 1.78, 0.34] : [0.06, 0.98, 0.3], hB: [0.04, 0.98, -0.3], lf: Math.max(0, s) * 0.05, lb: Math.max(0, -s) * 0.05 }); }
+        case 5: { const st = Math.round(h * 2) / 2; return POSE({ py: 0.93, lean: 0.02, twist: st * 0.3, hy: -st * 0.4, hp: 0.05, hF: [0.32, 1.25 + st * 0.15, 0.3], hB: [0.32, 1.25 - st * 0.15, -0.3] }); }
+        case 6: { const j = Math.max(0, s); return POSE({ py: 0.9 + j * 0.12, lean: -0.02, hp: -0.15, hF: [0.1, 1.85, 0.3], hB: [0.1, 1.85, -0.3], lf: j * 0.12, lb: j * 0.12 }); }
+        default: return POSE({ py: 0.94, lean: 0.04, hp: 0.06 + up * 0.08, hy: h * 0.1, hF: [0.28, 1.2, 0.2], hB: [0.02, 0.95, -0.27] });
+      }
+    }
+    const SLOW_A = (t, gap) => POSE({ py: 0.94, lean: 0.05, twist: Math.sin(t * 1.3) * 0.08, hp: 0.12, hF: [0.25 + gap * 0.2, 1.08, 0.17], hB: [0.25 + gap * 0.2, 1.08, -0.17], fzF: 0.1, fzB: -0.1, fxF: Math.sin(t * 1.3) * 0.05, fxB: -Math.sin(t * 1.3) * 0.05 });
+    const SLOW_B = (t, gap) => POSE({ py: 0.94, lean: 0.05, twist: -Math.sin(t * 1.3) * 0.08, hp: -0.06, hF: [0.24 + gap * 0.2, 1.45, 0.17], hB: [0.24 + gap * 0.2, 1.45, -0.17], fzF: 0.1, fzB: -0.1, fxF: -Math.sin(t * 1.3) * 0.05, fxB: Math.sin(t * 1.3) * 0.05 });
+    const GIGGLE = (t) => POSE({ lean: 0.08 + Math.abs(Math.sin(t * 9)) * 0.03, twist: 0.15, hp: 0.14, hy: 0.25, hF: [0.2, 1.52, 0.05], hB: [0.18, 1.47, -0.07] });
+    const SHY = (t) => POSE({ lean: 0.14, twist: 0.3, hy: -0.4, hp: 0.25, hF: [0.24, 1.66, 0.02], hB: [0.02, 0.98, -0.32] });
+    const yawTo = (x, z, tx, tz) => Math.atan2(-(tz - z), tx - x);
+    let FS = null;
+    const pkey = () => (lookKey() || "kf").replace(/_.*/, "");
+    function festaEnter(R) {
+      const pk = pkey();
+      FS = { pk, t: 0, main: 0, step: 0, slow: 0, slowAt: 0, slowK: 0, cup: null, wait: 0, call: 0 };
+      for (const n of R.npcR) {
+        if (!n.home) n.home = { x: n.x, z: n.z, yaw: n.yaw, dance: n.dance, idle: n.idle };
+        Object.assign(n, n.home); n.ov = null; n.hide = n.who === pk; n.off = n.hide;
+      }
+      IN.disco = { on: true }; IN.ov = null; IN.cut = null; IN.cutCam = null; IN.dancing = null; IN.cup = null; IN.snack = 0;
+      ui.festa && ui.festa("on", { i: 0 });
+      const hint = { kf: "A Julie tá perto do bar... vai lá dar um oi.", kaua: "Que tanto de gente... a mesa de salgadinho parece um bom esconderijo.", gabi: "Aquele cara de camiseta de reggae tá olhando sua pulseira...", kauane: "Ih... o Cabeça e o Breno tão ali na mesinha da esquerda.", julie: "O K.F. tá ali perto do bar." }[pk] || "Bora curtir a festa!";
+      IN.sayQ = [{ t: 1.2, who: "", line: hint }];
+    }
+    const fNpc = (who) => IN.R.npcR.find((n) => n.who === who || n.look === who);
+    // posiciona alguém (NPC ou você, se for o seu personagem) numa cena: x, z, yaw e a pose da hora
+    function place2(who, x, z, yaw, pose) {
+      if (who === FS.pk) { IN.ov = { x, z, yaw, pose }; IN.x = x; IN.z = z; IN.yaw = yaw; return; }
+      const n = fNpc(who); if (n) n.ov = { x, z, yaw, pose };
+    }
+    function setHome(who, x, z, yaw, extra) {
+      if (who === FS.pk) { IN.x = x; IN.z = z; IN.yaw = yaw; return; }
+      const n = fNpc(who); if (!n) return;
+      Object.assign(n, { x, z, yaw, dance: null, idle: null }, extra || {});
+    }
+    function cutStart(shots, done) { IN.cut = { shots, t: 0, i: -1, done }; IN.dancing = null; IN.talk = null; ui.cut && ui.cut("start"); ui.inside && ui.inside("spot", null); }
+    function cutEnd() {
+      const C = IN.cut; if (!C) return;
+      IN.cut = null; IN.cutCam = null; IN.ov = null; IN.cam.fov = 1.08;
+      for (const n of IN.R.npcR) n.ov = null;
+      ui.cut && ui.cut("end");
+      C.done && C.done();
+    }
+    function cutTick(dt) {
+      const C = IN.cut; C.t += dt;
+      let acc = 0, i = 0;
+      while (i < C.shots.length && C.t > acc + C.shots[i].dur) { acc += C.shots[i].dur; i++; }
+      if (i >= C.shots.length) return cutEnd();
+      const sh = C.shots[i], lt = C.t - acc, u = lt / sh.dur;
+      if (i !== C.i) { C.i = i; ui.cut && ui.cut("line", { who: sh.who ? WHO[sh.who] || sh.who : "", text: sh.text || "" }); if (sh.on) sh.on(); }
+      const cm = sh.cam(u); IN.cutCam = cm;
+      if (C.act) C.act(C.t, u, i);
+    }
+    // ---- cena: o Kauã esbarra na Mila ----
+    function cutBump() {
+      const KX0 = -4.6, KZ0 = 8.95, KX = -2.45, KZ = 9.6, MXp = -1.9, MZp = 9.75;
+      const shots = [
+        { dur: 2.6, who: "kaua", text: "Licença... licença...", cam: (u) => ({ eye: [-3.3 + u * 0.6, 1.75, 7.0], at: [-3.4 + u * 1.0, 1.15, 9.3] }) },
+        { dur: 1.5, who: "", text: "", on: () => { sfx.nocan && sfx.nocan(); }, cam: () => ({ eye: [-2.15, 1.45, 8.1], at: [-2.15, 1.05, 9.7] }) },
+        { dur: 3.2, who: "kaua", text: "Foi mal! Foi mal mesmo, eu não vi...", cam: () => ({ eye: [-2.2, 1.62, 8.0], at: [-2.17, 1.42, 9.68] }) },
+        { dur: 3.2, who: "mila", text: "Relaxa, não foi nada. Era só refri.", cam: () => ({ eye: [-3.05, 1.78, 8.75], at: [-1.9, 1.5, 9.75] }) },
+        { dur: 4.2, who: "mila", text: "Gostei do cabelo. Espetado assim... tem personalidade.", cam: (u) => ({ eye: [-3.05 + u * 0.12, 1.78, 8.75], at: [-1.9, 1.5, 9.75] }) },
+        { dur: 2.8, who: "kaua", text: "Ah... v-valeu.", cam: () => ({ eye: [-1.15, 1.72, 9.2], at: [-2.45, 1.52, 9.6] }) },
+        { dur: 3.0, who: "mila", text: "Eu sou a Mila. E você?", cam: () => ({ eye: [-3.05, 1.78, 8.75], at: [-1.9, 1.5, 9.75] }) },
+        { dur: 2.4, who: "kaua", text: "Kauã. Prazer.", cam: () => ({ eye: [-1.15, 1.72, 9.2], at: [-2.45, 1.52, 9.6] }) },
+        { dur: 3.8, who: "kf", text: "Cara... quem te viu, quem te vê, hein, amigão! Hehehe.", cam: () => ({ eye: [1.9, 1.75, 10.1], at: [3.05, 1.5, 8.8] }) },
+        { dur: 2.6, who: "julie", text: "Hihi...", cam: () => ({ eye: [2.2, 1.7, 9.9], at: [3.25, 1.5, 8.25] }) },
+      ];
+      cutStart(shots, () => {
+        setHome("kaua", KX, KZ, yawTo(KX, KZ, MXp, MZp), { idle: "talk2" });
+        setHome("mila", MXp, MZp, yawTo(MXp, MZp, KX, KZ), { idle: "talk2" });
+        FS.main = 1; FS.slowAt = FS.t + 8;
+      });
+      IN.cut.act = (T, u, i) => {
+        const tk = Math.min(1, T / 2.6), kx = KX0 + (KX - KX0) * tk, kz = KZ0 + (KZ - KZ0) * tk;
+        const walkP = (ph) => POSE({ lean: 0.08, twist: Math.sin(ph) * 0.07, fxF: Math.sin(ph) * 0.2, fxB: -Math.sin(ph) * 0.2, lf: Math.max(0, Math.cos(ph)) * 0.07, lb: Math.max(0, -Math.cos(ph)) * 0.07, hF: [0.1, 0.95, 0.27], hB: [-0.1, 0.95, -0.27] });
+        const kp = i === 0 ? walkP(T * 9) : i === 1 ? POSE({ lean: -0.12, hp: -0.1, hF: [0.3, 1.3, 0.25], hB: [0.3, 1.3, -0.25] }) : i === 5 || i === 7 ? SHY(T) : POSE({ lean: 0.06, hp: 0.1, twist: 0.1, hF: [0.3, 1.15, 0.2], hB: [0.02, 0.95, -0.27] });
+        place2("kaua", kx, kz, yawTo(KX0, KZ0, KX, KZ), kp);
+        const turned = i >= 1, my = turned ? yawTo(MXp, MZp, KX, KZ) : Math.PI * 0.55;
+        const mp = i === 0 ? DANCE(3, T, 0) : i === 1 ? POSE({ lean: -0.08, hp: -0.15, hF: [0.25, 1.25, 0.25], hB: [0.1, 0.95, -0.3] }) : POSE({ lean: 0.03, twist: 0.12, hp: 0.04, hy: 0.15, hF: [0.12, 1.0, 0.28], hB: [0.05, 1.68, -0.12] });
+        place2("mila", MXp, MZp, my, mp);
+        // copo da Mila caindo
+        FS.cup = i === 0 ? { x: MXp + 0.15, y: 1.25, z: MZp - 0.2 } : i === 1 ? { x: MXp - 0.15 - u * 0.2, y: Math.max(0.03, 1.2 - u * u * 3), z: MZp - 0.3, r: u * 3 } : { x: MXp - 0.35, y: 0.03, z: MZp - 0.3, r: 1.57 };
+        place2("kf", 3.0, 9.2, yawTo(3.0, 9.2, KX, KZ), i === 8 ? POSE({ twist: 0.15, hp: 0.0, hF: [0.25, 1.2 + Math.sin(T * 6) * 0.05, 0.25], hB: [0.02, 0.95, -0.27] }) : POSE({ hp: 0.05, hF: [0.03, 0.95, 0.27], hB: [0.02, 0.95, -0.27] }));
+        place2("julie", 3.25, 8.25, yawTo(3.25, 8.25, KX, KZ), i === 9 ? GIGGLE(T) : POSE({ hp: 0.05, hF: [0.03, 0.95, 0.27], hB: [0.02, 0.95, -0.27] }));
+      };
+    }
+    // ---- cena: a música lenta (o DJ chama os casais; K.F. e Julie, Kauã e Mila; o primeiro beijo do K.F. e da Julie) ----
+    const SLOW_PAIRS = [["fx0", "fx2", 2.4, 9.5, 0.4], ["fx3", "fx4", -2.9, 6.0, -0.3], ["fx5", "fx7", 2.6, 5.9, 2.4], ["fx1", "fx8", -3.3, 10.4, 1.2]], SLOW_SOLO = [["fx6", -3.5, 9.9], ["fx9", 3.5, 7.4]];
+    function cutSlow() {
+      FS.slow = 1;
+      ui.festa && ui.festa("slow");
+      const KJ = [0.5, 7.4], KM = [-1.6, 8.75];
+      const shots = [
+        { dur: 3.8, who: "lucas", text: "Agora a gente vai diminuir o ritmo um pouquinho...", cam: (u) => ({ eye: [0.3 - u * 0.4, 2.0, 9.5], at: [0, 1.75, 12.5] }) },
+        { dur: 3.4, who: "lucas", text: "Chama o seu par e vem pra pista!", cam: () => ({ eye: [-0.2, 1.95, 10.1], at: [0, 1.8, 12.5] }) },
+        { dur: 4.2, who: "", text: "♪", cam: (u) => ({ eye: [-4.1 + u * 0.6, 5.2, 13.0], at: [0, 0.8, 7.8] }) },
+        { dur: 4.4, who: "julie", text: "Sabe que eu nunca dancei música lenta com ninguém?", cam: () => ({ eye: [KJ[0] - 0.95, 1.78, KJ[1] - 0.7], at: [KJ[0] + 0.24, 1.48, KJ[1]] }) },
+        { dur: 4.0, who: "kf", text: "Nem eu. Mas acho que a gente tá indo bem.", cam: () => ({ eye: [KJ[0] + 0.95, 1.72, KJ[1] - 0.7], at: [KJ[0] - 0.24, 1.6, KJ[1]] }) },
+        { dur: 3.6, who: "mila", text: "Relaxa... é só ir no balanço.", cam: () => ({ eye: [KM[0] - 0.95, 1.72, KM[1] - 0.7], at: [KM[0] + 0.24, 1.48, KM[1]] }) },
+        { dur: 3.2, who: "kaua", text: "Tô tentando! Acho que tô pegando o jeito.", cam: () => ({ eye: [KM[0] + 0.95, 1.68, KM[1] - 0.7], at: [KM[0] - 0.24, 1.55, KM[1]] }) },
+        { dur: 5.6, who: "", text: "", cam: (u) => ({ eye: [KJ[0] + 0.05, 1.85 - u * 0.1, KJ[1] - 1.05 + u * 0.12], at: [KJ[0], 1.6, KJ[1]], fov: 0.85 }) },
+        { dur: 4.4, who: "", text: "♪ ♪ ♪", cam: (u) => ({ eye: [3.6 - u * 0.8, 4.4, 3.2], at: [0, 2.6, 8.0] }) },
+      ];
+      cutStart(shots, () => {
+        FS.slowDone = 1; FS.slowEnd = FS.t + 150;
+        SLOW_PAIRS.forEach(([a, b2, x, z, r]) => { setHome(a, x - Math.cos(r) * 0.24, z + Math.sin(r) * 0.24, r, { idle: "slowA" }); setHome(b2, x + Math.cos(r) * 0.24, z - Math.sin(r) * 0.24, r + Math.PI, { idle: "slowB" }); });
+        for (const [lk, x, z] of SLOW_SOLO) setHome(lk, x, z, yawTo(x, z, KJ[0], KJ[1]), { idle: "talk2" });
+        setHome("kf", KJ[0] - 0.24, KJ[1], 0, { idle: "slowA", pair: 1 }); setHome("julie", KJ[0] + 0.24, KJ[1], Math.PI, { idle: "slowB", pair: 1 });
+        setHome("kaua", KM[0] - 0.24, KM[1], 0, { idle: "slowA" }); setHome("mila", KM[0] + 0.24, KM[1], Math.PI, { idle: "slowB" });
+        if (FS.pk === "kf" || FS.pk === "julie" || FS.pk === "kaua") IN.ov = null;
+      });
+      IN.cut.act = (T, u, i) => {
+        // gap: distância entre os dois; no beijo eles chegam pertinho e inclinam a cabeça
+        const kiss = i === 7 ? Math.min(1, Math.max(0, (u - 0.15) / 0.45)) : i === 8 ? 1 : 0, ke = kiss * kiss * (3 - 2 * kiss), g = 0.24 - ke * 0.05;
+        const A = SLOW_A(T, 0), B = SLOW_B(T, 0);
+        if (ke > 0) { A.hp = 0.12 + ke * 0.16; A.lean = 0.05 + ke * 0.08; A.hy = -ke * 0.12; B.hp = -0.06 - ke * 0.18; B.lean = 0.05 + ke * 0.06; B.hy = ke * 0.12; A.twist = B.twist = 0; }
+        place2("kf", KJ[0] - g, KJ[1], 0, A); place2("julie", KJ[0] + g, KJ[1], Math.PI, B);
+        place2("kaua", KM[0] - 0.24, KM[1], 0, SLOW_A(T + 0.7, 0)); place2("mila", KM[0] + 0.24, KM[1], Math.PI, SLOW_B(T + 0.7, 0));
+        SLOW_PAIRS.forEach(([a, b2, x, z, r], k) => { place2(a, x - Math.cos(r) * 0.24, z + Math.sin(r) * 0.24, r, SLOW_A(T + k, 0)); place2(b2, x + Math.cos(r) * 0.24, z - Math.sin(r) * 0.24, r + Math.PI, SLOW_B(T + k, 0)); });
+        for (const [lk, x, z] of SLOW_SOLO) place2(lk, x, z, yawTo(x, z, KJ[0], KJ[1]), POSE({ hp: 0.05, twist: Math.sin(T * 0.8) * 0.06, hF: [0.25, 1.1, 0.2], hB: [0.02, 0.95, -0.27] }));
+        if (i === 0 || i === 1) { const n = fNpc("lucas"); if (n) n.ov = { x: n.x, z: n.z, yaw: n.yaw, pose: POSE({ lean: 0.02, hp: -0.02, twist: 0.1, hF: [0.32, 1.62, 0.06], hB: [0.42, 1.3, -0.25] }) }; }
+        // quem não tem par na hora assiste do canto
+        if (FS.pk === "gabi") place2("gabi", 2.5, 4.4, yawTo(2.5, 4.4, KJ[0], KJ[1]), POSE({ hp: 0.05, hy: Math.sin(T * 0.5) * 0.2, hF: [0.2, 1.1, 0.2], hB: [0.02, 0.95, -0.27] }));
+        if (FS.pk === "kauane") place2("kauane", -2.6, 4.2, yawTo(-2.6, 4.2, KJ[0], KJ[1]), POSE({ hp: 0.05, hF: [0.25, 1.05, 0.12], hB: [0.25, 1.05, -0.12] }));
+      };
+    }
+    function festaTalk(who) {
+      const pk = FS.pk, L = FLINES[who] || FLINES.fx;
+      const Q = (arr) => { IN.sayQ = arr.map(([w, line], k) => ({ t: k ? 2.9 : 0.05, who: w, line })); };
+      const busy = IN.sayQ && IN.sayQ.length;
+      if (busy) return true;
+      if ((pk === "kf" && who === "julie") || (pk === "julie" && who === "kf")) {
+        if (!FS.greet) {
+          FS.greet = 1;
+          Q([["julie", "Oi, garoto tubarão!"], ["gabi", "...garoto tubarão?"], ["kauane", "Oxe. Que apelido é esse?"], ["kf", "E aí, Julie! Nem sabia que você vinha."], ["julie", "O Lucas é meu vizinho. Não ia perder o set dele por nada."], ["kf", "O cara tá brabo hoje, né?"], ["julie", "Tá demais! Fica aqui com a gente... quer dizer, comigo. Hehe."], ["julie", "Ei... o Kauã tá sozinho lá no salgadinho. Chama ele pra cá!"]]);
+          return true;
+        }
+      }
+      if ((pk === "kf" || pk === "julie") && who === "kaua" && FS.greet && !FS.main) {
+        Q([[pk === "julie" ? "julie" : "kf", pk === "julie" ? "Kauã! Vem ficar com a gente lá no bar!" : "Ô Kauã, cola aqui com a gente!"], ["kaua", "Já vou, já vou..."]]);
+        IN.sayQ.push({ t: 1.6, who: "", line: "", fn: () => cutBump() });
+        return true;
+      }
+      if (pk === "kaua" && who === "mila" && FS.main && !FS.milaTalk) {
+        FS.milaTalk = 1;
+        Q([["mila", "Então, Kauã... você anda de skate também?"], ["kaua", "Ando. Comecei faz pouco tempo, mas tô pegando o jeito."], ["mila", "Eu ando na pista do centro. Um dia a gente racha uma sessão."], ["kaua", "S-sério? Fechou!"]]);
+        return true;
+      }
+      if (pk === "gabi" && who === "diogo" && !FS.main) {
+        Q([["diogo", "Opa! Pulseira da hora essa. Curte reggae?"], ["gabi", "Demais. Lá em casa só toca Cidade Negra e Natiruts."], ["diogo", "Sério? Eu toco numa banda com uns amigos. Uns covers e umas nossas."], ["gabi", "Mentira! Qual o nome?"], ["diogo", "Raízes. Tá até na camiseta, ó. Hahaha."], ["gabi", "Hahaha, propaganda gratuita. Gostei."], ["diogo", "Sábado tem ensaio na garagem do meu primo. Cola lá com a galera!"], ["gabi", "Fechou! Valeu, Diogo."]]);
+        IN.sayQ.push({ t: 2.9, who: "", line: "", fn: () => { FS.main = 1; FS.slowAt = FS.t + 6; } });
+        return true;
+      }
+      if (pk === "kauane" && (who === "cabeca" || who === "breno") && !FS.main) {
+        Q([["cabeca", "Olha só quem chegou... a rainha da ladeira."], ["kauane", "Vai começar, Cabeça?"], ["cabeca", "Calma, calma! Na real... foi mal por aquele dia. A gente foi muito mal perdedor."], ["breno", "Foi feio mesmo. Você desceu aquela ladeira voando."], ["kauane", "...Tá. Desculpa também por ter chamado vocês de criança. Mas que pareceram, pareceram."], ["cabeca", "Hahaha! Justo. Ó, fiquei sabendo que você tá treinando uma manobra nova."], ["kauane", "Tô. Mas é segredo. Quando sair, vocês vão ver."], ["breno", "Então já é. Quando for lançar, chama a gente."], ["analivia", "Viu? Eu falei que ela não era brava, só marrenta! Hihi."], ["kauane", "Ana Lívia!"]]);
+        IN.sayQ.push({ t: 2.9, who: "", line: "", fn: () => { FS.main = 1; FS.slowAt = FS.t + 6; } });
+        return true;
+      }
+      sayIn(who, L[IN.li++ % L.length], 3.5);
+      return true;
+    }
+    // falar com quem está perto: os pontos de conversa acompanham as pessoas
+    function festaSpots(R) {
+      R.spots = R.spots.filter((s) => !s.npc);
+      for (const n of R.npcR) {
+        if (n.hide || (n.y || 0) > 1 || n.who === "lucas") continue;
+        const nm = n.who === "fx" ? ART.LOOKS[n.look].name : WHO[n.who];
+        R.spots.push({ id: "t_" + n.look, npc: 1, x: n.x - Math.cos(n.yaw) * -0.0, z: n.z, r: 0.95, act: "ftalk", who: n.who, look: n.look, label: "Falar com " + nm, face: [n.x, n.z] });
+      }
+    }
+    const cupG = Rn.upload((() => { const m = new Mesh(); m.tube([0, -0.06, 0], [0, 0.06, 0], 0.035, 0.042, 8, hex(0xe0302b)); m.tube([0, 0.06, 0], [0, 0.065, 0], 0.042, 0.042, 8, hex(0xffffff)); m.tube([0.01, 0.06, 0], [0.03, 0.15, 0], 0.005, 0.005, 3, hex(0xff4fa3)); return m; })());
+    const coxG = Rn.upload((() => { const m = new Mesh(); m.ball([0, 0.02, 0], 0.04, hex(0xd88a3a), 0, 7, 5, { sy: 1.25 }); return m; })());
+    function festaFrame(R, D, dt, t) {
+      if (!FS) return;
+      FS.t += dt;
+      // piso de luz: acende no tempo da música, em ondas coloridas; na música lenta fica roxinho e calmo
+      FS.slowK = Math.max(0, Math.min(1, FS.slowK + ((FS.slow && (IN.cut || FS.slowDone) && FS.t - (FS.slowStart || 0) < 140) ? dt / 2 : -dt / 3)));
+      const beat = FS.t * 2.08, PAL = [[1, 0.3, 0.65], [0.3, 0.8, 1], [1, 0.85, 0.25], [0.55, 0.35, 1], [0.35, 1, 0.55]];
+      for (const o of D.floor) {
+        const w = (o.i + o.j + Math.floor(beat)) % 5, on = ((o.i * 3 + o.j * 5 + Math.floor(beat)) % 4) !== 0, c = PAL[w], lv = on ? 1 : 0.25, sk = FS.slowK;
+        o.tint = [(c[0] * lv) * (1 - sk) + 0.45 * sk, (c[1] * lv) * (1 - sk) + 0.25 * sk, (c[2] * lv) * (1 - sk) + 0.75 * sk];
+      }
+      discoFx(R, D, dt, t);
+      if (FS.slowK > 0 && R.scene.amb) R.scene.amb = R.scene.amb.map((v) => v * (1 - FS.slowK * 0.35));
+      // copo que cai na cena do esbarrão
+      if (!D.cup) D.cup = { g: cupG, mo: M.I(), hidden: true };
+      D.cup.hidden = !(IN.cut && FS.cup);
+      if (!D.cup.hidden) D.cup.mo = M.mul(M.T(FS.cup.x, FS.cup.y, FS.cup.z), M.RZ(FS.cup.r || 0));
+      // na mão: refri do bar ou coxinha (comendo)
+      if (!D.hand) D.hand = { g: cupG, mo: M.I(), hidden: true };
+      const h = !IN.cut && (IN.cup || IN.snack > 0) && rig.F ? handOf(rig, look, "F") : null;
+      D.hand.hidden = !h;
+      if (h) { D.hand.g = IN.snack > 0 ? coxG : cupG; D.hand.mo = M.T(h[0], h[1] + 0.04, h[2]); }
+      if (IN.snack > 0) IN.snack -= dt;
+      if (IN.cut) { cutTick(dt); return; }
+      festaSpots(R);
+      // Kauã (jogando com ele): depois de um tempo no salgadinho, o K.F. chama; indo até eles, esbarra na Mila
+      if (FS.pk === "kaua" && !FS.main) {
+        if (!FS.call && ((FS.ate && FS.t > FS.ate + 3.5) || FS.t > 25)) { FS.call = 1; IN.sayQ = [{ t: 0.4, who: "kf", line: "Ô Kauã! Larga essa coxinha e cola aqui com a gente!" }, { t: 3.2, who: "julie", line: "Vem, Kauã! A gente tá aqui perto do bar." }]; }
+        if (FS.call && IN.x > -3.6 && !(IN.sayQ && IN.sayQ.length)) cutBump();
+      }
+      if (FS.main && !FS.slow && FS.t > FS.slowAt && !(IN.sayQ && IN.sayQ.length)) { FS.slowStart = FS.t; cutSlow(); }
+      if (FS.slowEnd && FS.t > FS.slowEnd) {
+        FS.slowEnd = 0;
+        for (const n of R.npcR) if (n.who === "fx") Object.assign(n, { x: n.home.x, z: n.home.z, yaw: n.home.yaw, dance: n.home.dance, idle: n.home.idle });
+        for (const w of ["kf", "julie", "kaua", "mila"]) { const n = fNpc(w); if (n && n.idle && /^slow/.test(n.idle)) n.idle = "talk2"; }
+      }
+    }
+    function festaAct(s) {
+      if (s.act === "ftalk") { IN.dancing = null; return festaTalk(s.who); }
+      if (s.act === "talk" && s.who === "lucas") return festaTalk("lucas");
+      if (s.act === "snack") { IN.snack = 2.2; IN.cup = null; FS.ate = FS.ate || FS.t; sayIn(FS.pk, ["Hmm, coxinha quentinha.", "Mais uma não faz mal...", "Esse pastelzinho tá bom demais."][IN.li++ % 3], 2.2); return true; }
+      if (s.act === "drink") { IN.cup = true; IN.snack = 0; sayIn("", "Kiko do bar: Refri geladinho saindo! Por conta da casa hoje.", 2.6); return true; }
+      if (s.act === "dance") { IN.dancing = IN.dancing ? null : { s: (IN.li++ % 7) }; IN.cup = null; return true; }
+      return false;
+    }
     function inFrame(dt, t) {
       const R = IN.R;
       IN.t += dt;
-      const walk = S.running && !IN.hold && !IN.sit && IN.change == null && !IN.lounge;
+      const walk = S.running && !IN.hold && !IN.sit && IN.change == null && !IN.lounge && !IN.cut;
+      if (IN.dancing && (keys.up || keys.down)) IN.dancing = null;
       let mv = 0;
       if (walk) {
         const turn = (keys.left ? 1 : 0) - (keys.right ? 1 : 0);
@@ -7669,6 +8375,8 @@ const STREET = (() => {
         IN.x = px; IN.z = pz; IN.yaw = yaw;
         const br = Math.sin(t * 0.8) * 0.01;
         tp = k < 1 ? POSE({ py: 0.94 - 0.3 * e }) : LOUNGE(t, br);
+      } else if (IN.dancing && Math.abs(IN.v) < 0.12) {
+        tp = DANCE(IN.dancing.s, t, 0);
       } else if (Math.abs(IN.v) > 0.12) {
         const sw = Math.sin(IN.ph), cw = Math.cos(IN.ph), sg = IN.v < 0 ? -1 : 1;
         tp = POSE({ lean: 0.06, twist: sw * 0.07, fxF: sw * 0.2 * sg, fxB: -sw * 0.2 * sg, lf: Math.max(0, cw) * 0.07, lb: Math.max(0, -cw) * 0.07, hF: [-sw * 0.18 * sg, 0.93, 0.27], hB: [sw * 0.18 * sg, 0.93, -0.27] });
@@ -7690,15 +8398,19 @@ const STREET = (() => {
       // disco (ou CD) na mão: as duas mãos seguram nas bordas, na frente do peito
       if (IN.carry && !IN.sit && !(IN.hold && IN.spot && IN.spot.act === "dig")) { tp.hF = IN.carry.fmt === "cd" ? [0.04, 1.0, 0.3] : [0.04, 0.88, 0.3]; tp.twist = 0; }
       if (IN.anim || IN.needle) { tp = POSE({ lean: 0.2, hp: 0.36, hF: [0.5, 1.0 + Math.sin(t * 2) * 0.02, 0.08], hB: [0.1, 0.95, -0.27] }); if (IN.anim && IN.anim.t < 1.4) { const w = IN.anim.kind === "cd" ? 0.075 : 0.16; tp.hF = [0.5, 1.12, w]; tp.hB = [0.5, 1.1, -w]; } }
-      if ((IN.cone || IN.pop) && !IN.sit && !IN.anim && !IN.lounge) tp.hF = [0.3, 1.22, 0.2];
+      if ((IN.cone || IN.pop || IN.cup) && !IN.sit && !IN.anim && !IN.lounge && !IN.dancing) tp.hF = [0.3, 1.22, 0.2];
+      if (IN.snack > 0) tp.hF = IN.snack > 1.1 ? [0.22, 1.55, 0.06] : [0.3, 1.2, 0.2];
       IN.pose = ART.lerpPose(IN.pose, tp, Math.min(1, dt * 10));
       for (const k of ["stand", "walk", "hr", "roll"]) IN.pose[k] = tp[k];
+      if (IN.ov) { px = IN.ov.x; pz = IN.ov.z; yaw = IN.ov.yaw; IN.pose = ART.lerpPose(IN.pose, IN.ov.pose, Math.min(1, dt * 12)); }
       const sk = look.skates ? Math.PI / 2 : 0;
       rig.pose(M.mul(M.T(px, look.skates ? 0 : -0.1, pz), M.RY(yaw + sk)), IN.pose);
       rig.board.hidden = true;
       // gente lá dentro
-      if (IN.sayQ && IN.sayQ.length) { IN.sayQ[0].t -= dt; if (IN.sayQ[0].t <= 0) { const q = IN.sayQ.shift(); sayIn(q.who, q.line); if (q.give && SA && SA.def.kind === "ice") { SA.phase = 1; IN.cone = { kf: 1, julie: 1, c: 0xf8f2e6 }; sfx.can(); } } }
+      if (IN.sayQ && IN.sayQ.length) { IN.sayQ[0].t -= dt; if (IN.sayQ[0].t <= 0) { const q = IN.sayQ.shift(); if (q.line) sayIn(q.who, q.line); if (q.fn) q.fn(); if (q.give && SA && SA.def.kind === "ice") { SA.phase = 1; IN.cone = { kf: 1, julie: 1, c: 0xf8f2e6 }; sfx.can(); } } }
       for (const n of R.npcR) {
+        n.rig.objs[0].hidden = !!n.hide;
+        if (n.hide) continue;
         if (n.julie) { const vis = !!(SA && SA.def.kind === "ice"); n.rig.objs[0].hidden = !vis; n.off = !vis; if (!vis) continue; }
         const near = Math.hypot(IN.x - n.x, IN.z - n.z) < 3.2;
         const talking = IN.talk && IN.talk.who === n.who;
@@ -7708,6 +8420,13 @@ const STREET = (() => {
         else if (talking) p = POSE({ twist: 0.1 + Math.sin(t * 1.3) * 0.06, hp: 0.06 + Math.sin(t * 2.6) * 0.04, hF: [0.26 + Math.sin(t * 3.1) * 0.06, 1.18 + Math.sin(t * 2.3) * 0.08, 0.26] });
         else if (n.idle === "seat") p = SITP(t, { lean: 0.05, hp: 0.05 + Math.sin(t * 0.7 + n.ph) * 0.04, hy: Math.sin(t * 0.4 + n.ph) * 0.2, hF: [0.3, 1.08 + Math.max(0, Math.sin(t * 1.7 + n.ph)) * 0.12, 0.14], hB: [0.36, 0.78, -0.14] });
         else if (n.idle === "bounce") p = POSE({ py: 0.94 + Math.abs(Math.sin(t * 4)) * 0.03, hy: Math.sin(t * 1.3) * 0.4, hp: -0.06, hF: [-0.14, 0.92, 0.15], hB: [-0.14, 0.92, -0.15] });
+        else if (n.idle === "dj") { const b = t * Math.PI * 2 * 2.08, ph = Math.floor(t / 4) % 3; p = POSE({ lean: 0.16, hp: 0.22 + Math.abs(Math.sin(b)) * 0.08, twist: Math.sin(b / 2) * 0.08, hF: ph === 2 ? [0.08, 1.62, 0.16] : [0.46, 1.38 + Math.sin(b * 2) * 0.012, 0.3 + Math.sin(b / 2) * 0.04], hB: [0.46, 1.38, -0.32 + (ph === 1 ? Math.sin(b * 2) * 0.05 : 0)] }); }
+        else if (n.idle === "rail") p = POSE({ lean: 0.22, hp: 0.32 + Math.sin(t * 0.7 + n.ph) * 0.05, hy: Math.sin(t * 0.4 + n.ph) * 0.3, hF: [0.4, 1.0, 0.2], hB: [0.4, 1.0, -0.2] });
+        else if (n.idle === "shy") p = POSE({ lean: 0.1, hp: 0.18, hy: Math.sin(t * 0.5) * 0.2, hF: [0.42, 1.0 + Math.max(0, Math.sin(t * 0.9 + n.ph)) * 0.45, 0.12], hB: [0.02, 0.95, -0.27] });
+        else if (n.idle === "talk2") p = POSE({ twist: 0.08 + Math.sin(t * 1.1 + n.ph) * 0.06, hp: 0.06, hy: Math.sin(t * 0.7 + n.ph) * 0.12, hF: [0.22 + Math.sin(t * 2.7 + n.ph) * 0.05, 1.12 + Math.sin(t * 2.1) * 0.06, 0.24], hB: [0.02, 0.95, -0.27] });
+        else if (n.idle === "slowA") p = SLOW_A(t, 0);
+        else if (n.idle === "slowB") p = SLOW_B(t, 0);
+        else if (n.dance != null) p = DANCE(n.dance, t, n.ph);
         else p = POSE({ lean: 0.04 + Math.sin(t * 1.1 + n.ph) * 0.02, twist: 0.1, hy: -0.3 + Math.sin(t * 0.6 + n.ph) * 0.2, hp: 0.12, hF: [0.06, 1.0, 0.2], hB: [0.02, 0.92, -0.25] });
         const dance = n.who === "vava" && IN.disco && IN.disco.vava && (IN.discoK || 0) > 0.4 && !talking;
         if (dance) {
@@ -7718,9 +8437,11 @@ const STREET = (() => {
         }
         if (n.julie && IN.cone && IN.cone.julie && !talking) p.hF = [0.28, 1.2, 0.2];
         if (!dance && (near || talking) && n.idle !== "play" && n.idle !== "browse" && n.idle !== "seat") p.hy = Math.max(-1, Math.min(1, -(Math.atan2(-(IN.z - n.z), IN.x - n.x) - n.yaw)));
+        if (n.ov) { n.x = n.ov.x; n.z = n.ov.z; n.yaw = n.ov.yaw; p = n.ov.pose; }
+        if ((n.dance != null || /^slow|dj|rail/.test(n.idle || "")) && !talking && !n.ov) { /* dançando: não vira pra olhar */ } else if (!n.ov && (near || talking) && !dance && n.idle !== "play" && n.idle !== "browse" && n.idle !== "seat" && R.id === "festa") p.hy = Math.max(-1, Math.min(1, -(Math.atan2(-(IN.z - n.z), IN.x - n.x) - n.yaw)));
         n.pose = n.pose ? ART.lerpPose(n.pose, p, Math.min(1, dt * 8)) : p;
         n.pose.stand = p.stand; n.pose.walk = p.walk;
-        n.rig.pose(M.mul(M.T(n.x, -0.1, n.z), M.RY(n.yaw)), n.pose);
+        n.rig.pose(M.mul(M.T(n.x, -0.1 + (n.y || 0), n.z), M.RY(n.yaw)), n.pose);
       }
       // ventilador, vitrola, notas saindo das caixas
       const D = R.dyn;
@@ -7728,6 +8449,7 @@ const STREET = (() => {
       if (D.fanS) D.fanS.mo = M.mul(M.T(0, R.H - 0.35, 2.8), M.RY(t * 2.8));
       if (R.id === "sorveteria") iceFrame(R, D);
       if (R.id === "discos") { discosFrame(R, D, dt, t, fx, fz, px, pz, yaw); discoFx(R, D, dt, t); }
+      if (R.id === "festa") festaFrame(R, D, dt, t);
       // câmera: atrás e acima; quando mexe em alguma coisa, chega perto por cima do ombro
       let eye, at;
       const sx = -fz, sz = fx;
@@ -7737,9 +8459,13 @@ const STREET = (() => {
       else if (IN.hold && IN.spot && IN.spot.face) { const f = IN.spot.face; eye = [px - fx * 1.25 + sx * 0.45, 2.05, pz - fz * 1.25 + sz * 0.45]; at = [(px + f[0]) / 2, 1.0, (pz + f[1]) / 2]; }
       else { eye = [px - fx * 2.4, 2.55, pz - fz * 2.4]; at = [px + fx * 0.9, 1.05, pz + fz * 0.9]; }
       eye[0] = Math.max(-R.W + 0.25, Math.min(R.W - 0.25, eye[0])); eye[2] = Math.max(0.12, Math.min(R.D - 0.2, eye[2])); eye[1] = Math.min(R.H - 0.3, eye[1]);
+      if (R.id === "festa" && !IN.cutCam) { const under = (Math.abs(eye[0]) > 4.0 && eye[2] > 5.6) || eye[2] > 13.3 || (Math.abs(px) > 4.2 && pz > 5.8); eye[1] = under ? Math.min(eye[1], 2.4) : Math.min(eye[1] + 0.35, R.H - 0.3); }
+      if (IN.cutCam) { IN.cam.eye = IN.cutCam.eye.slice(); IN.cam.at = IN.cutCam.at.slice(); IN.cam.fov = IN.cutCam.fov || 0.95; }
+      else {
       if (IN.t < 0.05) { IN.cam.eye = eye.slice(); IN.cam.at = at.slice(); }
       IN.cam.eye = V.lerp(IN.cam.eye, eye, Math.min(1, dt * 4.5));
       IN.cam.at = V.lerp(IN.cam.at, at, Math.min(1, dt * 7));
+      }
       const sc = R.scene;
       sc.objects = R.base.concat(Object.values(D).flat(), ...R.decks.map((d) => Object.values(d.objs)), (R.booths || []).map((b) => b.door), R.npcR.map((n) => n.rig.objs[0]), rig.objs, R.notes);
       if (IN.skates) sc.objects.push({ g: skatePropG, mo: M.I() });
@@ -10340,6 +11066,13 @@ const sides=(a)=>{const A=a.faixas.map((f,i)=>Object.assign({i},f));if(A.some(f=
 function inOpen(id){INO=id;$('say').classList.remove('on');for(const o of ['digO','insO'])$(o).classList.toggle('on',o===id)}
 function inClose(){INO=null;for(const o of ['digO','insO'])$(o).classList.remove('on');game.release();$('cv').focus()}
 for(const b of document.querySelectorAll('[data-inclose]'))b.addEventListener('click',()=>{if(INO==='insO'&&INS.from==='dig'){inOpen('digO');drawDig()}else inClose()});
+// festa no Aloha Club: o set do DJ toca em sequência (pula a faixa que não abrir) e a música lenta entra na hora certa
+const FEST={on:0,i:0,slow:0};
+function festPlay(i){const S=RADIO.festa(),n=S.set.length;FEST.i=((i%n)+n)%n;FEST.slow=0;const f=S.set[FEST.i];
+  RADIO.playTrack({a:f.a,t:f.t,id:f.id,s:f.s||0,once:1,onEnd:()=>{if(FEST.on&&!FEST.slow)festPlay(FEST.i+1)},onFail:()=>{if(FEST.on&&!FEST.slow)setTimeout(()=>festPlay(FEST.i+1),400)}});
+  toastC('♪ DJ Luskinha: '+f.a+' — '+f.t)}
+function festSlow(){const L=RADIO.festa().lenta;FEST.slow=1;RADIO.playTrack({a:L.a,t:L.t,id:L.id,s:0,once:1,onEnd:()=>{FEST.slow=0;if(FEST.on)festPlay(FEST.i+1)},onFail:()=>{FEST.slow=0;if(FEST.on)festPlay(FEST.i+1)}});toastC('♪ '+L.a+' — '+L.t)}
+ui.festa=(ev,d)=>{if(ev==='on'){FEST.on=1;festPlay((d&&d.i)||0)}else if(ev==='slow')festSlow();else if(ev==='next'&&FEST.on&&!FEST.slow)festPlay(FEST.i+1);else if(ev==='off'){FEST.on=0;FEST.slow=0}};
 ui.inside=(ev,d)=>{
   if(ev==='enter'){$('screen').classList.add('inside');if(d.name==='VAVÁ DISCOS')tvStart();$('inName').textContent=d.name;$('mmBox').classList.remove('on');clearTimeout(dmQ);clearTimeout(dmMini);$('dm').className='dm';DISC.set('');SHOP.radioWas=RADIO.active;RADIO.hold(true);if(RADIO.active)RADIO.pause(true);clearInterval(SHOP.tm);SHOP.tm=setInterval(shopTick,400);inSpot(null);if(d.skates)setTimeout(()=>toastC('Patins na porta, chinelo no pé 🩴'),900)}
   else if(ev==='spot')inSpot(d);
@@ -10352,7 +11085,7 @@ ui.inside=(ev,d)=>{
   else if(ev==='lounge'){inSpot(d.on?{label:d.seat?'Sentado na mesinha… Enter levanta':'Curtindo o som… Enter levanta'}:null);if(d.on)$('inPL').parentNode.querySelector('kbd').textContent='Enter';}
   else if(ev==='lift')shopStop();
   else if(ev==='leave'){inSpot(null);fadeDo(()=>game.exitPlace())}
-  else if(ev==='exit'){$('screen').classList.remove('inside');tvStop();SHOP.dz=null;$('mmBox').classList.add('on');inSpot(null);$('say').classList.remove('on');clearInterval(SHOP.tm);for(const o of ['digO','insO','lanO'])$(o).classList.remove('on');INO=null;placeOn=null;MG.stop();
+  else if(ev==='exit'){if(FEST.on){FEST.on=0;FEST.slow=0;SHOP.ai=0}$('screen').classList.remove('inside');tvStop();SHOP.dz=null;$('mmBox').classList.add('on');inSpot(null);$('say').classList.remove('on');clearInterval(SHOP.tm);for(const o of ['digO','insO','lanO'])$(o).classList.remove('on');INO=null;placeOn=null;MG.stop();
     if(d.reset){RADIO.hold(false);RADIO.setVol(null);if(SHOP.ai>=0){SHOP.ai=-1;$('np').classList.remove('on');RADIO.stopTrack()}return}
     $('ndl').classList.remove('on');
     RADIO.setVol(null);RADIO.hold(false);
@@ -10576,7 +11309,7 @@ addEventListener('keydown',e=>{const k=e.key.toLowerCase();
   if(game.inside&&!paused&&game.lounging){if(k==='enter'||k==='escape'||k===' '||k==='e'){e.preventDefault();game.release()}return}
   if(game.inside&&!paused&&k==='f'){game.phones();return}
   if(game.inside&&!paused&&k==='q'){game.door();return}
-  if(game.inside&&!paused){if(k==='enter'||k==='e'||k===' '){e.preventDefault();if(!e.repeat)game.interact();return}if(k==='n'){shopSkip(1);return}if(k==='b'){shopSkip(-1);return}if(k==='f'||k==='r'||k==='c')return}
+  if(game.inside&&!paused){if(k==='enter'||k==='e'||k===' '){e.preventDefault();if(!e.repeat)game.interact();return}if(k==='n'){if(FEST.on)ui.festa('next');else shopSkip(1);return}if(k==='b'){shopSkip(-1);return}if(k==='f'||k==='r'||k==='c')return}
   if(dlgOn){if(k==='enter'){e.preventDefault();game.acceptMission();dlg(false);return}if(k==='escape'){e.preventDefault();dlg(false);return}}
   // fita passando: controles do videocassete
   if(game.playing){e.preventDefault();if(k===' ')game.playPause()?$('plSt').textContent='❚❚ PAUSE':$('plSt').textContent='▶ PLAY';else if(k==='arrowleft'||k==='a')game.playSeek(-2);else if(k==='arrowright'||k==='d')game.playSeek(2);else if(k==='r'){game.playRestart();$('pl').classList.remove('ended')}else if(k==='b')downloadVideo();else if(k==='escape'||k==='p')game.stopPlay();return}

@@ -491,13 +491,16 @@ const STREET = (() => {
     const PLACES = [
       { id: "lan", at: [-30, 42.4], who: "Dudu da Lan", line: "E aí, mano! Bora jogar um pouco? Pra vocês a ficha é por minha conta... só não conta pro meu chefe, kkkk.", title: "Entrar na Lan House" },
       { id: "sorveteria", at: [15.5, 42.4], who: "Neide da Sorveteria", line: "Entra que tá fresquinho aqui dentro! Hoje o flocos tá caprichado.", title: "Entrar na Sorveteria Pinguim" },
+      { id: "festa", at: [27, 42.4], who: "Lucas (DJ Luskinha)", line: "Chega mais! A festa tá começando... hoje o som vai ser pesado, só pedrada dos anos 90!", title: "Entrar no Aloha Club" },
       { id: "discos", at: [-20.5, 42.4], who: "Seu Vavá dos Discos", line: "Chegou coisa nova! Pode escutar à vontade na cabine, só não risca meus vinis, hein.", title: "Entrar na Vavá Discos" },
     ];
     let poffer = null;
     function placeFrame() {
       const iceOn = SA && SA.def.kind === "ice";
       if ((SA && !iceOn) || soffer || PH || REC || CUT || offer) { if (poffer && (offer || soffer)) poffer = null; return; }
-      const p = PLACES.find((q) => (!iceOn || q.id === "sorveteria") && Math.hypot(S.x - q.at[0], S.z - q.at[1]) < 2.4) || null;
+      const manu = /^manu/.test(lookKey() || "");
+      const p = PLACES.find((q) => (!iceOn || q.id === "sorveteria") && !(manu && q.id === "festa") && Math.hypot(S.x - q.at[0], S.z - q.at[1]) < 2.4) || null;
+      if (manu && Math.hypot(S.x - 27, S.z - 42.4) < 2.4 && S.speed < 4) { if (!placeFrame.mn) { placeFrame.mn = 1; say("A MANU PREFERE FICAR EM CASA (VIDEOGAME E SORVETE)", 2.6, true); } } else placeFrame.mn = 0;
       if (p && S.speed < 4 && poffer !== p) { poffer = p; ui.mission && ui.mission("offer", { who: p.who, line: p.line, title: p.title, place: 1 }); }
       if (!p && poffer) { poffer = null; ui.mission && ui.mission("hide"); if (MA) ui.mission && ui.mission("start", { title: MA.m.title }); }
     }
@@ -526,7 +529,8 @@ const STREET = (() => {
         inCv = INSIDE.makeTex(shopAlbums(), (cv) => { inTex = Rn.texture(cv, inTex); });
         inTex = Rn.texture(inCv, inTex);
       }
-      const R = id === "lan" ? INSIDE.buildLan(Rn, inTex) : id === "sorveteria" ? INSIDE.buildSorveteria(Rn, inTex) : INSIDE.buildDiscos(shopAlbums(), Rn, inTex);
+      const R = id === "lan" ? INSIDE.buildLan(Rn, inTex) : id === "sorveteria" ? INSIDE.buildSorveteria(Rn, inTex) : id === "festa" ? INSIDE.buildFesta(Rn, inTex) : INSIDE.buildDiscos(shopAlbums(), Rn, inTex);
+      if (id === "festa") R.npcs = FESTA_CAST.map((c) => Object.assign({}, c));
       R.npcR = R.npcs.map((d, i) => Object.assign({ rig: ART.makeRig(Rn, ART.LOOKS[d.look] || ART.LOOKS.npc0), ph: i * 1.9 }, d));
       R.scene.lights = new Float32Array(R.lights.flat());
       R.notes = Array.from({ length: 8 }, (_, i) => ({ g: noteG, mo: M.I(), hidden: true, t: i * 0.45, sp: i % 2 }));
@@ -546,6 +550,7 @@ const STREET = (() => {
       const ck = lookKey() + "_chinelo";
       if ((id === "discos" || id === "sorveteria") && look.skates && ART.LOOKS[ck]) { IN.skates = { prev: lookKey(), key: ck }; setLook(ck); IN.change = 0; }
       ui.inside && ui.inside("enter", { id, name: R.name, skates: !!IN.skates });
+      if (id === "festa") festaEnter(R);
       return true;
     }
     function exitPlace() {
@@ -568,7 +573,7 @@ const STREET = (() => {
       if (x < -RW || x > RW || z < 0.28 || z > RD) return true;
       const r = 0.27;
       for (const [x0, z0, x1, z1] of IN.R.solids) if (x > x0 - r && x < x1 + r && z > z0 - r && z < z1 + r) return true;
-      for (const n of IN.R.npcR) if (!n.off && Math.hypot(x - n.x, z - n.z) < 0.5) return true;
+      for (const n of IN.R.npcR) if (!n.off && !n.hide && !((n.y || 0) > 1) && Math.hypot(x - n.x, z - n.z) < 0.5) return true;
       // portas das cabines: fechada tranca a frente; aberta fica pra fora, do lado da dobradiça
       for (const b of IN.R.booths || []) {
         const d = b.door, Q = d.a < 0.6 ? [b.bx - b.w, b.z0 - 0.06, b.bx + b.w, b.z0 + 0.06] : [b.bx - b.w - 0.25, b.z0 - 1.1, b.bx - b.w + 0.02, b.z0 - 0.02];
@@ -588,9 +593,11 @@ const STREET = (() => {
       return true;
     }
     function inInteract() {
+      if (IN && IN.cut) { cutEnd(); return true; }
       if (!IN || IN.hold || IN.sit || !S.running) return false;
       const s = IN.spot;
       if (!s) return false;
+      if (IN.R.id === "festa" && s.act !== "door") { if (s.face) IN.yawT = Math.atan2(-(s.face[1] - IN.z), s.face[0] - IN.x); return festaAct(s); }
       if (s.act === "door") {
         if (IN.carry) { IN.carry = null; vavaSay("Ô, menino! Disco só sai daqui pago, hein. Deixa que eu guardo."); return true; }
         ui.inside && ui.inside("leave");
@@ -720,7 +727,7 @@ const STREET = (() => {
           ...Array.from({ length: 8 }, (_, i) => ({ g: spotG[i % 6], mo: M.I(), hidden: true })), ...Array.from({ length: 28 }, () => ({ g: sparkG, mo: M.I(), hidden: true }))];
         R.ambBase = R.scene.amb.slice();
       }
-      const [ball, chain] = D.disco, BX = 0, BZ = 6.4, H = R.H || 3.4, hide = k <= 0.001;
+      const [ball, chain] = D.disco, [BX, BZ] = R.ball || [0, 6.4], H = R.H || 3.4, hide = k <= 0.001;
       const by = H + 0.35 - e * 0.95;
       ball.hidden = chain.hidden = hide;
       ball.mo = M.mul(M.T(BX, by, BZ), M.RY(t * 1.1));
@@ -945,10 +952,281 @@ const STREET = (() => {
       Dy.headP.hidden = !IN.phones || !rig.F;
       if (IN.phones && rig.F) { Dy.headP.g = phoneG(); Dy.headP.mo = M.mul(rig.F[CHARS.BONE.head], M.S(look.headScale || 1, look.headScale || 1, look.headScale || 1)); }
     }
+    // ================= festa no Aloha Club =================
+    // elenco: a turma (quem você não está jogando aparece como NPC), Julie, DJ Luskinha, Mila, Diogo, os primos
+    // Cabeça e Breno, Ana Lívia e a galera dançando (alguns lá em cima no mezanino)
+    const FESTA_CAST = [
+      { look: "lucas", who: "lucas", x: 0, z: 12.55, y: 0.4, yaw: Math.PI / 2, idle: "dj" },
+      { look: "julie", who: "julie", x: 3.25, z: 8.25, yaw: Math.PI * 0.62 },
+      { look: "kf", who: "kf", x: 3.0, z: 9.2, yaw: -Math.PI * 0.4 },
+      { look: "kaua", who: "kaua", x: -4.95, z: 8.9, yaw: Math.PI, idle: "shy" },
+      { look: "mila", who: "mila", x: -1.9, z: 9.75, yaw: Math.PI * 0.55, dance: 3 },
+      { look: "gabi", who: "gabi", x: 2.2, z: 3.0, yaw: 0.1 },
+      { look: "diogo", who: "diogo", x: 3.4, z: 3.65, yaw: Math.PI * 0.85 },
+      { look: "kauane", who: "kauane", x: -2.2, z: 3.05, yaw: Math.PI },
+      { look: "cabeca", who: "cabeca", x: -3.45, z: 3.7, yaw: -0.5 },
+      { look: "breno", who: "breno", x: -3.55, z: 2.4, yaw: 0.5 },
+      { look: "analivia", who: "analivia", x: -2.45, z: 2.3, yaw: 2.6 },
+      { look: "fx0", who: "fx", x: -2.2, z: 5.9, yaw: 0.4, dance: 0 },
+      { look: "fx1", who: "fx", x: -0.6, z: 5.6, yaw: -1.2, dance: 1 },
+      { look: "fx2", who: "fx", x: 1.0, z: 6.1, yaw: 2.2, dance: 3 },
+      { look: "fx3", who: "fx", x: 2.3, z: 5.7, yaw: 1.4, dance: 2 },
+      { look: "fx4", who: "fx", x: -1.4, z: 7.3, yaw: -0.6, dance: 5 },
+      { look: "fx5", who: "fx", x: 1.6, z: 7.6, yaw: 2.8, dance: 6 },
+      { look: "fx6", who: "fx", x: -0.2, z: 7.1, yaw: 0.9, dance: 4 },
+      { look: "fx7", who: "fx", x: 0.3, z: 8.9, yaw: -2.0, dance: 0 },
+      { look: "fx8", who: "fx", x: 2.2, z: 6.6, yaw: 2.1, dance: 3 },
+      { look: "fx9", who: "fx", x: 0.9, z: 10.0, yaw: 1.6, dance: 1 },
+      { look: "fx10", who: "fx", x: -4.7, z: 9.0, y: 3.2, yaw: 0, idle: "rail" },
+      { look: "fx11", who: "fx", x: 1.2, z: 13.85, y: 3.2, yaw: Math.PI / 2, idle: "rail" },
+    ];
+    Object.assign(WHO, { lucas: "DJ Luskinha", mila: "Mila", diogo: "Diogo", cabeca: "Cabeça", breno: "Breno", analivia: "Ana Lívia", kaua: "Kauã", gabi: "Gabi", kauane: "Kauane", fx: "" });
+    const FLINES = {
+      lucas: ["Fala, parceiro! Tá curtindo o set?", "Hoje eu trouxe só pedrada dos anos 90. Segura essa!", "Quer outra? Aperta N que eu solto a próxima.", "Daqui a pouco tem surpresa... fica ligado."],
+      julie: ["Esse DJ é muito bom, né?", "Você dança, garoto tubarão? Hehe.", "Que bom que você veio."],
+      kf: ["Olha a pista, mano! Tá lotada.", "O Lucas é brabo demais, falei pra você.", "Bora dançar, sem vergonha!"],
+      kaua: ["Essa coxinha tá muito boa...", "Tá cheio, né? Nunca vi tanta gente junta.", "Eu tô de boa aqui, sério."],
+      mila: ["Essa música é muito boa!", "Gostei do seu estilo.", "O Lucas manda bem demais."],
+      diogo: ["Fala aí! Curtindo a festa?", "Esse som tá demais, mas falta um reggaezinho, hein.", "Já pegou água de coco? Tá geladinha."],
+      cabeca: ["E aí, firmeza?", "Essa festa tá pegando fogo!", "Ó o meu tênis novo, nem pisa."],
+      breno: ["Fala, tudo certo?", "Ambiente maneiro, né?", "O Kiko do bar faz um coquetel de frutas brabo."],
+      analivia: ["Ai, amei a decoração!", "Você viu a Kauane? Ela tá linda hoje.", "Esse colar de flor combina com tudo, né?"],
+      gabi: ["Que festa massa!", "Já foi no bar? Tem água de coco.", "Olha a decoração... parece praia."],
+      kauane: ["Hmpf. Até que tá legal.", "Se alguém pisar no meu tênis, briga.", "O Lucas manda bem, vai."],
+      fx: ["Essa música é muito boa!", "Já pegou um colar de flor? Deram na porta!", "O DJ tá on fire hoje!", "Bora pra pista!", "Aloha! Hahaha."],
+    };
+    // passinhos (no tempo da música, ~125 bpm): 0 dois-pra-lá, 1 sobe-e-desce com a mão pra cima, 2 corridinha,
+    // 3 balanço de quadril com mão no cabelo, 4 dedo pro alto (discoteca), 5 robô, 6 pulinho eurodance, 7 só balança a cabeça
+    function DANCE(k, t, ph) {
+      const b = (t + ph * 0.13) * Math.PI * 2 * 2.08, s = Math.sin(b), c = Math.cos(b), h = Math.sin(b / 2), up = Math.abs(s);
+      switch (k % 8) {
+        case 0: return POSE({ py: 0.92 + up * 0.03, twist: h * 0.25, hy: h * 0.2, hp: 0.04, fzF: 0.12 + Math.max(0, h) * 0.12, fzB: -0.12 + Math.min(0, h) * 0.12, hF: [0.25, 1.05 + up * 0.08, 0.22], hB: [0.25, 1.05 + up * 0.08, -0.22], lf: Math.max(0, s) * 0.05, lb: Math.max(0, -s) * 0.05 });
+        case 1: return POSE({ py: 0.9 + up * 0.05, lean: -0.04, hp: -0.12, twist: h * 0.12, hF: [0.12, 1.75 + up * 0.15, 0.22], hB: [0.12, 1.75 + up * 0.15, -0.22] });
+        case 2: return POSE({ py: 0.92 + up * 0.03, lean: 0.12, fxF: s * 0.18, fxB: -s * 0.18, lf: Math.max(0, c) * 0.12, lb: Math.max(0, -c) * 0.12, hF: [-s * 0.2 + 0.1, 1.1, 0.25], hB: [s * 0.2 + 0.1, 1.1, -0.25] });
+        case 3: return POSE({ py: 0.92 + up * 0.02, twist: h * 0.35, roll: h * 0.08, hy: -h * 0.3, hp: 0.0, hF: [0.05, 1.72, 0.12], hB: [0.05, 1.0 + up * 0.1, -0.28] });
+        case 4: { const hi = h > -0.2; return POSE({ py: 0.92 + up * 0.035, lean: 0.06, twist: h * 0.28, hy: h * 0.35, hp: -0.04, hF: hi ? [0.2, 1.78, 0.34] : [0.06, 0.98, 0.3], hB: [0.04, 0.98, -0.3], lf: Math.max(0, s) * 0.05, lb: Math.max(0, -s) * 0.05 }); }
+        case 5: { const st = Math.round(h * 2) / 2; return POSE({ py: 0.93, lean: 0.02, twist: st * 0.3, hy: -st * 0.4, hp: 0.05, hF: [0.32, 1.25 + st * 0.15, 0.3], hB: [0.32, 1.25 - st * 0.15, -0.3] }); }
+        case 6: { const j = Math.max(0, s); return POSE({ py: 0.9 + j * 0.12, lean: -0.02, hp: -0.15, hF: [0.1, 1.85, 0.3], hB: [0.1, 1.85, -0.3], lf: j * 0.12, lb: j * 0.12 }); }
+        default: return POSE({ py: 0.94, lean: 0.04, hp: 0.06 + up * 0.08, hy: h * 0.1, hF: [0.28, 1.2, 0.2], hB: [0.02, 0.95, -0.27] });
+      }
+    }
+    const SLOW_A = (t, gap) => POSE({ py: 0.94, lean: 0.05, twist: Math.sin(t * 1.3) * 0.08, hp: 0.12, hF: [0.25 + gap * 0.2, 1.08, 0.17], hB: [0.25 + gap * 0.2, 1.08, -0.17], fzF: 0.1, fzB: -0.1, fxF: Math.sin(t * 1.3) * 0.05, fxB: -Math.sin(t * 1.3) * 0.05 });
+    const SLOW_B = (t, gap) => POSE({ py: 0.94, lean: 0.05, twist: -Math.sin(t * 1.3) * 0.08, hp: -0.06, hF: [0.24 + gap * 0.2, 1.45, 0.17], hB: [0.24 + gap * 0.2, 1.45, -0.17], fzF: 0.1, fzB: -0.1, fxF: -Math.sin(t * 1.3) * 0.05, fxB: Math.sin(t * 1.3) * 0.05 });
+    const GIGGLE = (t) => POSE({ lean: 0.08 + Math.abs(Math.sin(t * 9)) * 0.03, twist: 0.15, hp: 0.14, hy: 0.25, hF: [0.2, 1.52, 0.05], hB: [0.18, 1.47, -0.07] });
+    const SHY = (t) => POSE({ lean: 0.14, twist: 0.3, hy: -0.4, hp: 0.25, hF: [0.24, 1.66, 0.02], hB: [0.02, 0.98, -0.32] });
+    const yawTo = (x, z, tx, tz) => Math.atan2(-(tz - z), tx - x);
+    let FS = null;
+    const pkey = () => (lookKey() || "kf").replace(/_.*/, "");
+    function festaEnter(R) {
+      const pk = pkey();
+      FS = { pk, t: 0, main: 0, step: 0, slow: 0, slowAt: 0, slowK: 0, cup: null, wait: 0, call: 0 };
+      for (const n of R.npcR) {
+        if (!n.home) n.home = { x: n.x, z: n.z, yaw: n.yaw, dance: n.dance, idle: n.idle };
+        Object.assign(n, n.home); n.ov = null; n.hide = n.who === pk; n.off = n.hide;
+      }
+      IN.disco = { on: true }; IN.ov = null; IN.cut = null; IN.cutCam = null; IN.dancing = null; IN.cup = null; IN.snack = 0;
+      ui.festa && ui.festa("on", { i: 0 });
+      const hint = { kf: "A Julie tá perto do bar... vai lá dar um oi.", kaua: "Que tanto de gente... a mesa de salgadinho parece um bom esconderijo.", gabi: "Aquele cara de camiseta de reggae tá olhando sua pulseira...", kauane: "Ih... o Cabeça e o Breno tão ali na mesinha da esquerda.", julie: "O K.F. tá ali perto do bar." }[pk] || "Bora curtir a festa!";
+      IN.sayQ = [{ t: 1.2, who: "", line: hint }];
+    }
+    const fNpc = (who) => IN.R.npcR.find((n) => n.who === who || n.look === who);
+    // posiciona alguém (NPC ou você, se for o seu personagem) numa cena: x, z, yaw e a pose da hora
+    function place2(who, x, z, yaw, pose) {
+      if (who === FS.pk) { IN.ov = { x, z, yaw, pose }; IN.x = x; IN.z = z; IN.yaw = yaw; return; }
+      const n = fNpc(who); if (n) n.ov = { x, z, yaw, pose };
+    }
+    function setHome(who, x, z, yaw, extra) {
+      if (who === FS.pk) { IN.x = x; IN.z = z; IN.yaw = yaw; return; }
+      const n = fNpc(who); if (!n) return;
+      Object.assign(n, { x, z, yaw, dance: null, idle: null }, extra || {});
+    }
+    function cutStart(shots, done) { IN.cut = { shots, t: 0, i: -1, done }; IN.dancing = null; IN.talk = null; ui.cut && ui.cut("start"); ui.inside && ui.inside("spot", null); }
+    function cutEnd() {
+      const C = IN.cut; if (!C) return;
+      IN.cut = null; IN.cutCam = null; IN.ov = null; IN.cam.fov = 1.08;
+      for (const n of IN.R.npcR) n.ov = null;
+      ui.cut && ui.cut("end");
+      C.done && C.done();
+    }
+    function cutTick(dt) {
+      const C = IN.cut; C.t += dt;
+      let acc = 0, i = 0;
+      while (i < C.shots.length && C.t > acc + C.shots[i].dur) { acc += C.shots[i].dur; i++; }
+      if (i >= C.shots.length) return cutEnd();
+      const sh = C.shots[i], lt = C.t - acc, u = lt / sh.dur;
+      if (i !== C.i) { C.i = i; ui.cut && ui.cut("line", { who: sh.who ? WHO[sh.who] || sh.who : "", text: sh.text || "" }); if (sh.on) sh.on(); }
+      const cm = sh.cam(u); IN.cutCam = cm;
+      if (C.act) C.act(C.t, u, i);
+    }
+    // ---- cena: o Kauã esbarra na Mila ----
+    function cutBump() {
+      const KX0 = -4.6, KZ0 = 8.95, KX = -2.45, KZ = 9.6, MXp = -1.9, MZp = 9.75;
+      const shots = [
+        { dur: 2.6, who: "kaua", text: "Licença... licença...", cam: (u) => ({ eye: [-3.3 + u * 0.6, 1.75, 7.0], at: [-3.4 + u * 1.0, 1.15, 9.3] }) },
+        { dur: 1.5, who: "", text: "", on: () => { sfx.nocan && sfx.nocan(); }, cam: () => ({ eye: [-2.15, 1.45, 8.1], at: [-2.15, 1.05, 9.7] }) },
+        { dur: 3.2, who: "kaua", text: "Foi mal! Foi mal mesmo, eu não vi...", cam: () => ({ eye: [-2.2, 1.62, 8.0], at: [-2.17, 1.42, 9.68] }) },
+        { dur: 3.2, who: "mila", text: "Relaxa, não foi nada. Era só refri.", cam: () => ({ eye: [-3.05, 1.78, 8.75], at: [-1.9, 1.5, 9.75] }) },
+        { dur: 4.2, who: "mila", text: "Gostei do cabelo. Espetado assim... tem personalidade.", cam: (u) => ({ eye: [-3.05 + u * 0.12, 1.78, 8.75], at: [-1.9, 1.5, 9.75] }) },
+        { dur: 2.8, who: "kaua", text: "Ah... v-valeu.", cam: () => ({ eye: [-1.15, 1.72, 9.2], at: [-2.45, 1.52, 9.6] }) },
+        { dur: 3.0, who: "mila", text: "Eu sou a Mila. E você?", cam: () => ({ eye: [-3.05, 1.78, 8.75], at: [-1.9, 1.5, 9.75] }) },
+        { dur: 2.4, who: "kaua", text: "Kauã. Prazer.", cam: () => ({ eye: [-1.15, 1.72, 9.2], at: [-2.45, 1.52, 9.6] }) },
+        { dur: 3.8, who: "kf", text: "Cara... quem te viu, quem te vê, hein, amigão! Hehehe.", cam: () => ({ eye: [1.9, 1.75, 10.1], at: [3.05, 1.5, 8.8] }) },
+        { dur: 2.6, who: "julie", text: "Hihi...", cam: () => ({ eye: [2.2, 1.7, 9.9], at: [3.25, 1.5, 8.25] }) },
+      ];
+      cutStart(shots, () => {
+        setHome("kaua", KX, KZ, yawTo(KX, KZ, MXp, MZp), { idle: "talk2" });
+        setHome("mila", MXp, MZp, yawTo(MXp, MZp, KX, KZ), { idle: "talk2" });
+        FS.main = 1; FS.slowAt = FS.t + 8;
+      });
+      IN.cut.act = (T, u, i) => {
+        const tk = Math.min(1, T / 2.6), kx = KX0 + (KX - KX0) * tk, kz = KZ0 + (KZ - KZ0) * tk;
+        const walkP = (ph) => POSE({ lean: 0.08, twist: Math.sin(ph) * 0.07, fxF: Math.sin(ph) * 0.2, fxB: -Math.sin(ph) * 0.2, lf: Math.max(0, Math.cos(ph)) * 0.07, lb: Math.max(0, -Math.cos(ph)) * 0.07, hF: [0.1, 0.95, 0.27], hB: [-0.1, 0.95, -0.27] });
+        const kp = i === 0 ? walkP(T * 9) : i === 1 ? POSE({ lean: -0.12, hp: -0.1, hF: [0.3, 1.3, 0.25], hB: [0.3, 1.3, -0.25] }) : i === 5 || i === 7 ? SHY(T) : POSE({ lean: 0.06, hp: 0.1, twist: 0.1, hF: [0.3, 1.15, 0.2], hB: [0.02, 0.95, -0.27] });
+        place2("kaua", kx, kz, yawTo(KX0, KZ0, KX, KZ), kp);
+        const turned = i >= 1, my = turned ? yawTo(MXp, MZp, KX, KZ) : Math.PI * 0.55;
+        const mp = i === 0 ? DANCE(3, T, 0) : i === 1 ? POSE({ lean: -0.08, hp: -0.15, hF: [0.25, 1.25, 0.25], hB: [0.1, 0.95, -0.3] }) : POSE({ lean: 0.03, twist: 0.12, hp: 0.04, hy: 0.15, hF: [0.12, 1.0, 0.28], hB: [0.05, 1.68, -0.12] });
+        place2("mila", MXp, MZp, my, mp);
+        // copo da Mila caindo
+        FS.cup = i === 0 ? { x: MXp + 0.15, y: 1.25, z: MZp - 0.2 } : i === 1 ? { x: MXp - 0.15 - u * 0.2, y: Math.max(0.03, 1.2 - u * u * 3), z: MZp - 0.3, r: u * 3 } : { x: MXp - 0.35, y: 0.03, z: MZp - 0.3, r: 1.57 };
+        place2("kf", 3.0, 9.2, yawTo(3.0, 9.2, KX, KZ), i === 8 ? POSE({ twist: 0.15, hp: 0.0, hF: [0.25, 1.2 + Math.sin(T * 6) * 0.05, 0.25], hB: [0.02, 0.95, -0.27] }) : POSE({ hp: 0.05, hF: [0.03, 0.95, 0.27], hB: [0.02, 0.95, -0.27] }));
+        place2("julie", 3.25, 8.25, yawTo(3.25, 8.25, KX, KZ), i === 9 ? GIGGLE(T) : POSE({ hp: 0.05, hF: [0.03, 0.95, 0.27], hB: [0.02, 0.95, -0.27] }));
+      };
+    }
+    // ---- cena: a música lenta (o DJ chama os casais; K.F. e Julie, Kauã e Mila; o primeiro beijo do K.F. e da Julie) ----
+    const SLOW_PAIRS = [["fx0", "fx2", 2.4, 9.5, 0.4], ["fx3", "fx4", -2.9, 6.0, -0.3], ["fx5", "fx7", 2.6, 5.9, 2.4], ["fx1", "fx8", -3.3, 10.4, 1.2]], SLOW_SOLO = [["fx6", -3.5, 9.9], ["fx9", 3.5, 7.4]];
+    function cutSlow() {
+      FS.slow = 1;
+      ui.festa && ui.festa("slow");
+      const KJ = [0.5, 7.4], KM = [-1.6, 8.75];
+      const shots = [
+        { dur: 3.8, who: "lucas", text: "Agora a gente vai diminuir o ritmo um pouquinho...", cam: (u) => ({ eye: [0.3 - u * 0.4, 2.0, 9.5], at: [0, 1.75, 12.5] }) },
+        { dur: 3.4, who: "lucas", text: "Chama o seu par e vem pra pista!", cam: () => ({ eye: [-0.2, 1.95, 10.1], at: [0, 1.8, 12.5] }) },
+        { dur: 4.2, who: "", text: "♪", cam: (u) => ({ eye: [-4.1 + u * 0.6, 5.2, 13.0], at: [0, 0.8, 7.8] }) },
+        { dur: 4.4, who: "julie", text: "Sabe que eu nunca dancei música lenta com ninguém?", cam: () => ({ eye: [KJ[0] - 0.95, 1.78, KJ[1] - 0.7], at: [KJ[0] + 0.24, 1.48, KJ[1]] }) },
+        { dur: 4.0, who: "kf", text: "Nem eu. Mas acho que a gente tá indo bem.", cam: () => ({ eye: [KJ[0] + 0.95, 1.72, KJ[1] - 0.7], at: [KJ[0] - 0.24, 1.6, KJ[1]] }) },
+        { dur: 3.6, who: "mila", text: "Relaxa... é só ir no balanço.", cam: () => ({ eye: [KM[0] - 0.95, 1.72, KM[1] - 0.7], at: [KM[0] + 0.24, 1.48, KM[1]] }) },
+        { dur: 3.2, who: "kaua", text: "Tô tentando! Acho que tô pegando o jeito.", cam: () => ({ eye: [KM[0] + 0.95, 1.68, KM[1] - 0.7], at: [KM[0] - 0.24, 1.55, KM[1]] }) },
+        { dur: 5.6, who: "", text: "", cam: (u) => ({ eye: [KJ[0] + 0.05, 1.85 - u * 0.1, KJ[1] - 1.05 + u * 0.12], at: [KJ[0], 1.6, KJ[1]], fov: 0.85 }) },
+        { dur: 4.4, who: "", text: "♪ ♪ ♪", cam: (u) => ({ eye: [3.6 - u * 0.8, 4.4, 3.2], at: [0, 2.6, 8.0] }) },
+      ];
+      cutStart(shots, () => {
+        FS.slowDone = 1; FS.slowEnd = FS.t + 150;
+        SLOW_PAIRS.forEach(([a, b2, x, z, r]) => { setHome(a, x - Math.cos(r) * 0.24, z + Math.sin(r) * 0.24, r, { idle: "slowA" }); setHome(b2, x + Math.cos(r) * 0.24, z - Math.sin(r) * 0.24, r + Math.PI, { idle: "slowB" }); });
+        for (const [lk, x, z] of SLOW_SOLO) setHome(lk, x, z, yawTo(x, z, KJ[0], KJ[1]), { idle: "talk2" });
+        setHome("kf", KJ[0] - 0.24, KJ[1], 0, { idle: "slowA", pair: 1 }); setHome("julie", KJ[0] + 0.24, KJ[1], Math.PI, { idle: "slowB", pair: 1 });
+        setHome("kaua", KM[0] - 0.24, KM[1], 0, { idle: "slowA" }); setHome("mila", KM[0] + 0.24, KM[1], Math.PI, { idle: "slowB" });
+        if (FS.pk === "kf" || FS.pk === "julie" || FS.pk === "kaua") IN.ov = null;
+      });
+      IN.cut.act = (T, u, i) => {
+        // gap: distância entre os dois; no beijo eles chegam pertinho e inclinam a cabeça
+        const kiss = i === 7 ? Math.min(1, Math.max(0, (u - 0.15) / 0.45)) : i === 8 ? 1 : 0, ke = kiss * kiss * (3 - 2 * kiss), g = 0.24 - ke * 0.05;
+        const A = SLOW_A(T, 0), B = SLOW_B(T, 0);
+        if (ke > 0) { A.hp = 0.12 + ke * 0.16; A.lean = 0.05 + ke * 0.08; A.hy = -ke * 0.12; B.hp = -0.06 - ke * 0.18; B.lean = 0.05 + ke * 0.06; B.hy = ke * 0.12; A.twist = B.twist = 0; }
+        place2("kf", KJ[0] - g, KJ[1], 0, A); place2("julie", KJ[0] + g, KJ[1], Math.PI, B);
+        place2("kaua", KM[0] - 0.24, KM[1], 0, SLOW_A(T + 0.7, 0)); place2("mila", KM[0] + 0.24, KM[1], Math.PI, SLOW_B(T + 0.7, 0));
+        SLOW_PAIRS.forEach(([a, b2, x, z, r], k) => { place2(a, x - Math.cos(r) * 0.24, z + Math.sin(r) * 0.24, r, SLOW_A(T + k, 0)); place2(b2, x + Math.cos(r) * 0.24, z - Math.sin(r) * 0.24, r + Math.PI, SLOW_B(T + k, 0)); });
+        for (const [lk, x, z] of SLOW_SOLO) place2(lk, x, z, yawTo(x, z, KJ[0], KJ[1]), POSE({ hp: 0.05, twist: Math.sin(T * 0.8) * 0.06, hF: [0.25, 1.1, 0.2], hB: [0.02, 0.95, -0.27] }));
+        if (i === 0 || i === 1) { const n = fNpc("lucas"); if (n) n.ov = { x: n.x, z: n.z, yaw: n.yaw, pose: POSE({ lean: 0.02, hp: -0.02, twist: 0.1, hF: [0.32, 1.62, 0.06], hB: [0.42, 1.3, -0.25] }) }; }
+        // quem não tem par na hora assiste do canto
+        if (FS.pk === "gabi") place2("gabi", 2.5, 4.4, yawTo(2.5, 4.4, KJ[0], KJ[1]), POSE({ hp: 0.05, hy: Math.sin(T * 0.5) * 0.2, hF: [0.2, 1.1, 0.2], hB: [0.02, 0.95, -0.27] }));
+        if (FS.pk === "kauane") place2("kauane", -2.6, 4.2, yawTo(-2.6, 4.2, KJ[0], KJ[1]), POSE({ hp: 0.05, hF: [0.25, 1.05, 0.12], hB: [0.25, 1.05, -0.12] }));
+      };
+    }
+    function festaTalk(who) {
+      const pk = FS.pk, L = FLINES[who] || FLINES.fx;
+      const Q = (arr) => { IN.sayQ = arr.map(([w, line], k) => ({ t: k ? 2.9 : 0.05, who: w, line })); };
+      const busy = IN.sayQ && IN.sayQ.length;
+      if (busy) return true;
+      if ((pk === "kf" && who === "julie") || (pk === "julie" && who === "kf")) {
+        if (!FS.greet) {
+          FS.greet = 1;
+          Q([["julie", "Oi, garoto tubarão!"], ["gabi", "...garoto tubarão?"], ["kauane", "Oxe. Que apelido é esse?"], ["kf", "E aí, Julie! Nem sabia que você vinha."], ["julie", "O Lucas é meu vizinho. Não ia perder o set dele por nada."], ["kf", "O cara tá brabo hoje, né?"], ["julie", "Tá demais! Fica aqui com a gente... quer dizer, comigo. Hehe."], ["julie", "Ei... o Kauã tá sozinho lá no salgadinho. Chama ele pra cá!"]]);
+          return true;
+        }
+      }
+      if ((pk === "kf" || pk === "julie") && who === "kaua" && FS.greet && !FS.main) {
+        Q([[pk === "julie" ? "julie" : "kf", pk === "julie" ? "Kauã! Vem ficar com a gente lá no bar!" : "Ô Kauã, cola aqui com a gente!"], ["kaua", "Já vou, já vou..."]]);
+        IN.sayQ.push({ t: 1.6, who: "", line: "", fn: () => cutBump() });
+        return true;
+      }
+      if (pk === "kaua" && who === "mila" && FS.main && !FS.milaTalk) {
+        FS.milaTalk = 1;
+        Q([["mila", "Então, Kauã... você anda de skate também?"], ["kaua", "Ando. Comecei faz pouco tempo, mas tô pegando o jeito."], ["mila", "Eu ando na pista do centro. Um dia a gente racha uma sessão."], ["kaua", "S-sério? Fechou!"]]);
+        return true;
+      }
+      if (pk === "gabi" && who === "diogo" && !FS.main) {
+        Q([["diogo", "Opa! Pulseira da hora essa. Curte reggae?"], ["gabi", "Demais. Lá em casa só toca Cidade Negra e Natiruts."], ["diogo", "Sério? Eu toco numa banda com uns amigos. Uns covers e umas nossas."], ["gabi", "Mentira! Qual o nome?"], ["diogo", "Raízes. Tá até na camiseta, ó. Hahaha."], ["gabi", "Hahaha, propaganda gratuita. Gostei."], ["diogo", "Sábado tem ensaio na garagem do meu primo. Cola lá com a galera!"], ["gabi", "Fechou! Valeu, Diogo."]]);
+        IN.sayQ.push({ t: 2.9, who: "", line: "", fn: () => { FS.main = 1; FS.slowAt = FS.t + 6; } });
+        return true;
+      }
+      if (pk === "kauane" && (who === "cabeca" || who === "breno") && !FS.main) {
+        Q([["cabeca", "Olha só quem chegou... a rainha da ladeira."], ["kauane", "Vai começar, Cabeça?"], ["cabeca", "Calma, calma! Na real... foi mal por aquele dia. A gente foi muito mal perdedor."], ["breno", "Foi feio mesmo. Você desceu aquela ladeira voando."], ["kauane", "...Tá. Desculpa também por ter chamado vocês de criança. Mas que pareceram, pareceram."], ["cabeca", "Hahaha! Justo. Ó, fiquei sabendo que você tá treinando uma manobra nova."], ["kauane", "Tô. Mas é segredo. Quando sair, vocês vão ver."], ["breno", "Então já é. Quando for lançar, chama a gente."], ["analivia", "Viu? Eu falei que ela não era brava, só marrenta! Hihi."], ["kauane", "Ana Lívia!"]]);
+        IN.sayQ.push({ t: 2.9, who: "", line: "", fn: () => { FS.main = 1; FS.slowAt = FS.t + 6; } });
+        return true;
+      }
+      sayIn(who, L[IN.li++ % L.length], 3.5);
+      return true;
+    }
+    // falar com quem está perto: os pontos de conversa acompanham as pessoas
+    function festaSpots(R) {
+      R.spots = R.spots.filter((s) => !s.npc);
+      for (const n of R.npcR) {
+        if (n.hide || (n.y || 0) > 1 || n.who === "lucas") continue;
+        const nm = n.who === "fx" ? ART.LOOKS[n.look].name : WHO[n.who];
+        R.spots.push({ id: "t_" + n.look, npc: 1, x: n.x - Math.cos(n.yaw) * -0.0, z: n.z, r: 0.95, act: "ftalk", who: n.who, look: n.look, label: "Falar com " + nm, face: [n.x, n.z] });
+      }
+    }
+    const cupG = Rn.upload((() => { const m = new Mesh(); m.tube([0, -0.06, 0], [0, 0.06, 0], 0.035, 0.042, 8, hex(0xe0302b)); m.tube([0, 0.06, 0], [0, 0.065, 0], 0.042, 0.042, 8, hex(0xffffff)); m.tube([0.01, 0.06, 0], [0.03, 0.15, 0], 0.005, 0.005, 3, hex(0xff4fa3)); return m; })());
+    const coxG = Rn.upload((() => { const m = new Mesh(); m.ball([0, 0.02, 0], 0.04, hex(0xd88a3a), 0, 7, 5, { sy: 1.25 }); return m; })());
+    function festaFrame(R, D, dt, t) {
+      if (!FS) return;
+      FS.t += dt;
+      // piso de luz: acende no tempo da música, em ondas coloridas; na música lenta fica roxinho e calmo
+      FS.slowK = Math.max(0, Math.min(1, FS.slowK + ((FS.slow && (IN.cut || FS.slowDone) && FS.t - (FS.slowStart || 0) < 140) ? dt / 2 : -dt / 3)));
+      const beat = FS.t * 2.08, PAL = [[1, 0.3, 0.65], [0.3, 0.8, 1], [1, 0.85, 0.25], [0.55, 0.35, 1], [0.35, 1, 0.55]];
+      for (const o of D.floor) {
+        const w = (o.i + o.j + Math.floor(beat)) % 5, on = ((o.i * 3 + o.j * 5 + Math.floor(beat)) % 4) !== 0, c = PAL[w], lv = on ? 1 : 0.25, sk = FS.slowK;
+        o.tint = [(c[0] * lv) * (1 - sk) + 0.45 * sk, (c[1] * lv) * (1 - sk) + 0.25 * sk, (c[2] * lv) * (1 - sk) + 0.75 * sk];
+      }
+      discoFx(R, D, dt, t);
+      if (FS.slowK > 0 && R.scene.amb) R.scene.amb = R.scene.amb.map((v) => v * (1 - FS.slowK * 0.35));
+      // copo que cai na cena do esbarrão
+      if (!D.cup) D.cup = { g: cupG, mo: M.I(), hidden: true };
+      D.cup.hidden = !(IN.cut && FS.cup);
+      if (!D.cup.hidden) D.cup.mo = M.mul(M.T(FS.cup.x, FS.cup.y, FS.cup.z), M.RZ(FS.cup.r || 0));
+      // na mão: refri do bar ou coxinha (comendo)
+      if (!D.hand) D.hand = { g: cupG, mo: M.I(), hidden: true };
+      const h = !IN.cut && (IN.cup || IN.snack > 0) && rig.F ? handOf(rig, look, "F") : null;
+      D.hand.hidden = !h;
+      if (h) { D.hand.g = IN.snack > 0 ? coxG : cupG; D.hand.mo = M.T(h[0], h[1] + 0.04, h[2]); }
+      if (IN.snack > 0) IN.snack -= dt;
+      if (IN.cut) { cutTick(dt); return; }
+      festaSpots(R);
+      // Kauã (jogando com ele): depois de um tempo no salgadinho, o K.F. chama; indo até eles, esbarra na Mila
+      if (FS.pk === "kaua" && !FS.main) {
+        if (!FS.call && ((FS.ate && FS.t > FS.ate + 3.5) || FS.t > 25)) { FS.call = 1; IN.sayQ = [{ t: 0.4, who: "kf", line: "Ô Kauã! Larga essa coxinha e cola aqui com a gente!" }, { t: 3.2, who: "julie", line: "Vem, Kauã! A gente tá aqui perto do bar." }]; }
+        if (FS.call && IN.x > -3.6 && !(IN.sayQ && IN.sayQ.length)) cutBump();
+      }
+      if (FS.main && !FS.slow && FS.t > FS.slowAt && !(IN.sayQ && IN.sayQ.length)) { FS.slowStart = FS.t; cutSlow(); }
+      if (FS.slowEnd && FS.t > FS.slowEnd) {
+        FS.slowEnd = 0;
+        for (const n of R.npcR) if (n.who === "fx") Object.assign(n, { x: n.home.x, z: n.home.z, yaw: n.home.yaw, dance: n.home.dance, idle: n.home.idle });
+        for (const w of ["kf", "julie", "kaua", "mila"]) { const n = fNpc(w); if (n && n.idle && /^slow/.test(n.idle)) n.idle = "talk2"; }
+      }
+    }
+    function festaAct(s) {
+      if (s.act === "ftalk") { IN.dancing = null; return festaTalk(s.who); }
+      if (s.act === "talk" && s.who === "lucas") return festaTalk("lucas");
+      if (s.act === "snack") { IN.snack = 2.2; IN.cup = null; FS.ate = FS.ate || FS.t; sayIn(FS.pk, ["Hmm, coxinha quentinha.", "Mais uma não faz mal...", "Esse pastelzinho tá bom demais."][IN.li++ % 3], 2.2); return true; }
+      if (s.act === "drink") { IN.cup = true; IN.snack = 0; sayIn("", "Kiko do bar: Refri geladinho saindo! Por conta da casa hoje.", 2.6); return true; }
+      if (s.act === "dance") { IN.dancing = IN.dancing ? null : { s: (IN.li++ % 7) }; IN.cup = null; return true; }
+      return false;
+    }
     function inFrame(dt, t) {
       const R = IN.R;
       IN.t += dt;
-      const walk = S.running && !IN.hold && !IN.sit && IN.change == null && !IN.lounge;
+      const walk = S.running && !IN.hold && !IN.sit && IN.change == null && !IN.lounge && !IN.cut;
+      if (IN.dancing && (keys.up || keys.down)) IN.dancing = null;
       let mv = 0;
       if (walk) {
         const turn = (keys.left ? 1 : 0) - (keys.right ? 1 : 0);
@@ -1008,6 +1286,8 @@ const STREET = (() => {
         IN.x = px; IN.z = pz; IN.yaw = yaw;
         const br = Math.sin(t * 0.8) * 0.01;
         tp = k < 1 ? POSE({ py: 0.94 - 0.3 * e }) : LOUNGE(t, br);
+      } else if (IN.dancing && Math.abs(IN.v) < 0.12) {
+        tp = DANCE(IN.dancing.s, t, 0);
       } else if (Math.abs(IN.v) > 0.12) {
         const sw = Math.sin(IN.ph), cw = Math.cos(IN.ph), sg = IN.v < 0 ? -1 : 1;
         tp = POSE({ lean: 0.06, twist: sw * 0.07, fxF: sw * 0.2 * sg, fxB: -sw * 0.2 * sg, lf: Math.max(0, cw) * 0.07, lb: Math.max(0, -cw) * 0.07, hF: [-sw * 0.18 * sg, 0.93, 0.27], hB: [sw * 0.18 * sg, 0.93, -0.27] });
@@ -1029,15 +1309,19 @@ const STREET = (() => {
       // disco (ou CD) na mão: as duas mãos seguram nas bordas, na frente do peito
       if (IN.carry && !IN.sit && !(IN.hold && IN.spot && IN.spot.act === "dig")) { tp.hF = IN.carry.fmt === "cd" ? [0.04, 1.0, 0.3] : [0.04, 0.88, 0.3]; tp.twist = 0; }
       if (IN.anim || IN.needle) { tp = POSE({ lean: 0.2, hp: 0.36, hF: [0.5, 1.0 + Math.sin(t * 2) * 0.02, 0.08], hB: [0.1, 0.95, -0.27] }); if (IN.anim && IN.anim.t < 1.4) { const w = IN.anim.kind === "cd" ? 0.075 : 0.16; tp.hF = [0.5, 1.12, w]; tp.hB = [0.5, 1.1, -w]; } }
-      if ((IN.cone || IN.pop) && !IN.sit && !IN.anim && !IN.lounge) tp.hF = [0.3, 1.22, 0.2];
+      if ((IN.cone || IN.pop || IN.cup) && !IN.sit && !IN.anim && !IN.lounge && !IN.dancing) tp.hF = [0.3, 1.22, 0.2];
+      if (IN.snack > 0) tp.hF = IN.snack > 1.1 ? [0.22, 1.55, 0.06] : [0.3, 1.2, 0.2];
       IN.pose = ART.lerpPose(IN.pose, tp, Math.min(1, dt * 10));
       for (const k of ["stand", "walk", "hr", "roll"]) IN.pose[k] = tp[k];
+      if (IN.ov) { px = IN.ov.x; pz = IN.ov.z; yaw = IN.ov.yaw; IN.pose = ART.lerpPose(IN.pose, IN.ov.pose, Math.min(1, dt * 12)); }
       const sk = look.skates ? Math.PI / 2 : 0;
       rig.pose(M.mul(M.T(px, look.skates ? 0 : -0.1, pz), M.RY(yaw + sk)), IN.pose);
       rig.board.hidden = true;
       // gente lá dentro
-      if (IN.sayQ && IN.sayQ.length) { IN.sayQ[0].t -= dt; if (IN.sayQ[0].t <= 0) { const q = IN.sayQ.shift(); sayIn(q.who, q.line); if (q.give && SA && SA.def.kind === "ice") { SA.phase = 1; IN.cone = { kf: 1, julie: 1, c: 0xf8f2e6 }; sfx.can(); } } }
+      if (IN.sayQ && IN.sayQ.length) { IN.sayQ[0].t -= dt; if (IN.sayQ[0].t <= 0) { const q = IN.sayQ.shift(); if (q.line) sayIn(q.who, q.line); if (q.fn) q.fn(); if (q.give && SA && SA.def.kind === "ice") { SA.phase = 1; IN.cone = { kf: 1, julie: 1, c: 0xf8f2e6 }; sfx.can(); } } }
       for (const n of R.npcR) {
+        n.rig.objs[0].hidden = !!n.hide;
+        if (n.hide) continue;
         if (n.julie) { const vis = !!(SA && SA.def.kind === "ice"); n.rig.objs[0].hidden = !vis; n.off = !vis; if (!vis) continue; }
         const near = Math.hypot(IN.x - n.x, IN.z - n.z) < 3.2;
         const talking = IN.talk && IN.talk.who === n.who;
@@ -1047,6 +1331,13 @@ const STREET = (() => {
         else if (talking) p = POSE({ twist: 0.1 + Math.sin(t * 1.3) * 0.06, hp: 0.06 + Math.sin(t * 2.6) * 0.04, hF: [0.26 + Math.sin(t * 3.1) * 0.06, 1.18 + Math.sin(t * 2.3) * 0.08, 0.26] });
         else if (n.idle === "seat") p = SITP(t, { lean: 0.05, hp: 0.05 + Math.sin(t * 0.7 + n.ph) * 0.04, hy: Math.sin(t * 0.4 + n.ph) * 0.2, hF: [0.3, 1.08 + Math.max(0, Math.sin(t * 1.7 + n.ph)) * 0.12, 0.14], hB: [0.36, 0.78, -0.14] });
         else if (n.idle === "bounce") p = POSE({ py: 0.94 + Math.abs(Math.sin(t * 4)) * 0.03, hy: Math.sin(t * 1.3) * 0.4, hp: -0.06, hF: [-0.14, 0.92, 0.15], hB: [-0.14, 0.92, -0.15] });
+        else if (n.idle === "dj") { const b = t * Math.PI * 2 * 2.08, ph = Math.floor(t / 4) % 3; p = POSE({ lean: 0.16, hp: 0.22 + Math.abs(Math.sin(b)) * 0.08, twist: Math.sin(b / 2) * 0.08, hF: ph === 2 ? [0.08, 1.62, 0.16] : [0.46, 1.38 + Math.sin(b * 2) * 0.012, 0.3 + Math.sin(b / 2) * 0.04], hB: [0.46, 1.38, -0.32 + (ph === 1 ? Math.sin(b * 2) * 0.05 : 0)] }); }
+        else if (n.idle === "rail") p = POSE({ lean: 0.22, hp: 0.32 + Math.sin(t * 0.7 + n.ph) * 0.05, hy: Math.sin(t * 0.4 + n.ph) * 0.3, hF: [0.4, 1.0, 0.2], hB: [0.4, 1.0, -0.2] });
+        else if (n.idle === "shy") p = POSE({ lean: 0.1, hp: 0.18, hy: Math.sin(t * 0.5) * 0.2, hF: [0.42, 1.0 + Math.max(0, Math.sin(t * 0.9 + n.ph)) * 0.45, 0.12], hB: [0.02, 0.95, -0.27] });
+        else if (n.idle === "talk2") p = POSE({ twist: 0.08 + Math.sin(t * 1.1 + n.ph) * 0.06, hp: 0.06, hy: Math.sin(t * 0.7 + n.ph) * 0.12, hF: [0.22 + Math.sin(t * 2.7 + n.ph) * 0.05, 1.12 + Math.sin(t * 2.1) * 0.06, 0.24], hB: [0.02, 0.95, -0.27] });
+        else if (n.idle === "slowA") p = SLOW_A(t, 0);
+        else if (n.idle === "slowB") p = SLOW_B(t, 0);
+        else if (n.dance != null) p = DANCE(n.dance, t, n.ph);
         else p = POSE({ lean: 0.04 + Math.sin(t * 1.1 + n.ph) * 0.02, twist: 0.1, hy: -0.3 + Math.sin(t * 0.6 + n.ph) * 0.2, hp: 0.12, hF: [0.06, 1.0, 0.2], hB: [0.02, 0.92, -0.25] });
         const dance = n.who === "vava" && IN.disco && IN.disco.vava && (IN.discoK || 0) > 0.4 && !talking;
         if (dance) {
@@ -1057,9 +1348,11 @@ const STREET = (() => {
         }
         if (n.julie && IN.cone && IN.cone.julie && !talking) p.hF = [0.28, 1.2, 0.2];
         if (!dance && (near || talking) && n.idle !== "play" && n.idle !== "browse" && n.idle !== "seat") p.hy = Math.max(-1, Math.min(1, -(Math.atan2(-(IN.z - n.z), IN.x - n.x) - n.yaw)));
+        if (n.ov) { n.x = n.ov.x; n.z = n.ov.z; n.yaw = n.ov.yaw; p = n.ov.pose; }
+        if ((n.dance != null || /^slow|dj|rail/.test(n.idle || "")) && !talking && !n.ov) { /* dançando: não vira pra olhar */ } else if (!n.ov && (near || talking) && !dance && n.idle !== "play" && n.idle !== "browse" && n.idle !== "seat" && R.id === "festa") p.hy = Math.max(-1, Math.min(1, -(Math.atan2(-(IN.z - n.z), IN.x - n.x) - n.yaw)));
         n.pose = n.pose ? ART.lerpPose(n.pose, p, Math.min(1, dt * 8)) : p;
         n.pose.stand = p.stand; n.pose.walk = p.walk;
-        n.rig.pose(M.mul(M.T(n.x, -0.1, n.z), M.RY(n.yaw)), n.pose);
+        n.rig.pose(M.mul(M.T(n.x, -0.1 + (n.y || 0), n.z), M.RY(n.yaw)), n.pose);
       }
       // ventilador, vitrola, notas saindo das caixas
       const D = R.dyn;
@@ -1067,6 +1360,7 @@ const STREET = (() => {
       if (D.fanS) D.fanS.mo = M.mul(M.T(0, R.H - 0.35, 2.8), M.RY(t * 2.8));
       if (R.id === "sorveteria") iceFrame(R, D);
       if (R.id === "discos") { discosFrame(R, D, dt, t, fx, fz, px, pz, yaw); discoFx(R, D, dt, t); }
+      if (R.id === "festa") festaFrame(R, D, dt, t);
       // câmera: atrás e acima; quando mexe em alguma coisa, chega perto por cima do ombro
       let eye, at;
       const sx = -fz, sz = fx;
@@ -1076,9 +1370,13 @@ const STREET = (() => {
       else if (IN.hold && IN.spot && IN.spot.face) { const f = IN.spot.face; eye = [px - fx * 1.25 + sx * 0.45, 2.05, pz - fz * 1.25 + sz * 0.45]; at = [(px + f[0]) / 2, 1.0, (pz + f[1]) / 2]; }
       else { eye = [px - fx * 2.4, 2.55, pz - fz * 2.4]; at = [px + fx * 0.9, 1.05, pz + fz * 0.9]; }
       eye[0] = Math.max(-R.W + 0.25, Math.min(R.W - 0.25, eye[0])); eye[2] = Math.max(0.12, Math.min(R.D - 0.2, eye[2])); eye[1] = Math.min(R.H - 0.3, eye[1]);
+      if (R.id === "festa" && !IN.cutCam) { const under = (Math.abs(eye[0]) > 4.0 && eye[2] > 5.6) || eye[2] > 13.3 || (Math.abs(px) > 4.2 && pz > 5.8); eye[1] = under ? Math.min(eye[1], 2.4) : Math.min(eye[1] + 0.35, R.H - 0.3); }
+      if (IN.cutCam) { IN.cam.eye = IN.cutCam.eye.slice(); IN.cam.at = IN.cutCam.at.slice(); IN.cam.fov = IN.cutCam.fov || 0.95; }
+      else {
       if (IN.t < 0.05) { IN.cam.eye = eye.slice(); IN.cam.at = at.slice(); }
       IN.cam.eye = V.lerp(IN.cam.eye, eye, Math.min(1, dt * 4.5));
       IN.cam.at = V.lerp(IN.cam.at, at, Math.min(1, dt * 7));
+      }
       const sc = R.scene;
       sc.objects = R.base.concat(Object.values(D).flat(), ...R.decks.map((d) => Object.values(d.objs)), (R.booths || []).map((b) => b.door), R.npcR.map((n) => n.rig.objs[0]), rig.objs, R.notes);
       if (IN.skates) sc.objects.push({ g: skatePropG, mo: M.I() });
