@@ -297,7 +297,7 @@ html.embed body{padding:8px 8px 0;gap:6px;background:#1b1530;min-height:0;height
     <div class="inHud" aria-live="polite"><span id="inName"></span><small>setas andam · Enter mexe nas coisas · Esc pausa</small></div>
     <div class="inP" id="inP"><kbd>Enter</kbd><span id="inPL"></span></div>
     <div class="say" id="say"><b id="sayW"></b><span id="sayL"></span></div>
-    <div class="np" id="np"><div class="vmini" id="npV"><img id="npL" alt=""></div><div><b id="npT"></b><span id="npA"></span><div class="bar"><i id="npBar"></i></div><small>N próxima · B volta · M marca onde a música começa</small></div></div>
+    <div class="np" id="np"><div class="vmini" id="npV"><img id="npL" alt=""></div><div><b id="npT"></b><span id="npA"></span><div class="bar"><i id="npBar"></i></div><small>N próxima faixa · B volta uma · M pausa</small></div></div>
     <div class="tvO" id="tvO" aria-hidden="true"><div id="tvP"></div></div>
     <div class="inO" id="digO" role="dialog" aria-label="Caixote de discos"><div class="oHead"><b id="digT">LPs</b><span id="digS"></span><button class="oBtn" data-inclose>Voltar (Esc)</button></div>
       <button class="digArr l" id="digL" aria-label="Disco anterior">‹</button><div class="crate" id="crate"><div class="stk" id="stk"></div></div><button class="digArr r" id="digR" aria-label="Próximo disco">›</button>
@@ -1535,6 +1535,8 @@ const CHARS = (() => {
     sleeve: "short", pantsR: 0.78, flare: 0.2, scale: 1.0, headScale: 0.95, npc: { freckles: 1, mouth: "smile", brow: 0xb85a20, iris: "#3a6a8a" } };
   TOWN.forEach((t, i) => (t.face = "npc" + i));
   TOWN.forEach((t, i) => (LOOKS["npc" + i] = Object.assign({ sleeve: "long", pantsR: 0.9, flare: 0.4, shoeToe: t.shoe, sole: 0x2a2630, lace: t.shoe, scale: t.kid ? 0.72 : t.old ? 0.88 : 0.92, headScale: t.kid ? 1.08 : 0.97, pantsR: 0.72, flare: 0.1 }, t)));
+  // Neide da Sorveteria Pinguim: atendente de avental rosa e cabelo preso
+  LOOKS.neide = Object.assign({}, LOOKS.npc10, { name: "Neide", top: 0xffffff, top2: 0xeeeeee, apron: 0xff8fc8, pants: 0x3a4a7a, hairStyle: "bun", sleeve: "short" });
 
   // ---------- rostos pintados (256x256 cada) ----------
   function face(g, key, L) {
@@ -5394,7 +5396,7 @@ const RADIO = (() => {
       ],
     },
     {
-      a: "Fleetwood Mac", t: "Rumours", y: 1977, sel: "Warner", cor: "#f5f2ea", cor2: "#2a2a2a", fmt: ["lp"], pl: "PLpg0EOoO2vdUxDyiIfZGjwfI8fh6JRvg6", rot: { bg: "#f2b24a", fg: "#2a1a0a", ac: "#ffffff" },
+      a: "Fleetwood Mac", t: "Rumours", y: 1977, sel: "Warner", cor: "#f5f2ea", cor2: "#2a2a2a", fmt: ["lp"], pl: "PLfGibfZATlGoY1Y0uYcs_nlTLLDXW30Pn", auto: 1, rot: { bg: "#f2b24a", fg: "#2a1a0a", ac: "#ffffff" },
       capa: "data:image/jpeg;base64,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",
       faixas: [
         { t: "Second Hand News", lado: "A" },
@@ -5403,6 +5405,7 @@ const RADIO = (() => {
         { t: "Don't Stop", lado: "A" },
         { t: "Go Your Own Way", lado: "A" },
         { t: "Songbird", lado: "A" },
+        { t: "Silver Springs", lado: "B" },
         { t: "The Chain", lado: "B" },
         { t: "You Make Loving Fun", lado: "B" },
         { t: "I Don't Want to Know", lado: "B" },
@@ -5831,6 +5834,7 @@ const INSIDE = (() => {
     ouca: RR(0, 800, 512, 96), precos: RR(512, 800, 512, 96),
     neonD: RR(0, 896, 512, 64), semana: RR(512, 896, 256, 64), neonL: RR(768, 896, 256, 64),
     tags: Array.from({ length: 8 }, (_, i) => RR(i * 128 + 2, 962, 124, 60)),
+    sMenu: RR(1024, 832, 512, 192), sNeon: RR(1536, 832, 512, 64), sPicole: RR(1536, 896, 512, 64), sSabor: RR(1536, 960, 512, 64),
   };
   const FONT = (px, w = 900) => `${w} ${px}px Rubik, "Arial Black", Arial, sans-serif`;
   function rnd(seed) {
@@ -5998,6 +6002,18 @@ const INSIDE = (() => {
       const [x, y, w, h] = P(T.tags[i]);
       sign(g, x, y, w, h, t, i === 5 ? "#ffd23f" : i === 6 ? "#3fd0ff" : i === 7 ? "#f5f1e6" : "#f5f1e6", i === 7 ? "#e0302b" : "#1b1530", 26);
     });
+    // sorveteria: quadro de preços (giz), neon, adesivo do freezer de picolé e plaquinha de sabores
+    {
+      const [x, y, w, h] = P(T.sMenu);
+      g.fillStyle = "#7a4a2a"; g.fillRect(x, y, w, h); g.fillStyle = "#1f3a2e"; g.fillRect(x + 8, y + 8, w - 16, h - 16);
+      g.textBaseline = "middle"; g.fillStyle = "#ffe3f3"; g.font = "900 30px Rubik, Arial Black, sans-serif"; g.textAlign = "center"; g.fillText("SORVETES", x + w / 2, y + 30);
+      g.font = "700 19px Rubik, Arial, sans-serif";
+      const L = [["Casquinha 1 bola", "1,50"], ["Casquinha 2 bolas", "2,50"], ["Taça c/ calda", "4,00"], ["Milk-shake", "3,50"], ["Picolé de fruta", "1,00"], ["Açaí na tigela", "5,00"]];
+      L.forEach(([n, v], i) => { const cx = x + 22 + (i % 2) * (w / 2), cy = y + 70 + Math.floor(i / 2) * 38; g.textAlign = "left"; g.fillStyle = "#f4f1e6"; g.fillText(n, cx, cy); g.textAlign = "right"; g.fillStyle = "#ffd23f"; g.fillText("R$ " + v, cx + w / 2 - 40, cy); });
+    }
+    { const [x, y, w, h] = P(T.sNeon); sign(g, x, y, w, h, "SORVETERIA PINGUIM", null, "#e6fbff", 42, "#3fd0ff"); }
+    { const [x, y, w, h] = P(T.sPicole); sign(g, x, y, w, h, "PICOLÉ GELADINHO", "#2457c8", "#ffffff", 34); }
+    { const [x, y, w, h] = P(T.sSabor); sign(g, x, y, w, h, "FLOCOS · CHOCOLATE · MORANGO · LIMÃO · CREME", "#fff7e8", "#c8287a", 22); }
     // fotos de capa chegam depois (decodificar a imagem é assíncrono)
     albs.forEach((a, i) => {
       if (!a.capa || a.img) return;
@@ -6532,6 +6548,12 @@ const INSIDE = (() => {
       "O CD é prático, mas o chiadinho do vinil... não tem igual.",
       "Seu skate tá bem ali na porta, ninguém mexe. Aqui é família.",
     ],
+    neide: [
+      "Flocos é o campeão de venda, viu? Mas o de limão no calor é outra coisa.",
+      "Casquinha tá saindo quentinha... quer dizer, geladinha, né! Hahaha.",
+      "Pode sentar na mesinha, fica à vontade. Só não deixa pingar no chão!",
+      "Esses skatistas passam aqui todo fim de tarde. Já sei o pedido de todo mundo.",
+    ],
     dudu: [
       "E aí, mano! Escolhe um PC aí, a ficha é por minha conta.",
       "O 3 tá com o mouse meio ruim, mas dá pra jogar de boa.",
@@ -6540,7 +6562,101 @@ const INSIDE = (() => {
       "Se o PC travar é só dar um tapinha no gabinete. Brincadeira... ou não.",
     ],
   };
-  return { T, makeTex, buildDiscos, buildLan, coverURL, labelURL, drawCover, palOf, LINES, phoneMesh };
+
+  // ---------- Sorveteria Pinguim (onde o K.F. leva a Julie) ----------
+  function buildSorveteria(Rn, tex) {
+    const st = new Mesh(), fl = new Mesh(), thin = new Mesh();
+    const W = 4, D = 9, H = 3.2, solids = [];
+    const S = (x0, z0, x1, z1) => solids.push([x0, z0, x1, z1]);
+    const mint = hex(0xbfeee0), cream = hex(0xfff7e8), pink = hex(0xff9ccf), pinkD = hex(0xe06aa8), white = hex(0xf6f6f2), blue = hex(0x2457c8);
+    shell(st, fl, { wallLo: pinkD, wallHi: hex(0xfde6ef), floorA: mint, floorB: cream, tile: 0.5, W, D, H, outside: [hex(0xffe8c0), hex(0xffd29a), hex(0xbfae98)] });
+    // ---- balcão-vitrine de sorvete (freezer com vidro curvo e as cubas de sabor) ----
+    const cz0 = 5.3, cz1 = 6.0, cx0 = -3.0, cx1 = 2.2;
+    st.box(cx0, 0, cz0, cx1, 0.85, cz1, white, { top: hex(0xe8e8e4) });
+    st.box(cx0, 0.42, cz0 - 0.005, cx1, 0.5, cz0, pink);
+    thin.box(cx0 + 0.05, 0.85, cz0 + 0.12, cx1 - 0.05, 1.22, cz0 + 0.16, hex(0xcfe8ff), { m: 3 });
+    thin.box(cx0 + 0.05, 1.22, cz0 + 0.14, cx1 - 0.05, 1.25, cz1 - 0.1, hex(0xcfe8ff), { m: 3 });
+    st.box(cx0, 0.85, cz1 - 0.1, cx1, 1.27, cz1, white);
+    const flav = [0xf8f2e6, 0x5a3424, 0xff8fb0, 0xa8e07a, 0xfff0a0, 0x7a3aa8, 0xffb070, 0xd8f0ff, 0xc8282a, 0x3a2418];
+    for (let i = 0; i < 10; i++) {
+      const x = cx0 + 0.18 + i * ((cx1 - cx0 - 0.36) / 9.4), c = hex(flav[i]);
+      st.box(x - 0.2, 0.85, cz0 + 0.2, x + 0.2, 0.9, cz1 - 0.15, hex(0xc8ccd4), { m: 1 });
+      st.box(x - 0.18, 0.88, cz0 + 0.22, x + 0.18, 0.95, cz1 - 0.17, c);
+      st.ball([x - 0.05, 0.96, cz0 + 0.38], 0.07, c, 0, 7, 4, { sy: 0.6 }); st.ball([x + 0.07, 0.95, cz0 + 0.45], 0.06, c, 0, 7, 4, { sy: 0.6 });
+      if (i === 0) for (const [dx, dz] of [[-0.06, 0.34], [0.05, 0.42], [0.1, 0.36], [-0.02, 0.47]]) st.ball([x + dx, 0.995, cz0 + dz], 0.012, hex(0x2a1810), 2, 4, 3); // flocos
+    }
+    dec(fl, [-0.4, 0.62, cz0 - 0.012], [-1, 0, 0], [0, 1, 0], 2.6, 0.32, T.sSabor);
+    S(cx0, cz0, cx1, cz1);
+    // ---- balcão de trás: casquinhas, máquina de milk-shake e caixa registradora ----
+    st.box(-3.6, 0, 8.25, 3.6, 0.92, D, cream, { top: hex(0xf0e2d0) }); S(-3.6, 8.25, 3.6, D);
+    for (let k = 0; k < 6; k++) st.tube([-2.8 + k * 0.07, 0.92, 8.55], [-2.8 + k * 0.07, 1.12, 8.55], 0.01, 0.035, 6, hex(0xd8a25a));
+    st.tube([-2.05, 0.92, 8.6], [-2.05, 1.35, 8.6], 0.09, 0.09, 10, hex(0xb8bcc4), 1); st.box(-2.15, 1.35, 8.5, -1.95, 1.45, 8.7, pink);
+    for (let k = 0; k < 3; k++) st.tube([-1.7 + k * 0.16, 0.92, 8.55], [-1.7 + k * 0.16, 1.1, 8.55], 0.045, 0.06, 8, hex([0xff8fb0, 0xf8f2e6, 0x5a3424][k]));
+    st.box(1.4, 0.92, 8.4, 1.85, 1.12, 8.8, hex(0x9a9aa2)); st.box(1.45, 1.12, 8.6, 1.8, 1.25, 8.8, hex(0x7a7a84)); thin.box(1.5, 1.14, 8.399, 1.75, 1.2, 8.4, hex(0x7dff9a), { m: 2 });
+    dec(fl, [0, 2.15, D - 0.04], [-1, 0, 0], [0, 1, 0], 2.4, 0.9, T.sMenu);
+    dec(fl, [-W + 0.04, 2.6, 4.6], [0, 0, -1], [0, 1, 0], 2.4, 0.3, T.sNeon, [1.6, 1.6, 1.6]);
+    // ---- freezer horizontal de picolé (parede esquerda) ----
+    st.box(-W, 0, 2.0, -W + 0.8, 0.82, 3.5, white, { top: hex(0xe4e4e0) });
+    thin.box(-W + 0.08, 0.82, 2.08, -W + 0.72, 0.835, 3.42, hex(0xbfe0ff), { m: 3 });
+    for (let k = 0; k < 7; k++) { const c = hex([0xff6a6a, 0xffd23f, 0x7ae07a, 0xff9ccf, 0x8c5cff, 0xff9a3a, 0x3fd0ff][k]); st.box(-W + 0.15 + (k % 3) * 0.2, 0.6, 2.2 + k * 0.17, -W + 0.27 + (k % 3) * 0.2, 0.8, 2.26 + k * 0.17, c); }
+    dec(fl, [-W + 0.81, 0.55, 2.75], [0, 0, -1], [0, 1, 0], 1.2, 0.15, T.sPicole);
+    S(-W, 2.0, -W + 0.8, 3.5);
+    // ---- mesinhas redondas com cadeiras de plástico ----
+    const tables = [[2.1, 2.0], [2.1, 3.9]];
+    for (const [tx, tz] of tables) {
+      st.tube([tx, 0, tz], [tx, 0.72, tz], 0.04, 0.04, 8, C.metal, 1); st.tube([tx, 0, tz], [tx, 0.03, tz], 0.25, 0.25, 12, C.metal, 1);
+      st.tube([tx, 0.72, tz], [tx, 0.75, tz], 0.42, 0.42, 16, white);
+      thin.box(tx - 0.05, 0.75, tz - 0.05, tx + 0.05, 0.86, tz + 0.05, hex(0xf4f4f4)); // porta-guardanapo
+      for (const sd of [-1, 1]) {
+        st.tf = M.mul(M.T(tx + sd * 0.72, 0, tz), M.RY(sd > 0 ? Math.PI : 0));
+        const red = hex(0xe0302b);
+        st.box(-0.2, 0.42, -0.2, 0.2, 0.46, 0.2, red);
+        for (const [lx, lz] of [[-0.17, -0.17], [-0.17, 0.17], [0.17, -0.17], [0.17, 0.17]]) st.box(lx - 0.02, 0, lz - 0.02, lx + 0.02, 0.42, lz + 0.02, red);
+        st.box(-0.22, 0.46, -0.2, -0.18, 0.86, 0.2, red);
+        st.tf = null;
+      }
+      S(tx - 0.45, tz - 0.45, tx + 0.45, tz + 0.45);
+    }
+    // ---- mascote na porta: um pinguim de cachecol segurando uma casquinha ----
+    {
+      const px = -2.4, pz = 1.0, blk = hex(0x1d2130), wht = hex(0xf8f8f4), org = hex(0xff9a3a), sc = hex(0xff4fa3);
+      st.tube([px, 0, pz], [px, 0.08, pz], 0.32, 0.32, 12, hex(0x3fd0ff));
+      st.ball([px, 0.62, pz], 0.3, blk, 0, 10, 7, { sy: 1.6 }); st.ball([px + 0.08, 0.6, pz], 0.24, wht, 0, 10, 7, { sy: 1.5, sx: 0.9 });
+      st.ball([px, 1.12, pz], 0.21, blk, 0, 10, 7); st.ball([px + 0.15, 1.13, pz], 0.12, wht, 0, 8, 5, { sx: 0.6 });
+      for (const ez of [-0.07, 0.07]) { st.ball([px + 0.19, 1.17, pz + ez], 0.035, wht, 2, 6, 4); st.ball([px + 0.215, 1.17, pz + ez], 0.018, blk, 0, 5, 3); }
+      st.ball([px + 0.25, 1.09, pz], 0.05, org, 0, 6, 4, { sx: 1.8, sy: 0.6 });
+      st.tube([px, 0.96, pz], [px, 1.0, pz], 0.2, 0.2, 12, sc); st.box(px - 0.02, 0.72, pz + 0.12, px + 0.05, 0.98, pz + 0.2, sc);
+      for (const ez of [-0.1, 0.1]) st.ball([px + 0.1, 0.12, pz + ez], 0.08, org, 0, 6, 4, { sx: 1.6, sy: 0.4 });
+      st.ball([px + 0.02, 0.6, pz - 0.3], 0.08, blk, 0, 6, 4, { sy: 2 });
+      st.tube([px + 0.12, 0.6, pz + 0.3], [px + 0.12, 0.8, pz + 0.3], 0.01, 0.05, 7, hex(0xd8a25a)); st.ball([px + 0.12, 0.84, pz + 0.3], 0.06, hex(0xff8fb0), 0, 7, 5);
+      S(px - 0.35, pz - 0.35, px + 0.35, pz + 0.35);
+    }
+    // ---- teto: ventilador e pendentes coloridos ----
+    for (const [x, z, c] of [[-1.6, 4.6, C.pink], [0.6, 4.6, C.cyan], [2.1, 3.0, hex(0xffd23f)]]) pendant(st, x, 2.2, z, c);
+    st.tube([0, H, 2.8], [0, H - 0.35, 2.8], 0.02, 0.02, 6, C.metal, 1);
+    const fan = new Mesh(); fan.ball([0, 0, 0], 0.08, white, 1, 8, 4); for (let k = 0; k < 4; k++) { fan.tf = M.RY(k * Math.PI / 2); fan.box(0.08, -0.01, -0.06, 0.7, 0.0, 0.06, hex(0xf0e2d0)); } fan.tf = null;
+    const up = (m, o) => Rn.upload(m, o);
+    const lights = [[-1.6, 2.2, 4.6], [0.6, 2.2, 4.6], [2.1, 2.2, 3.0], [0, 2.9, 7.5], [-3, 2.6, 2.7], [0, 2.4, 0.6]];
+    const spots = [
+      { id: "door", x: 0, z: 0.55, r: 0.62, act: "door", label: "Sair da sorveteria" },
+      { id: "balcao", x: -0.5, z: 4.75, r: 0.7, act: "order", label: "Pedir sorvete", face: [-0.5, 5.6] },
+      { id: "picole", x: -W + 1.25, z: 2.75, r: 0.6, act: "picole", label: "Pegar um picolé", face: [-W, 2.75] },
+      { id: "neide", x: 1.2, z: 4.75, r: 0.55, act: "talk", who: "neide", label: "Falar com a Neide", face: [1.2, 6.8] },
+      ...tables.map(([tx, tz], i) => ({ id: "mesa" + i, x: tx - 1.15, z: tz, r: 0.42, act: "seat", at: [tx - 0.72, tz], yaw: 0, label: "Sentar na mesinha", face: [tx, tz] })),
+    ];
+    return {
+      id: "sorveteria", name: "SORVETERIA PINGUIM", W, D, H, base: [{ g: up(fl, { outline: false }), tex }, { g: up(st), tex }, { g: up(thin, { outline: false }), tex }],
+      dyn: { fanS: { g: up(fan), mo: M.T(0, H - 0.35, 2.8) } }, decks: [], solids, spots, lights, tables,
+      npcs: [
+        { look: "neide", x: 0.4, z: 6.8, yaw: Math.PI / 2, idle: "calm", who: "neide" },
+        { look: "julie", x: 0.35, z: 4.55, yaw: -Math.PI / 2 + 0.25, idle: "calm", who: "julie", julie: 1 },
+        { look: "fig12", x: 2.1 + 0.72, z: 3.9, yaw: Math.PI, idle: "seat" },
+      ],
+      spawn: [0, 1.5, 0],
+      scene: { sun: V.norm([0.18, 0.95, 0.22]), top: hex(0xfde6ef), mid: hex(0xfde6ef), hz: hex(0xfde6ef), fog: hex(0xfde6ef), fogd: 0.004, shade: hex(0xd4b4cc), ink: hex(0x1b1530), ink_w: 1.5, amb: [0.92, 0.88, 0.88], night: 0.36, wet: 0, winc: [9, 9, 9] },
+    };
+  }
+  return { T, makeTex, buildDiscos, buildLan, buildSorveteria, coverURL, labelURL, drawCover, palOf, LINES, phoneMesh };
 })();
 </script>
 <script>// Jogabilidade: física arcade de skate (ollie carregado, vert com 180 automático, flips e
@@ -7035,12 +7151,14 @@ const STREET = (() => {
     // lugares onde dá pra entrar: lan house (minigames) e loja de discos (ouvir álbuns)
     const PLACES = [
       { id: "lan", at: [-30, 42.4], who: "Dudu da Lan", line: "E aí, mano! Bora jogar um pouco? Pra vocês a ficha é por minha conta... só não conta pro meu chefe, kkkk.", title: "Entrar na Lan House" },
+      { id: "sorveteria", at: [15.5, 42.4], who: "Neide da Sorveteria", line: "Entra que tá fresquinho aqui dentro! Hoje o flocos tá caprichado.", title: "Entrar na Sorveteria Pinguim" },
       { id: "discos", at: [-20.5, 42.4], who: "Seu Vavá dos Discos", line: "Chegou coisa nova! Pode escutar à vontade na cabine, só não risca meus vinis, hein.", title: "Entrar na Vavá Discos" },
     ];
     let poffer = null;
     function placeFrame() {
-      if (SA || soffer || PH || REC || CUT || offer) { if (poffer && (offer || soffer)) poffer = null; return; }
-      const p = PLACES.find((q) => Math.hypot(S.x - q.at[0], S.z - q.at[1]) < 2.4) || null;
+      const iceOn = SA && SA.def.kind === "ice";
+      if ((SA && !iceOn) || soffer || PH || REC || CUT || offer) { if (poffer && (offer || soffer)) poffer = null; return; }
+      const p = PLACES.find((q) => (!iceOn || q.id === "sorveteria") && Math.hypot(S.x - q.at[0], S.z - q.at[1]) < 2.4) || null;
       if (p && S.speed < 4 && poffer !== p) { poffer = p; ui.mission && ui.mission("offer", { who: p.who, line: p.line, title: p.title, place: 1 }); }
       if (!p && poffer) { poffer = null; ui.mission && ui.mission("hide"); if (MA) ui.mission && ui.mission("start", { title: MA.m.title }); }
     }
@@ -7069,7 +7187,7 @@ const STREET = (() => {
         inCv = INSIDE.makeTex(shopAlbums(), (cv) => { inTex = Rn.texture(cv, inTex); });
         inTex = Rn.texture(inCv, inTex);
       }
-      const R = id === "lan" ? INSIDE.buildLan(Rn, inTex) : INSIDE.buildDiscos(shopAlbums(), Rn, inTex);
+      const R = id === "lan" ? INSIDE.buildLan(Rn, inTex) : id === "sorveteria" ? INSIDE.buildSorveteria(Rn, inTex) : INSIDE.buildDiscos(shopAlbums(), Rn, inTex);
       R.npcR = R.npcs.map((d, i) => Object.assign({ rig: ART.makeRig(Rn, ART.LOOKS[d.look] || ART.LOOKS.npc0), ph: i * 1.9 }, d));
       R.scene.lights = new Float32Array(R.lights.flat());
       R.notes = Array.from({ length: 8 }, (_, i) => ({ g: noteG, mo: M.I(), hidden: true, t: i * 0.45, sp: i % 2 }));
@@ -7087,7 +7205,7 @@ const STREET = (() => {
       if (music && music.playing) { music.stop(); IN.synth = true; }
       // patins não entram na loja de discos: a Manu tira na porta e calça o chinelo
       const ck = lookKey() + "_chinelo";
-      if (id === "discos" && look.skates && ART.LOOKS[ck]) { IN.skates = { prev: lookKey(), key: ck }; setLook(ck); IN.change = 0; }
+      if ((id === "discos" || id === "sorveteria") && look.skates && ART.LOOKS[ck]) { IN.skates = { prev: lookKey(), key: ck }; setLook(ck); IN.change = 0; }
       ui.inside && ui.inside("enter", { id, name: R.name, skates: !!IN.skates });
       return true;
     }
@@ -7111,7 +7229,7 @@ const STREET = (() => {
       if (x < -RW || x > RW || z < 0.28 || z > RD) return true;
       const r = 0.27;
       for (const [x0, z0, x1, z1] of IN.R.solids) if (x > x0 - r && x < x1 + r && z > z0 - r && z < z1 + r) return true;
-      for (const n of IN.R.npcR) if (Math.hypot(x - n.x, z - n.z) < 0.5) return true;
+      for (const n of IN.R.npcR) if (!n.off && Math.hypot(x - n.x, z - n.z) < 0.5) return true;
       // portas das cabines: fechada tranca a frente; aberta fica pra fora, do lado da dobradiça
       for (const b of IN.R.booths || []) {
         const d = b.door, Q = d.a < 0.6 ? [b.bx - b.w, b.z0 - 0.06, b.bx + b.w, b.z0 + 0.06] : [b.bx - b.w - 0.25, b.z0 - 1.1, b.bx - b.w + 0.02, b.z0 - 0.02];
@@ -7144,8 +7262,34 @@ const STREET = (() => {
       if (s.face) IN.yawT = Math.atan2(-(s.face[1] - IN.z), s.face[0] - IN.x);
       if (s.act === "talk") {
         const L = INSIDE.LINES[s.who];
-        IN.talk = { who: s.who, t: 4 };
-        ui.inside && ui.inside("say", { who: s.who === "vava" ? "Seu Vavá" : "Dudu", line: L[IN.li++ % L.length] });
+        sayIn(s.who, L[IN.li++ % L.length], 4);
+        return true;
+      }
+      // sorveteria: pedir no balcão, pegar picolé no freezer, sentar na mesinha
+      if (s.act === "order") {
+        const ice = SA && SA.def.kind === "ice";
+        if (ice && !SA.phase) {
+          SA.phase = 1; IN.cone = { kf: 1, julie: 1, c: 0xf8f2e6 }; sfx.can();
+          sayIn("julie", "Dois de flocos, por favor! ♡", 2.2);
+          IN.sayQ = [{ t: 2.3, who: "neide", line: "Saindo dois de flocos! Capricha nessa casquinha, hein." }, { t: 5.0, who: "julie", line: "Agora bora lá pra rampa grande ver o pôr do sol?" }];
+        } else if (IN.cone || IN.pop) sayIn("neide", "Termina esse primeiro, apressadinho! Hahaha.");
+        else {
+          const F = [["flocos", 0xf8f2e6], ["chocolate", 0x5a3424], ["morango", 0xff8fb0], ["limão", 0xa8e07a], ["creme", 0xfff0a0]], f = F[(IN.li++) % F.length];
+          IN.cone = { kf: 1, c: f[1] }; sfx.can();
+          sayIn("neide", "Uma de " + f[0] + " saindo! Bom proveito.");
+        }
+        return true;
+      }
+      if (s.act === "picole") {
+        if (IN.cone || IN.pop) { sayIn("neide", "Uma coisa de cada vez, menino!"); return true; }
+        IN.pop = [0xff6a6a, 0xffd23f, 0x7ae07a, 0xff9ccf, 0x8c5cff][(IN.li++) % 5]; sfx.can();
+        sayIn("neide", "Pode pegar! Depois acerta comigo no caixa.");
+        return true;
+      }
+      if (s.act === "seat") {
+        IN.sit = { s, t: 0, from: [IN.x, IN.z, IN.yaw], at: s.at, yaw: s.yaw, stand: false, opened: true, seat: true };
+        IN.hold = true;
+        ui.inside && ui.inside("lounge", { on: true, seat: true });
         return true;
       }
       if (s.act === "pc") {
@@ -7162,7 +7306,7 @@ const STREET = (() => {
     // a página fecha a tela (disco, vitrola, PC) e o skatista volta a andar
     function inRelease() {
       if (!IN) return;
-      if (IN.sit) { const [x, z, y] = IN.sit.from; IN.x = x; IN.z = z; IN.yaw = y + Math.PI; IN.yawT = null; IN.sit = null; }
+      if (IN.sit) { const [x, z, y] = IN.sit.from, seat = IN.sit.seat; IN.x = x; IN.z = z; IN.yaw = y + Math.PI; IN.yawT = null; IN.sit = null; if (seat) ui.inside && ui.inside("lounge", { on: false }); }
       if (IN.lounge) { const [x, z] = IN.lounge.from; IN.x = x; IN.z = z; IN.yaw = Math.PI; IN.yawT = null; IN.lounge = null; ui.inside && ui.inside("lounge", { on: false }); }
       IN.hold = false;
       IN.spot = null;
@@ -7181,6 +7325,8 @@ const STREET = (() => {
     const progOf = (ai, ti) => { const a = shopAlbums()[ai]; if (!a) return 0; ti = Math.max(0, Math.min(a.faixas.length - 1, ti)); return a.um ? a.faixas[ti].s / a.fim : ti / a.faixas.length; };
     const deckOf = (id) => IN && IN.R.decks.find((d) => d.id === id);
     const dsOf = (id) => (IN.ds[id] = IN.ds[id] || { lp: null, cd: null, ang: 0, spin: 0, armA: 0, armY: 0, trayK: 0, drop: null });
+    const WHO = { vava: "Seu Vavá", dudu: "Dudu", neide: "Neide", julie: "Julie" };
+    function sayIn(who, line, t = 3.5) { IN.talk = { who, t }; ui.inside && ui.inside("say", { who: WHO[who] || who, line }); }
     function vavaSay(line) { IN.talk = { who: "vava", t: 3.5 }; ui.inside && ui.inside("say", { who: "Seu Vavá", line }); }
     // qual formato o aparelho vai usar agora (cabine tem os dois; o rádio só CD)
     function deckFmt(s, d) {
@@ -7250,6 +7396,20 @@ const STREET = (() => {
         const cyc = [[1, 0.35, 0.7], [0.35, 0.8, 1], [0.75, 0.45, 1], [1, 0.9, 0.4]], ph = (t * 1.6) % 4, i0 = Math.floor(ph), u = ph - i0, A = cyc[i0], B = cyc[(i0 + 1) % 4];
         R.scene.amb = R.ambBase.map((v, j) => v * (1 - e * 0.5) + (A[j] + (B[j] - A[j]) * u) * e * 0.45);
       }
+    }
+    // casquinha na mão do K.F. (e da Julie, na missão) e picolé
+    const scoopG = {}, popG = {};
+    const scoopOf = (c) => scoopG[c] || (scoopG[c] = Rn.upload((() => { const m = new Mesh(); m.tube([0, -0.16, 0], [0, 0, 0], 0.005, 0.045, 7, hex(0xd8a25a)); m.ball([0, 0.04, 0], 0.052, hex(c), 0, 7, 5); if (c === 0xf8f2e6) { m.ball([0.02, 0.07, 0.01], 0.012, hex(0x3a2418), 2, 4, 3); m.ball([-0.02, 0.05, -0.02], 0.01, hex(0x3a2418), 2, 4, 3); } return m; })()));
+    const popOf = (c) => popG[c] || (popG[c] = Rn.upload((() => { const m = new Mesh(); m.box(-0.008, -0.12, -0.004, 0.008, 0, 0.004, hex(0xe8d0a0)); m.box(-0.03, 0, -0.016, 0.03, 0.13, 0.016, hex(c)); return m; })()));
+    function iceFrame(R, D) {
+      if (!D.ice) D.ice = [{ g: coneG, mo: M.I(), hidden: true }, { g: coneG, mo: M.I(), hidden: true }];
+      const [a, b] = D.ice;
+      const h = rig.F ? handOf(rig, look, "F") : null;
+      a.hidden = !(h && (IN.cone || IN.pop));
+      if (!a.hidden) { a.g = IN.pop ? popOf(IN.pop) : scoopOf(IN.cone.c); a.mo = M.mul(M.T(h[0], h[1] + 0.05, h[2]), M.RZ(0.25)); }
+      const j = R.npcR.find((n) => n.julie && !n.off), hj = j && IN.cone && IN.cone.julie && j.rig.F ? handOf(j.rig, ART.LOOKS.julie, "F") : null;
+      b.hidden = !hj;
+      if (hj) { b.g = scoopOf(0xf8f2e6); b.mo = M.mul(M.T(hj[0], hj[1] + 0.05, hj[2]), M.RZ(0.25)); }
     }
     function needleInfo() {
       const N = IN.needle, ds = dsOf(N.deck), ai = ds[N.fmt], a = shopAlbums()[ai];
@@ -7488,7 +7648,8 @@ const STREET = (() => {
         while (d < -Math.PI) d += Math.PI * 2;
         yaw = Z.from[2] + d * e;
         IN.x = px; IN.z = pz; IN.yaw = yaw;
-        tp = Z.stand ? POSE({ lean: 0.1, hp: -0.05, hF: [0.42, 1.08, 0.12], hB: [0.4, 1.05, -0.14] }) : k < 1 ? POSE({ py: 0.94 - 0.26 * e }) : SITP(t, { hp: 0.1 + Math.sin(t * 7) * 0.02, hF: [0.44, 0.87 + Math.sin(t * 9) * 0.01, 0.13], hB: [0.44, 0.86, -0.15] });
+        if (Z.seat) tp = k < 1 ? POSE({ py: 0.94 - 0.26 * e }) : SITP(t, { lean: 0.06, hp: 0.04, hy: Math.sin(t * 0.3) * 0.25, hF: IN.cone || IN.pop ? [0.3, 1.12, 0.16] : [0.36, 0.8, 0.14], hB: [0.36, 0.78, -0.14] });
+        else tp = Z.stand ? POSE({ lean: 0.1, hp: -0.05, hF: [0.42, 1.08, 0.12], hB: [0.4, 1.05, -0.14] }) : k < 1 ? POSE({ py: 0.94 - 0.26 * e }) : SITP(t, { hp: 0.1 + Math.sin(t * 7) * 0.02, hF: [0.44, 0.87 + Math.sin(t * 9) * 0.01, 0.13], hB: [0.44, 0.86, -0.15] });
         if (k >= 1 && !Z.opened) { Z.opened = true; ui.inside && ui.inside("open", { act: "pc", game: Z.s.game }); }
       } else if (IN.lounge) {
         // deita na poltrona: vai até ela, vira de costas, senta e reclina
@@ -7524,19 +7685,23 @@ const STREET = (() => {
       // disco (ou CD) na mão: as duas mãos seguram nas bordas, na frente do peito
       if (IN.carry && !IN.sit && !(IN.hold && IN.spot && IN.spot.act === "dig")) { tp.hF = IN.carry.fmt === "cd" ? [0.04, 1.0, 0.3] : [0.04, 0.88, 0.3]; tp.twist = 0; }
       if (IN.anim || IN.needle) { tp = POSE({ lean: 0.2, hp: 0.36, hF: [0.5, 1.0 + Math.sin(t * 2) * 0.02, 0.08], hB: [0.1, 0.95, -0.27] }); if (IN.anim && IN.anim.t < 1.4) { const w = IN.anim.kind === "cd" ? 0.075 : 0.16; tp.hF = [0.5, 1.12, w]; tp.hB = [0.5, 1.1, -w]; } }
+      if ((IN.cone || IN.pop) && !IN.sit && !IN.anim && !IN.lounge) tp.hF = [0.3, 1.22, 0.2];
       IN.pose = ART.lerpPose(IN.pose, tp, Math.min(1, dt * 10));
       for (const k of ["stand", "walk", "hr", "roll"]) IN.pose[k] = tp[k];
       const sk = look.skates ? Math.PI / 2 : 0;
       rig.pose(M.mul(M.T(px, look.skates ? 0 : -0.1, pz), M.RY(yaw + sk)), IN.pose);
       rig.board.hidden = true;
       // gente lá dentro
+      if (IN.sayQ && IN.sayQ.length) { IN.sayQ[0].t -= dt; if (IN.sayQ[0].t <= 0) { const q = IN.sayQ.shift(); sayIn(q.who, q.line); } }
       for (const n of R.npcR) {
+        if (n.julie) { const vis = !!(SA && SA.def.kind === "ice"); n.rig.objs[0].hidden = !vis; n.off = !vis; if (!vis) continue; }
         const near = Math.hypot(IN.x - n.x, IN.z - n.z) < 3.2;
         const talking = IN.talk && IN.talk.who === n.who;
         let p;
         if (n.idle === "play") p = SITP(t, { hp: 0.14, hy: Math.sin(t * 0.7 + n.ph) * 0.12, hF: [0.44, 0.87 + Math.abs(Math.sin(t * 8 + n.ph)) * 0.02, 0.13], hB: [0.44, 0.86, -0.15], lean: 0.18 + Math.sin(t * 0.5 + n.ph) * 0.04 });
         else if (n.idle === "browse") p = POSE({ lean: 0.04, hp: -0.05 + Math.sin(t * 0.6) * 0.05, hy: Math.sin(t * 0.3 + 1) * 0.2, hF: [0.48, 1.3 + Math.sin(t * 1.3 + n.ph) * 0.08, 0.06], hB: [0.04, 0.95, -0.27] });
         else if (talking) p = POSE({ twist: 0.1 + Math.sin(t * 1.3) * 0.06, hp: 0.06 + Math.sin(t * 2.6) * 0.04, hF: [0.26 + Math.sin(t * 3.1) * 0.06, 1.18 + Math.sin(t * 2.3) * 0.08, 0.26] });
+        else if (n.idle === "seat") p = SITP(t, { lean: 0.05, hp: 0.05 + Math.sin(t * 0.7 + n.ph) * 0.04, hy: Math.sin(t * 0.4 + n.ph) * 0.2, hF: [0.3, 1.08 + Math.max(0, Math.sin(t * 1.7 + n.ph)) * 0.12, 0.14], hB: [0.36, 0.78, -0.14] });
         else if (n.idle === "bounce") p = POSE({ py: 0.94 + Math.abs(Math.sin(t * 4)) * 0.03, hy: Math.sin(t * 1.3) * 0.4, hp: -0.06, hF: [-0.14, 0.92, 0.15], hB: [-0.14, 0.92, -0.15] });
         else p = POSE({ lean: 0.04 + Math.sin(t * 1.1 + n.ph) * 0.02, twist: 0.1, hy: -0.3 + Math.sin(t * 0.6 + n.ph) * 0.2, hp: 0.12, hF: [0.06, 1.0, 0.2], hB: [0.02, 0.92, -0.25] });
         const dance = n.who === "vava" && IN.disco && IN.disco.vava && (IN.discoK || 0) > 0.4 && !talking;
@@ -7546,7 +7711,8 @@ const STREET = (() => {
           p = POSE({ py: 0.92 + Math.abs(Math.sin(b)) * 0.035, lean: 0.06, twist: Math.sin(b / 2) * 0.28, hy: Math.sin(b / 2) * 0.35, hp: -0.04 + Math.sin(b) * 0.05,
             hF: up ? [0.2, 1.78, 0.34] : [0.06, 0.98, 0.3], hB: [0.04, 0.98, -0.3], lf: Math.max(0, Math.sin(b)) * 0.05, lb: Math.max(0, -Math.sin(b)) * 0.05 });
         }
-        if (!dance && (near || talking) && n.idle !== "play" && n.idle !== "browse") p.hy = Math.max(-1, Math.min(1, -(Math.atan2(-(IN.z - n.z), IN.x - n.x) - n.yaw)));
+        if (n.julie && IN.cone && IN.cone.julie && !talking) p.hF = [0.28, 1.2, 0.2];
+        if (!dance && (near || talking) && n.idle !== "play" && n.idle !== "browse" && n.idle !== "seat") p.hy = Math.max(-1, Math.min(1, -(Math.atan2(-(IN.z - n.z), IN.x - n.x) - n.yaw)));
         n.pose = n.pose ? ART.lerpPose(n.pose, p, Math.min(1, dt * 8)) : p;
         n.pose.stand = p.stand; n.pose.walk = p.walk;
         n.rig.pose(M.mul(M.T(n.x, -0.1, n.z), M.RY(n.yaw)), n.pose);
@@ -7554,6 +7720,8 @@ const STREET = (() => {
       // ventilador, vitrola, notas saindo das caixas
       const D = R.dyn;
       if (D.fan) D.fan.mo = M.mul(M.T(0, 2.95, 5.2), M.RY(t * 2.4));
+      if (D.fanS) D.fanS.mo = M.mul(M.T(0, R.H - 0.35, 2.8), M.RY(t * 2.8));
+      if (R.id === "sorveteria") iceFrame(R, D);
       if (R.id === "discos") { discosFrame(R, D, dt, t, fx, fz, px, pz, yaw); discoFx(R, D, dt, t); }
       // câmera: atrás e acima; quando mexe em alguma coisa, chega perto por cima do ombro
       let eye, at;
@@ -8003,8 +8171,7 @@ const STREET = (() => {
       } else if (SA.def.kind === "ice") {
         const sv = L.sorveteria || [15.5, 42.4];
         if (!SA.phase) {
-          ui.mission && ui.mission("tick", { title: "Leve a Julie até a Sorveteria Pinguim" });
-          if (Math.hypot(S.x - sv[0], S.z - sv[1]) < 3.4 && S.speed < 5) { SA.phase = 1; say("DOIS DE FLOCOS, POR FAVOR! ♡", 2.4, true); sfx.can(); }
+          if (!poffer) ui.mission && ui.mission("tick", { title: "Leve a Julie na Sorveteria Pinguim e peça dois de flocos" });
         } else {
           ui.mission && ui.mission("tick", { title: "Agora vai com ela até a rampa grande da pista" });
           coneAt(cones[0], (() => { const h = handAndHead(); return h && h.hand; })());
@@ -9772,7 +9939,7 @@ const STREET = (() => {
       shopPlay(ai, fmt, deck) { if (IN) { IN.play = { ai, fmt, deck: deck || "main" }; } },
       phones: () => phonesToggle(),
       door: () => doorToggle(),
-      get lounging() { return !!(IN && IN.lounge); },
+      get lounging() { return !!(IN && (IN.lounge || (IN.sit && IN.sit.seat))); },
       shopProg(p, ti) { if (IN) { IN.prog = p; if (ti != null) IN.curTi = ti; } },
       carry(ai, fmt) { if (IN) IN.carry = { ai, fmt }; },
       get carrying() { return IN ? IN.carry : null; },
@@ -10145,8 +10312,8 @@ function placeClose(){const id=placeOn;placeOn=null;$('lanO').classList.remove('
 for(const b of document.querySelectorAll('[data-close]'))b.addEventListener('click',placeClose);
 // ---------- loja de discos por dentro ----------
 const SHOP={ai:-1,fmt:null,ti:0,radioWas:false,tm:0,sayT:0,v:null,seenTi:-1,seekDone:true};
-// início de cada música (pula a parte falada/cena do clipe): M marca o segundo em que a música começa
-let MARK={};try{MARK=JSON.parse(localStorage.getItem('plaza-inicio')||'{}')}catch(e){}
+// início de cada música (pula a parte falada/cena do clipe): faixa com ini = segundo em que a música começa
+const MARK={};
 const markKey=(a,ti)=>a.a+' — '+a.t+'|'+ti;
 function markGet(a,ti){const k=markKey(a,ti);if(k in MARK)return MARK[k];const f=a.faixas[ti];return f&&f.ini!=null?f.ini:null}
 // volume: alguns discos são masterizados bem mais altos; o ganho do disco iguala
@@ -10170,7 +10337,7 @@ ui.inside=(ev,d)=>{
   else if(ev==='needle'){const n=$('ndl');n.classList.toggle('on',d.on);if(d.on){inSpot(null);$('ndT').textContent=(d.ti+1)+'. '+d.t;$('ndS').textContent=(d.fmt==='cd'?'CD · faixa '+(d.ti+1)+' de '+d.n:'LADO '+(d.lado||'A')+' · '+d.a)+(d.playing?' · tocando':'');$('ndH').textContent=d.fmt==='cd'?'← → escolhe a faixa · Enter toca · L para · T tira o CD · Esc sai':'← → leva a agulha · Enter solta a agulha · L levanta · T tira o disco · Esc sai'}}
   else if(ev==='drop')shopPlay(d.ai,d.fmt,d.ti,d.deck);
   else if(ev==='vol'){SHOP.v=d.v;shopVol()}
-  else if(ev==='lounge'){inSpot(d.on?{label:'Curtindo o som… Enter levanta'}:null);if(d.on)$('inPL').parentNode.querySelector('kbd').textContent='Enter';}
+  else if(ev==='lounge'){inSpot(d.on?{label:d.seat?'Sentado na mesinha… Enter levanta':'Curtindo o som… Enter levanta'}:null);if(d.on)$('inPL').parentNode.querySelector('kbd').textContent='Enter';}
   else if(ev==='lift')shopStop();
   else if(ev==='leave'){inSpot(null);fadeDo(()=>game.exitPlace())}
   else if(ev==='exit'){$('screen').classList.remove('inside');tvStop();SHOP.dz=null;$('mmBox').classList.add('on');inSpot(null);$('say').classList.remove('on');clearInterval(SHOP.tm);for(const o of ['digO','insO','lanO'])$(o).classList.remove('on');INO=null;placeOn=null;MG.stop();
@@ -10397,10 +10564,7 @@ addEventListener('keydown',e=>{const k=e.key.toLowerCase();
   if(game.inside&&!paused&&game.lounging){if(k==='enter'||k==='escape'||k===' '||k==='e'){e.preventDefault();game.release()}return}
   if(game.inside&&!paused&&k==='f'){game.phones();return}
   if(game.inside&&!paused&&k==='q'){game.door();return}
-  if(game.inside&&!paused){if(k==='enter'||k==='e'||k===' '){e.preventDefault();if(!e.repeat)game.interact();return}if(k==='m'&&SHOP.ai>=0){e.preventDefault();if(e.shiftKey){const txt=JSON.stringify(MARK,null,1);try{navigator.clipboard.writeText(txt)}catch(_){}toastC(Object.keys(MARK).length+' marcações copiadas: cola no chat');return}
-    const c=shopCur();if(!c)return;const t=Math.max(0,RADIO.time()-0.3);MARK[markKey(c.a,c.ti)]=Math.round(t*10)/10;if(c.a.um)c.a.faixas[c.ti].s=t;try{localStorage.setItem('plaza-inicio',JSON.stringify(MARK))}catch(_){}
-    toastC('Início de “'+c.a.faixas[c.ti].t+'” marcado em '+Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0'));return}
-    if(k==='n'){shopSkip(1);return}if(k==='b'){shopSkip(-1);return}if(k==='f'||k==='r'||k==='c')return}
+  if(game.inside&&!paused){if(k==='enter'||k==='e'||k===' '){e.preventDefault();if(!e.repeat)game.interact();return}if(k==='n'){shopSkip(1);return}if(k==='b'){shopSkip(-1);return}if(k==='f'||k==='r'||k==='c')return}
   if(dlgOn){if(k==='enter'){e.preventDefault();game.acceptMission();dlg(false);return}if(k==='escape'){e.preventDefault();dlg(false);return}}
   // fita passando: controles do videocassete
   if(game.playing){e.preventDefault();if(k===' ')game.playPause()?$('plSt').textContent='❚❚ PAUSE':$('plSt').textContent='▶ PLAY';else if(k==='arrowleft'||k==='a')game.playSeek(-2);else if(k==='arrowright'||k==='d')game.playSeek(2);else if(k==='r'){game.playRestart();$('pl').classList.remove('ended')}else if(k==='b')downloadVideo();else if(k==='escape'||k==='p')game.stopPlay();return}

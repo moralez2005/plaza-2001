@@ -297,7 +297,7 @@ html.embed body{padding:8px 8px 0;gap:6px;background:#1b1530;min-height:0;height
     <div class="inHud" aria-live="polite"><span id="inName"></span><small>setas andam · Enter mexe nas coisas · Esc pausa</small></div>
     <div class="inP" id="inP"><kbd>Enter</kbd><span id="inPL"></span></div>
     <div class="say" id="say"><b id="sayW"></b><span id="sayL"></span></div>
-    <div class="np" id="np"><div class="vmini" id="npV"><img id="npL" alt=""></div><div><b id="npT"></b><span id="npA"></span><div class="bar"><i id="npBar"></i></div><small>N próxima · B volta · M marca onde a música começa</small></div></div>
+    <div class="np" id="np"><div class="vmini" id="npV"><img id="npL" alt=""></div><div><b id="npT"></b><span id="npA"></span><div class="bar"><i id="npBar"></i></div><small>N próxima faixa · B volta uma · M pausa</small></div></div>
     <div class="tvO" id="tvO" aria-hidden="true"><div id="tvP"></div></div>
     <div class="inO" id="digO" role="dialog" aria-label="Caixote de discos"><div class="oHead"><b id="digT">LPs</b><span id="digS"></span><button class="oBtn" data-inclose>Voltar (Esc)</button></div>
       <button class="digArr l" id="digL" aria-label="Disco anterior">‹</button><div class="crate" id="crate"><div class="stk" id="stk"></div></div><button class="digArr r" id="digR" aria-label="Próximo disco">›</button>
@@ -463,8 +463,8 @@ function placeClose(){const id=placeOn;placeOn=null;$('lanO').classList.remove('
 for(const b of document.querySelectorAll('[data-close]'))b.addEventListener('click',placeClose);
 // ---------- loja de discos por dentro ----------
 const SHOP={ai:-1,fmt:null,ti:0,radioWas:false,tm:0,sayT:0,v:null,seenTi:-1,seekDone:true};
-// início de cada música (pula a parte falada/cena do clipe): M marca o segundo em que a música começa
-let MARK={};try{MARK=JSON.parse(localStorage.getItem('plaza-inicio')||'{}')}catch(e){}
+// início de cada música (pula a parte falada/cena do clipe): faixa com ini = segundo em que a música começa
+const MARK={};
 const markKey=(a,ti)=>a.a+' — '+a.t+'|'+ti;
 function markGet(a,ti){const k=markKey(a,ti);if(k in MARK)return MARK[k];const f=a.faixas[ti];return f&&f.ini!=null?f.ini:null}
 // volume: alguns discos são masterizados bem mais altos; o ganho do disco iguala
@@ -488,7 +488,7 @@ ui.inside=(ev,d)=>{
   else if(ev==='needle'){const n=$('ndl');n.classList.toggle('on',d.on);if(d.on){inSpot(null);$('ndT').textContent=(d.ti+1)+'. '+d.t;$('ndS').textContent=(d.fmt==='cd'?'CD · faixa '+(d.ti+1)+' de '+d.n:'LADO '+(d.lado||'A')+' · '+d.a)+(d.playing?' · tocando':'');$('ndH').textContent=d.fmt==='cd'?'← → escolhe a faixa · Enter toca · L para · T tira o CD · Esc sai':'← → leva a agulha · Enter solta a agulha · L levanta · T tira o disco · Esc sai'}}
   else if(ev==='drop')shopPlay(d.ai,d.fmt,d.ti,d.deck);
   else if(ev==='vol'){SHOP.v=d.v;shopVol()}
-  else if(ev==='lounge'){inSpot(d.on?{label:'Curtindo o som… Enter levanta'}:null);if(d.on)$('inPL').parentNode.querySelector('kbd').textContent='Enter';}
+  else if(ev==='lounge'){inSpot(d.on?{label:d.seat?'Sentado na mesinha… Enter levanta':'Curtindo o som… Enter levanta'}:null);if(d.on)$('inPL').parentNode.querySelector('kbd').textContent='Enter';}
   else if(ev==='lift')shopStop();
   else if(ev==='leave'){inSpot(null);fadeDo(()=>game.exitPlace())}
   else if(ev==='exit'){$('screen').classList.remove('inside');tvStop();SHOP.dz=null;$('mmBox').classList.add('on');inSpot(null);$('say').classList.remove('on');clearInterval(SHOP.tm);for(const o of ['digO','insO','lanO'])$(o).classList.remove('on');INO=null;placeOn=null;MG.stop();
@@ -715,10 +715,7 @@ addEventListener('keydown',e=>{const k=e.key.toLowerCase();
   if(game.inside&&!paused&&game.lounging){if(k==='enter'||k==='escape'||k===' '||k==='e'){e.preventDefault();game.release()}return}
   if(game.inside&&!paused&&k==='f'){game.phones();return}
   if(game.inside&&!paused&&k==='q'){game.door();return}
-  if(game.inside&&!paused){if(k==='enter'||k==='e'||k===' '){e.preventDefault();if(!e.repeat)game.interact();return}if(k==='m'&&SHOP.ai>=0){e.preventDefault();if(e.shiftKey){const txt=JSON.stringify(MARK,null,1);try{navigator.clipboard.writeText(txt)}catch(_){}toastC(Object.keys(MARK).length+' marcações copiadas: cola no chat');return}
-    const c=shopCur();if(!c)return;const t=Math.max(0,RADIO.time()-0.3);MARK[markKey(c.a,c.ti)]=Math.round(t*10)/10;if(c.a.um)c.a.faixas[c.ti].s=t;try{localStorage.setItem('plaza-inicio',JSON.stringify(MARK))}catch(_){}
-    toastC('Início de “'+c.a.faixas[c.ti].t+'” marcado em '+Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0'));return}
-    if(k==='n'){shopSkip(1);return}if(k==='b'){shopSkip(-1);return}if(k==='f'||k==='r'||k==='c')return}
+  if(game.inside&&!paused){if(k==='enter'||k==='e'||k===' '){e.preventDefault();if(!e.repeat)game.interact();return}if(k==='n'){shopSkip(1);return}if(k==='b'){shopSkip(-1);return}if(k==='f'||k==='r'||k==='c')return}
   if(dlgOn){if(k==='enter'){e.preventDefault();game.acceptMission();dlg(false);return}if(k==='escape'){e.preventDefault();dlg(false);return}}
   // fita passando: controles do videocassete
   if(game.playing){e.preventDefault();if(k===' ')game.playPause()?$('plSt').textContent='❚❚ PAUSE':$('plSt').textContent='▶ PLAY';else if(k==='arrowleft'||k==='a')game.playSeek(-2);else if(k==='arrowright'||k==='d')game.playSeek(2);else if(k==='r'){game.playRestart();$('pl').classList.remove('ended')}else if(k==='b')downloadVideo();else if(k==='escape'||k==='p')game.stopPlay();return}

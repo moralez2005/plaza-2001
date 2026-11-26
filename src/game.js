@@ -490,12 +490,14 @@ const STREET = (() => {
     // lugares onde dá pra entrar: lan house (minigames) e loja de discos (ouvir álbuns)
     const PLACES = [
       { id: "lan", at: [-30, 42.4], who: "Dudu da Lan", line: "E aí, mano! Bora jogar um pouco? Pra vocês a ficha é por minha conta... só não conta pro meu chefe, kkkk.", title: "Entrar na Lan House" },
+      { id: "sorveteria", at: [15.5, 42.4], who: "Neide da Sorveteria", line: "Entra que tá fresquinho aqui dentro! Hoje o flocos tá caprichado.", title: "Entrar na Sorveteria Pinguim" },
       { id: "discos", at: [-20.5, 42.4], who: "Seu Vavá dos Discos", line: "Chegou coisa nova! Pode escutar à vontade na cabine, só não risca meus vinis, hein.", title: "Entrar na Vavá Discos" },
     ];
     let poffer = null;
     function placeFrame() {
-      if (SA || soffer || PH || REC || CUT || offer) { if (poffer && (offer || soffer)) poffer = null; return; }
-      const p = PLACES.find((q) => Math.hypot(S.x - q.at[0], S.z - q.at[1]) < 2.4) || null;
+      const iceOn = SA && SA.def.kind === "ice";
+      if ((SA && !iceOn) || soffer || PH || REC || CUT || offer) { if (poffer && (offer || soffer)) poffer = null; return; }
+      const p = PLACES.find((q) => (!iceOn || q.id === "sorveteria") && Math.hypot(S.x - q.at[0], S.z - q.at[1]) < 2.4) || null;
       if (p && S.speed < 4 && poffer !== p) { poffer = p; ui.mission && ui.mission("offer", { who: p.who, line: p.line, title: p.title, place: 1 }); }
       if (!p && poffer) { poffer = null; ui.mission && ui.mission("hide"); if (MA) ui.mission && ui.mission("start", { title: MA.m.title }); }
     }
@@ -524,7 +526,7 @@ const STREET = (() => {
         inCv = INSIDE.makeTex(shopAlbums(), (cv) => { inTex = Rn.texture(cv, inTex); });
         inTex = Rn.texture(inCv, inTex);
       }
-      const R = id === "lan" ? INSIDE.buildLan(Rn, inTex) : INSIDE.buildDiscos(shopAlbums(), Rn, inTex);
+      const R = id === "lan" ? INSIDE.buildLan(Rn, inTex) : id === "sorveteria" ? INSIDE.buildSorveteria(Rn, inTex) : INSIDE.buildDiscos(shopAlbums(), Rn, inTex);
       R.npcR = R.npcs.map((d, i) => Object.assign({ rig: ART.makeRig(Rn, ART.LOOKS[d.look] || ART.LOOKS.npc0), ph: i * 1.9 }, d));
       R.scene.lights = new Float32Array(R.lights.flat());
       R.notes = Array.from({ length: 8 }, (_, i) => ({ g: noteG, mo: M.I(), hidden: true, t: i * 0.45, sp: i % 2 }));
@@ -542,7 +544,7 @@ const STREET = (() => {
       if (music && music.playing) { music.stop(); IN.synth = true; }
       // patins não entram na loja de discos: a Manu tira na porta e calça o chinelo
       const ck = lookKey() + "_chinelo";
-      if (id === "discos" && look.skates && ART.LOOKS[ck]) { IN.skates = { prev: lookKey(), key: ck }; setLook(ck); IN.change = 0; }
+      if ((id === "discos" || id === "sorveteria") && look.skates && ART.LOOKS[ck]) { IN.skates = { prev: lookKey(), key: ck }; setLook(ck); IN.change = 0; }
       ui.inside && ui.inside("enter", { id, name: R.name, skates: !!IN.skates });
       return true;
     }
@@ -566,7 +568,7 @@ const STREET = (() => {
       if (x < -RW || x > RW || z < 0.28 || z > RD) return true;
       const r = 0.27;
       for (const [x0, z0, x1, z1] of IN.R.solids) if (x > x0 - r && x < x1 + r && z > z0 - r && z < z1 + r) return true;
-      for (const n of IN.R.npcR) if (Math.hypot(x - n.x, z - n.z) < 0.5) return true;
+      for (const n of IN.R.npcR) if (!n.off && Math.hypot(x - n.x, z - n.z) < 0.5) return true;
       // portas das cabines: fechada tranca a frente; aberta fica pra fora, do lado da dobradiça
       for (const b of IN.R.booths || []) {
         const d = b.door, Q = d.a < 0.6 ? [b.bx - b.w, b.z0 - 0.06, b.bx + b.w, b.z0 + 0.06] : [b.bx - b.w - 0.25, b.z0 - 1.1, b.bx - b.w + 0.02, b.z0 - 0.02];
@@ -599,8 +601,34 @@ const STREET = (() => {
       if (s.face) IN.yawT = Math.atan2(-(s.face[1] - IN.z), s.face[0] - IN.x);
       if (s.act === "talk") {
         const L = INSIDE.LINES[s.who];
-        IN.talk = { who: s.who, t: 4 };
-        ui.inside && ui.inside("say", { who: s.who === "vava" ? "Seu Vavá" : "Dudu", line: L[IN.li++ % L.length] });
+        sayIn(s.who, L[IN.li++ % L.length], 4);
+        return true;
+      }
+      // sorveteria: pedir no balcão, pegar picolé no freezer, sentar na mesinha
+      if (s.act === "order") {
+        const ice = SA && SA.def.kind === "ice";
+        if (ice && !SA.phase) {
+          SA.phase = 1; IN.cone = { kf: 1, julie: 1, c: 0xf8f2e6 }; sfx.can();
+          sayIn("julie", "Dois de flocos, por favor! ♡", 2.2);
+          IN.sayQ = [{ t: 2.3, who: "neide", line: "Saindo dois de flocos! Capricha nessa casquinha, hein." }, { t: 5.0, who: "julie", line: "Agora bora lá pra rampa grande ver o pôr do sol?" }];
+        } else if (IN.cone || IN.pop) sayIn("neide", "Termina esse primeiro, apressadinho! Hahaha.");
+        else {
+          const F = [["flocos", 0xf8f2e6], ["chocolate", 0x5a3424], ["morango", 0xff8fb0], ["limão", 0xa8e07a], ["creme", 0xfff0a0]], f = F[(IN.li++) % F.length];
+          IN.cone = { kf: 1, c: f[1] }; sfx.can();
+          sayIn("neide", "Uma de " + f[0] + " saindo! Bom proveito.");
+        }
+        return true;
+      }
+      if (s.act === "picole") {
+        if (IN.cone || IN.pop) { sayIn("neide", "Uma coisa de cada vez, menino!"); return true; }
+        IN.pop = [0xff6a6a, 0xffd23f, 0x7ae07a, 0xff9ccf, 0x8c5cff][(IN.li++) % 5]; sfx.can();
+        sayIn("neide", "Pode pegar! Depois acerta comigo no caixa.");
+        return true;
+      }
+      if (s.act === "seat") {
+        IN.sit = { s, t: 0, from: [IN.x, IN.z, IN.yaw], at: s.at, yaw: s.yaw, stand: false, opened: true, seat: true };
+        IN.hold = true;
+        ui.inside && ui.inside("lounge", { on: true, seat: true });
         return true;
       }
       if (s.act === "pc") {
@@ -617,7 +645,7 @@ const STREET = (() => {
     // a página fecha a tela (disco, vitrola, PC) e o skatista volta a andar
     function inRelease() {
       if (!IN) return;
-      if (IN.sit) { const [x, z, y] = IN.sit.from; IN.x = x; IN.z = z; IN.yaw = y + Math.PI; IN.yawT = null; IN.sit = null; }
+      if (IN.sit) { const [x, z, y] = IN.sit.from, seat = IN.sit.seat; IN.x = x; IN.z = z; IN.yaw = y + Math.PI; IN.yawT = null; IN.sit = null; if (seat) ui.inside && ui.inside("lounge", { on: false }); }
       if (IN.lounge) { const [x, z] = IN.lounge.from; IN.x = x; IN.z = z; IN.yaw = Math.PI; IN.yawT = null; IN.lounge = null; ui.inside && ui.inside("lounge", { on: false }); }
       IN.hold = false;
       IN.spot = null;
@@ -636,6 +664,8 @@ const STREET = (() => {
     const progOf = (ai, ti) => { const a = shopAlbums()[ai]; if (!a) return 0; ti = Math.max(0, Math.min(a.faixas.length - 1, ti)); return a.um ? a.faixas[ti].s / a.fim : ti / a.faixas.length; };
     const deckOf = (id) => IN && IN.R.decks.find((d) => d.id === id);
     const dsOf = (id) => (IN.ds[id] = IN.ds[id] || { lp: null, cd: null, ang: 0, spin: 0, armA: 0, armY: 0, trayK: 0, drop: null });
+    const WHO = { vava: "Seu Vavá", dudu: "Dudu", neide: "Neide", julie: "Julie" };
+    function sayIn(who, line, t = 3.5) { IN.talk = { who, t }; ui.inside && ui.inside("say", { who: WHO[who] || who, line }); }
     function vavaSay(line) { IN.talk = { who: "vava", t: 3.5 }; ui.inside && ui.inside("say", { who: "Seu Vavá", line }); }
     // qual formato o aparelho vai usar agora (cabine tem os dois; o rádio só CD)
     function deckFmt(s, d) {
@@ -705,6 +735,20 @@ const STREET = (() => {
         const cyc = [[1, 0.35, 0.7], [0.35, 0.8, 1], [0.75, 0.45, 1], [1, 0.9, 0.4]], ph = (t * 1.6) % 4, i0 = Math.floor(ph), u = ph - i0, A = cyc[i0], B = cyc[(i0 + 1) % 4];
         R.scene.amb = R.ambBase.map((v, j) => v * (1 - e * 0.5) + (A[j] + (B[j] - A[j]) * u) * e * 0.45);
       }
+    }
+    // casquinha na mão do K.F. (e da Julie, na missão) e picolé
+    const scoopG = {}, popG = {};
+    const scoopOf = (c) => scoopG[c] || (scoopG[c] = Rn.upload((() => { const m = new Mesh(); m.tube([0, -0.16, 0], [0, 0, 0], 0.005, 0.045, 7, hex(0xd8a25a)); m.ball([0, 0.04, 0], 0.052, hex(c), 0, 7, 5); if (c === 0xf8f2e6) { m.ball([0.02, 0.07, 0.01], 0.012, hex(0x3a2418), 2, 4, 3); m.ball([-0.02, 0.05, -0.02], 0.01, hex(0x3a2418), 2, 4, 3); } return m; })()));
+    const popOf = (c) => popG[c] || (popG[c] = Rn.upload((() => { const m = new Mesh(); m.box(-0.008, -0.12, -0.004, 0.008, 0, 0.004, hex(0xe8d0a0)); m.box(-0.03, 0, -0.016, 0.03, 0.13, 0.016, hex(c)); return m; })()));
+    function iceFrame(R, D) {
+      if (!D.ice) D.ice = [{ g: coneG, mo: M.I(), hidden: true }, { g: coneG, mo: M.I(), hidden: true }];
+      const [a, b] = D.ice;
+      const h = rig.F ? handOf(rig, look, "F") : null;
+      a.hidden = !(h && (IN.cone || IN.pop));
+      if (!a.hidden) { a.g = IN.pop ? popOf(IN.pop) : scoopOf(IN.cone.c); a.mo = M.mul(M.T(h[0], h[1] + 0.05, h[2]), M.RZ(0.25)); }
+      const j = R.npcR.find((n) => n.julie && !n.off), hj = j && IN.cone && IN.cone.julie && j.rig.F ? handOf(j.rig, ART.LOOKS.julie, "F") : null;
+      b.hidden = !hj;
+      if (hj) { b.g = scoopOf(0xf8f2e6); b.mo = M.mul(M.T(hj[0], hj[1] + 0.05, hj[2]), M.RZ(0.25)); }
     }
     function needleInfo() {
       const N = IN.needle, ds = dsOf(N.deck), ai = ds[N.fmt], a = shopAlbums()[ai];
@@ -943,7 +987,8 @@ const STREET = (() => {
         while (d < -Math.PI) d += Math.PI * 2;
         yaw = Z.from[2] + d * e;
         IN.x = px; IN.z = pz; IN.yaw = yaw;
-        tp = Z.stand ? POSE({ lean: 0.1, hp: -0.05, hF: [0.42, 1.08, 0.12], hB: [0.4, 1.05, -0.14] }) : k < 1 ? POSE({ py: 0.94 - 0.26 * e }) : SITP(t, { hp: 0.1 + Math.sin(t * 7) * 0.02, hF: [0.44, 0.87 + Math.sin(t * 9) * 0.01, 0.13], hB: [0.44, 0.86, -0.15] });
+        if (Z.seat) tp = k < 1 ? POSE({ py: 0.94 - 0.26 * e }) : SITP(t, { lean: 0.06, hp: 0.04, hy: Math.sin(t * 0.3) * 0.25, hF: IN.cone || IN.pop ? [0.3, 1.12, 0.16] : [0.36, 0.8, 0.14], hB: [0.36, 0.78, -0.14] });
+        else tp = Z.stand ? POSE({ lean: 0.1, hp: -0.05, hF: [0.42, 1.08, 0.12], hB: [0.4, 1.05, -0.14] }) : k < 1 ? POSE({ py: 0.94 - 0.26 * e }) : SITP(t, { hp: 0.1 + Math.sin(t * 7) * 0.02, hF: [0.44, 0.87 + Math.sin(t * 9) * 0.01, 0.13], hB: [0.44, 0.86, -0.15] });
         if (k >= 1 && !Z.opened) { Z.opened = true; ui.inside && ui.inside("open", { act: "pc", game: Z.s.game }); }
       } else if (IN.lounge) {
         // deita na poltrona: vai até ela, vira de costas, senta e reclina
@@ -979,19 +1024,23 @@ const STREET = (() => {
       // disco (ou CD) na mão: as duas mãos seguram nas bordas, na frente do peito
       if (IN.carry && !IN.sit && !(IN.hold && IN.spot && IN.spot.act === "dig")) { tp.hF = IN.carry.fmt === "cd" ? [0.04, 1.0, 0.3] : [0.04, 0.88, 0.3]; tp.twist = 0; }
       if (IN.anim || IN.needle) { tp = POSE({ lean: 0.2, hp: 0.36, hF: [0.5, 1.0 + Math.sin(t * 2) * 0.02, 0.08], hB: [0.1, 0.95, -0.27] }); if (IN.anim && IN.anim.t < 1.4) { const w = IN.anim.kind === "cd" ? 0.075 : 0.16; tp.hF = [0.5, 1.12, w]; tp.hB = [0.5, 1.1, -w]; } }
+      if ((IN.cone || IN.pop) && !IN.sit && !IN.anim && !IN.lounge) tp.hF = [0.3, 1.22, 0.2];
       IN.pose = ART.lerpPose(IN.pose, tp, Math.min(1, dt * 10));
       for (const k of ["stand", "walk", "hr", "roll"]) IN.pose[k] = tp[k];
       const sk = look.skates ? Math.PI / 2 : 0;
       rig.pose(M.mul(M.T(px, look.skates ? 0 : -0.1, pz), M.RY(yaw + sk)), IN.pose);
       rig.board.hidden = true;
       // gente lá dentro
+      if (IN.sayQ && IN.sayQ.length) { IN.sayQ[0].t -= dt; if (IN.sayQ[0].t <= 0) { const q = IN.sayQ.shift(); sayIn(q.who, q.line); } }
       for (const n of R.npcR) {
+        if (n.julie) { const vis = !!(SA && SA.def.kind === "ice"); n.rig.objs[0].hidden = !vis; n.off = !vis; if (!vis) continue; }
         const near = Math.hypot(IN.x - n.x, IN.z - n.z) < 3.2;
         const talking = IN.talk && IN.talk.who === n.who;
         let p;
         if (n.idle === "play") p = SITP(t, { hp: 0.14, hy: Math.sin(t * 0.7 + n.ph) * 0.12, hF: [0.44, 0.87 + Math.abs(Math.sin(t * 8 + n.ph)) * 0.02, 0.13], hB: [0.44, 0.86, -0.15], lean: 0.18 + Math.sin(t * 0.5 + n.ph) * 0.04 });
         else if (n.idle === "browse") p = POSE({ lean: 0.04, hp: -0.05 + Math.sin(t * 0.6) * 0.05, hy: Math.sin(t * 0.3 + 1) * 0.2, hF: [0.48, 1.3 + Math.sin(t * 1.3 + n.ph) * 0.08, 0.06], hB: [0.04, 0.95, -0.27] });
         else if (talking) p = POSE({ twist: 0.1 + Math.sin(t * 1.3) * 0.06, hp: 0.06 + Math.sin(t * 2.6) * 0.04, hF: [0.26 + Math.sin(t * 3.1) * 0.06, 1.18 + Math.sin(t * 2.3) * 0.08, 0.26] });
+        else if (n.idle === "seat") p = SITP(t, { lean: 0.05, hp: 0.05 + Math.sin(t * 0.7 + n.ph) * 0.04, hy: Math.sin(t * 0.4 + n.ph) * 0.2, hF: [0.3, 1.08 + Math.max(0, Math.sin(t * 1.7 + n.ph)) * 0.12, 0.14], hB: [0.36, 0.78, -0.14] });
         else if (n.idle === "bounce") p = POSE({ py: 0.94 + Math.abs(Math.sin(t * 4)) * 0.03, hy: Math.sin(t * 1.3) * 0.4, hp: -0.06, hF: [-0.14, 0.92, 0.15], hB: [-0.14, 0.92, -0.15] });
         else p = POSE({ lean: 0.04 + Math.sin(t * 1.1 + n.ph) * 0.02, twist: 0.1, hy: -0.3 + Math.sin(t * 0.6 + n.ph) * 0.2, hp: 0.12, hF: [0.06, 1.0, 0.2], hB: [0.02, 0.92, -0.25] });
         const dance = n.who === "vava" && IN.disco && IN.disco.vava && (IN.discoK || 0) > 0.4 && !talking;
@@ -1001,7 +1050,8 @@ const STREET = (() => {
           p = POSE({ py: 0.92 + Math.abs(Math.sin(b)) * 0.035, lean: 0.06, twist: Math.sin(b / 2) * 0.28, hy: Math.sin(b / 2) * 0.35, hp: -0.04 + Math.sin(b) * 0.05,
             hF: up ? [0.2, 1.78, 0.34] : [0.06, 0.98, 0.3], hB: [0.04, 0.98, -0.3], lf: Math.max(0, Math.sin(b)) * 0.05, lb: Math.max(0, -Math.sin(b)) * 0.05 });
         }
-        if (!dance && (near || talking) && n.idle !== "play" && n.idle !== "browse") p.hy = Math.max(-1, Math.min(1, -(Math.atan2(-(IN.z - n.z), IN.x - n.x) - n.yaw)));
+        if (n.julie && IN.cone && IN.cone.julie && !talking) p.hF = [0.28, 1.2, 0.2];
+        if (!dance && (near || talking) && n.idle !== "play" && n.idle !== "browse" && n.idle !== "seat") p.hy = Math.max(-1, Math.min(1, -(Math.atan2(-(IN.z - n.z), IN.x - n.x) - n.yaw)));
         n.pose = n.pose ? ART.lerpPose(n.pose, p, Math.min(1, dt * 8)) : p;
         n.pose.stand = p.stand; n.pose.walk = p.walk;
         n.rig.pose(M.mul(M.T(n.x, -0.1, n.z), M.RY(n.yaw)), n.pose);
@@ -1009,6 +1059,8 @@ const STREET = (() => {
       // ventilador, vitrola, notas saindo das caixas
       const D = R.dyn;
       if (D.fan) D.fan.mo = M.mul(M.T(0, 2.95, 5.2), M.RY(t * 2.4));
+      if (D.fanS) D.fanS.mo = M.mul(M.T(0, R.H - 0.35, 2.8), M.RY(t * 2.8));
+      if (R.id === "sorveteria") iceFrame(R, D);
       if (R.id === "discos") { discosFrame(R, D, dt, t, fx, fz, px, pz, yaw); discoFx(R, D, dt, t); }
       // câmera: atrás e acima; quando mexe em alguma coisa, chega perto por cima do ombro
       let eye, at;
@@ -1458,8 +1510,7 @@ const STREET = (() => {
       } else if (SA.def.kind === "ice") {
         const sv = L.sorveteria || [15.5, 42.4];
         if (!SA.phase) {
-          ui.mission && ui.mission("tick", { title: "Leve a Julie até a Sorveteria Pinguim" });
-          if (Math.hypot(S.x - sv[0], S.z - sv[1]) < 3.4 && S.speed < 5) { SA.phase = 1; say("DOIS DE FLOCOS, POR FAVOR! ♡", 2.4, true); sfx.can(); }
+          if (!poffer) ui.mission && ui.mission("tick", { title: "Leve a Julie na Sorveteria Pinguim e peça dois de flocos" });
         } else {
           ui.mission && ui.mission("tick", { title: "Agora vai com ela até a rampa grande da pista" });
           coneAt(cones[0], (() => { const h = handAndHead(); return h && h.hand; })());
@@ -3227,7 +3278,7 @@ const STREET = (() => {
       shopPlay(ai, fmt, deck) { if (IN) { IN.play = { ai, fmt, deck: deck || "main" }; } },
       phones: () => phonesToggle(),
       door: () => doorToggle(),
-      get lounging() { return !!(IN && IN.lounge); },
+      get lounging() { return !!(IN && (IN.lounge || (IN.sit && IN.sit.seat))); },
       shopProg(p, ti) { if (IN) { IN.prog = p; if (ti != null) IN.curTi = ti; } },
       carry(ai, fmt) { if (IN) IN.carry = { ai, fmt }; },
       get carrying() { return IN ? IN.carry : null; },

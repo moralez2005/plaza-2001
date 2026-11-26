@@ -20,7 +20,3 @@ Anotações do que ainda vai entrar no PLAZA 2001. Nada disso está no jogo aind
 ## Mais pra frente
 
 - **Banda da galera:** dá pra tocar e tem uma missão própria.
-
-## Coisas pendentes na loja de discos
-
-- **Início das músicas:** marcar com M onde cada música começa nos clipes que têm fala ou cena antes, copiar com Shift+M e mandar pra deixar fixo no jogo.

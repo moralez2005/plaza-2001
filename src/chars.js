@@ -97,6 +97,8 @@ const CHARS = (() => {
     sleeve: "short", pantsR: 0.78, flare: 0.2, scale: 1.0, headScale: 0.95, npc: { freckles: 1, mouth: "smile", brow: 0xb85a20, iris: "#3a6a8a" } };
   TOWN.forEach((t, i) => (t.face = "npc" + i));
   TOWN.forEach((t, i) => (LOOKS["npc" + i] = Object.assign({ sleeve: "long", pantsR: 0.9, flare: 0.4, shoeToe: t.shoe, sole: 0x2a2630, lace: t.shoe, scale: t.kid ? 0.72 : t.old ? 0.88 : 0.92, headScale: t.kid ? 1.08 : 0.97, pantsR: 0.72, flare: 0.1 }, t)));
+  // Neide da Sorveteria Pinguim: atendente de avental rosa e cabelo preso
+  LOOKS.neide = Object.assign({}, LOOKS.npc10, { name: "Neide", top: 0xffffff, top2: 0xeeeeee, apron: 0xff8fc8, pants: 0x3a4a7a, hairStyle: "bun", sleeve: "short" });
 
   // ---------- rostos pintados (256x256 cada) ----------
   function face(g, key, L) {

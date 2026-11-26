@@ -21,6 +21,7 @@ const INSIDE = (() => {
     ouca: RR(0, 800, 512, 96), precos: RR(512, 800, 512, 96),
     neonD: RR(0, 896, 512, 64), semana: RR(512, 896, 256, 64), neonL: RR(768, 896, 256, 64),
     tags: Array.from({ length: 8 }, (_, i) => RR(i * 128 + 2, 962, 124, 60)),
+    sMenu: RR(1024, 832, 512, 192), sNeon: RR(1536, 832, 512, 64), sPicole: RR(1536, 896, 512, 64), sSabor: RR(1536, 960, 512, 64),
   };
   const FONT = (px, w = 900) => `${w} ${px}px Rubik, "Arial Black", Arial, sans-serif`;
   function rnd(seed) {
@@ -188,6 +189,18 @@ const INSIDE = (() => {
       const [x, y, w, h] = P(T.tags[i]);
       sign(g, x, y, w, h, t, i === 5 ? "#ffd23f" : i === 6 ? "#3fd0ff" : i === 7 ? "#f5f1e6" : "#f5f1e6", i === 7 ? "#e0302b" : "#1b1530", 26);
     });
+    // sorveteria: quadro de preços (giz), neon, adesivo do freezer de picolé e plaquinha de sabores
+    {
+      const [x, y, w, h] = P(T.sMenu);
+      g.fillStyle = "#7a4a2a"; g.fillRect(x, y, w, h); g.fillStyle = "#1f3a2e"; g.fillRect(x + 8, y + 8, w - 16, h - 16);
+      g.textBaseline = "middle"; g.fillStyle = "#ffe3f3"; g.font = "900 30px Rubik, Arial Black, sans-serif"; g.textAlign = "center"; g.fillText("SORVETES", x + w / 2, y + 30);
+      g.font = "700 19px Rubik, Arial, sans-serif";
+      const L = [["Casquinha 1 bola", "1,50"], ["Casquinha 2 bolas", "2,50"], ["Taça c/ calda", "4,00"], ["Milk-shake", "3,50"], ["Picolé de fruta", "1,00"], ["Açaí na tigela", "5,00"]];
+      L.forEach(([n, v], i) => { const cx = x + 22 + (i % 2) * (w / 2), cy = y + 70 + Math.floor(i / 2) * 38; g.textAlign = "left"; g.fillStyle = "#f4f1e6"; g.fillText(n, cx, cy); g.textAlign = "right"; g.fillStyle = "#ffd23f"; g.fillText("R$ " + v, cx + w / 2 - 40, cy); });
+    }
+    { const [x, y, w, h] = P(T.sNeon); sign(g, x, y, w, h, "SORVETERIA PINGUIM", null, "#e6fbff", 42, "#3fd0ff"); }
+    { const [x, y, w, h] = P(T.sPicole); sign(g, x, y, w, h, "PICOLÉ GELADINHO", "#2457c8", "#ffffff", 34); }
+    { const [x, y, w, h] = P(T.sSabor); sign(g, x, y, w, h, "FLOCOS · CHOCOLATE · MORANGO · LIMÃO · CREME", "#fff7e8", "#c8287a", 22); }
     // fotos de capa chegam depois (decodificar a imagem é assíncrono)
     albs.forEach((a, i) => {
       if (!a.capa || a.img) return;
@@ -722,6 +735,12 @@ const INSIDE = (() => {
       "O CD é prático, mas o chiadinho do vinil... não tem igual.",
       "Seu skate tá bem ali na porta, ninguém mexe. Aqui é família.",
     ],
+    neide: [
+      "Flocos é o campeão de venda, viu? Mas o de limão no calor é outra coisa.",
+      "Casquinha tá saindo quentinha... quer dizer, geladinha, né! Hahaha.",
+      "Pode sentar na mesinha, fica à vontade. Só não deixa pingar no chão!",
+      "Esses skatistas passam aqui todo fim de tarde. Já sei o pedido de todo mundo.",
+    ],
     dudu: [
       "E aí, mano! Escolhe um PC aí, a ficha é por minha conta.",
       "O 3 tá com o mouse meio ruim, mas dá pra jogar de boa.",
@@ -730,5 +749,99 @@ const INSIDE = (() => {
       "Se o PC travar é só dar um tapinha no gabinete. Brincadeira... ou não.",
     ],
   };
-  return { T, makeTex, buildDiscos, buildLan, coverURL, labelURL, drawCover, palOf, LINES, phoneMesh };
+
+  // ---------- Sorveteria Pinguim (onde o K.F. leva a Julie) ----------
+  function buildSorveteria(Rn, tex) {
+    const st = new Mesh(), fl = new Mesh(), thin = new Mesh();
+    const W = 4, D = 9, H = 3.2, solids = [];
+    const S = (x0, z0, x1, z1) => solids.push([x0, z0, x1, z1]);
+    const mint = hex(0xbfeee0), cream = hex(0xfff7e8), pink = hex(0xff9ccf), pinkD = hex(0xe06aa8), white = hex(0xf6f6f2), blue = hex(0x2457c8);
+    shell(st, fl, { wallLo: pinkD, wallHi: hex(0xfde6ef), floorA: mint, floorB: cream, tile: 0.5, W, D, H, outside: [hex(0xffe8c0), hex(0xffd29a), hex(0xbfae98)] });
+    // ---- balcão-vitrine de sorvete (freezer com vidro curvo e as cubas de sabor) ----
+    const cz0 = 5.3, cz1 = 6.0, cx0 = -3.0, cx1 = 2.2;
+    st.box(cx0, 0, cz0, cx1, 0.85, cz1, white, { top: hex(0xe8e8e4) });
+    st.box(cx0, 0.42, cz0 - 0.005, cx1, 0.5, cz0, pink);
+    thin.box(cx0 + 0.05, 0.85, cz0 + 0.12, cx1 - 0.05, 1.22, cz0 + 0.16, hex(0xcfe8ff), { m: 3 });
+    thin.box(cx0 + 0.05, 1.22, cz0 + 0.14, cx1 - 0.05, 1.25, cz1 - 0.1, hex(0xcfe8ff), { m: 3 });
+    st.box(cx0, 0.85, cz1 - 0.1, cx1, 1.27, cz1, white);
+    const flav = [0xf8f2e6, 0x5a3424, 0xff8fb0, 0xa8e07a, 0xfff0a0, 0x7a3aa8, 0xffb070, 0xd8f0ff, 0xc8282a, 0x3a2418];
+    for (let i = 0; i < 10; i++) {
+      const x = cx0 + 0.18 + i * ((cx1 - cx0 - 0.36) / 9.4), c = hex(flav[i]);
+      st.box(x - 0.2, 0.85, cz0 + 0.2, x + 0.2, 0.9, cz1 - 0.15, hex(0xc8ccd4), { m: 1 });
+      st.box(x - 0.18, 0.88, cz0 + 0.22, x + 0.18, 0.95, cz1 - 0.17, c);
+      st.ball([x - 0.05, 0.96, cz0 + 0.38], 0.07, c, 0, 7, 4, { sy: 0.6 }); st.ball([x + 0.07, 0.95, cz0 + 0.45], 0.06, c, 0, 7, 4, { sy: 0.6 });
+      if (i === 0) for (const [dx, dz] of [[-0.06, 0.34], [0.05, 0.42], [0.1, 0.36], [-0.02, 0.47]]) st.ball([x + dx, 0.995, cz0 + dz], 0.012, hex(0x2a1810), 2, 4, 3); // flocos
+    }
+    dec(fl, [-0.4, 0.62, cz0 - 0.012], [-1, 0, 0], [0, 1, 0], 2.6, 0.32, T.sSabor);
+    S(cx0, cz0, cx1, cz1);
+    // ---- balcão de trás: casquinhas, máquina de milk-shake e caixa registradora ----
+    st.box(-3.6, 0, 8.25, 3.6, 0.92, D, cream, { top: hex(0xf0e2d0) }); S(-3.6, 8.25, 3.6, D);
+    for (let k = 0; k < 6; k++) st.tube([-2.8 + k * 0.07, 0.92, 8.55], [-2.8 + k * 0.07, 1.12, 8.55], 0.01, 0.035, 6, hex(0xd8a25a));
+    st.tube([-2.05, 0.92, 8.6], [-2.05, 1.35, 8.6], 0.09, 0.09, 10, hex(0xb8bcc4), 1); st.box(-2.15, 1.35, 8.5, -1.95, 1.45, 8.7, pink);
+    for (let k = 0; k < 3; k++) st.tube([-1.7 + k * 0.16, 0.92, 8.55], [-1.7 + k * 0.16, 1.1, 8.55], 0.045, 0.06, 8, hex([0xff8fb0, 0xf8f2e6, 0x5a3424][k]));
+    st.box(1.4, 0.92, 8.4, 1.85, 1.12, 8.8, hex(0x9a9aa2)); st.box(1.45, 1.12, 8.6, 1.8, 1.25, 8.8, hex(0x7a7a84)); thin.box(1.5, 1.14, 8.399, 1.75, 1.2, 8.4, hex(0x7dff9a), { m: 2 });
+    dec(fl, [0, 2.15, D - 0.04], [-1, 0, 0], [0, 1, 0], 2.4, 0.9, T.sMenu);
+    dec(fl, [-W + 0.04, 2.6, 4.6], [0, 0, -1], [0, 1, 0], 2.4, 0.3, T.sNeon, [1.6, 1.6, 1.6]);
+    // ---- freezer horizontal de picolé (parede esquerda) ----
+    st.box(-W, 0, 2.0, -W + 0.8, 0.82, 3.5, white, { top: hex(0xe4e4e0) });
+    thin.box(-W + 0.08, 0.82, 2.08, -W + 0.72, 0.835, 3.42, hex(0xbfe0ff), { m: 3 });
+    for (let k = 0; k < 7; k++) { const c = hex([0xff6a6a, 0xffd23f, 0x7ae07a, 0xff9ccf, 0x8c5cff, 0xff9a3a, 0x3fd0ff][k]); st.box(-W + 0.15 + (k % 3) * 0.2, 0.6, 2.2 + k * 0.17, -W + 0.27 + (k % 3) * 0.2, 0.8, 2.26 + k * 0.17, c); }
+    dec(fl, [-W + 0.81, 0.55, 2.75], [0, 0, -1], [0, 1, 0], 1.2, 0.15, T.sPicole);
+    S(-W, 2.0, -W + 0.8, 3.5);
+    // ---- mesinhas redondas com cadeiras de plástico ----
+    const tables = [[2.1, 2.0], [2.1, 3.9]];
+    for (const [tx, tz] of tables) {
+      st.tube([tx, 0, tz], [tx, 0.72, tz], 0.04, 0.04, 8, C.metal, 1); st.tube([tx, 0, tz], [tx, 0.03, tz], 0.25, 0.25, 12, C.metal, 1);
+      st.tube([tx, 0.72, tz], [tx, 0.75, tz], 0.42, 0.42, 16, white);
+      thin.box(tx - 0.05, 0.75, tz - 0.05, tx + 0.05, 0.86, tz + 0.05, hex(0xf4f4f4)); // porta-guardanapo
+      for (const sd of [-1, 1]) {
+        st.tf = M.mul(M.T(tx + sd * 0.72, 0, tz), M.RY(sd > 0 ? Math.PI : 0));
+        const red = hex(0xe0302b);
+        st.box(-0.2, 0.42, -0.2, 0.2, 0.46, 0.2, red);
+        for (const [lx, lz] of [[-0.17, -0.17], [-0.17, 0.17], [0.17, -0.17], [0.17, 0.17]]) st.box(lx - 0.02, 0, lz - 0.02, lx + 0.02, 0.42, lz + 0.02, red);
+        st.box(-0.22, 0.46, -0.2, -0.18, 0.86, 0.2, red);
+        st.tf = null;
+      }
+      S(tx - 0.45, tz - 0.45, tx + 0.45, tz + 0.45);
+    }
+    // ---- mascote na porta: um pinguim de cachecol segurando uma casquinha ----
+    {
+      const px = -2.4, pz = 1.0, blk = hex(0x1d2130), wht = hex(0xf8f8f4), org = hex(0xff9a3a), sc = hex(0xff4fa3);
+      st.tube([px, 0, pz], [px, 0.08, pz], 0.32, 0.32, 12, hex(0x3fd0ff));
+      st.ball([px, 0.62, pz], 0.3, blk, 0, 10, 7, { sy: 1.6 }); st.ball([px + 0.08, 0.6, pz], 0.24, wht, 0, 10, 7, { sy: 1.5, sx: 0.9 });
+      st.ball([px, 1.12, pz], 0.21, blk, 0, 10, 7); st.ball([px + 0.15, 1.13, pz], 0.12, wht, 0, 8, 5, { sx: 0.6 });
+      for (const ez of [-0.07, 0.07]) { st.ball([px + 0.19, 1.17, pz + ez], 0.035, wht, 2, 6, 4); st.ball([px + 0.215, 1.17, pz + ez], 0.018, blk, 0, 5, 3); }
+      st.ball([px + 0.25, 1.09, pz], 0.05, org, 0, 6, 4, { sx: 1.8, sy: 0.6 });
+      st.tube([px, 0.96, pz], [px, 1.0, pz], 0.2, 0.2, 12, sc); st.box(px - 0.02, 0.72, pz + 0.12, px + 0.05, 0.98, pz + 0.2, sc);
+      for (const ez of [-0.1, 0.1]) st.ball([px + 0.1, 0.12, pz + ez], 0.08, org, 0, 6, 4, { sx: 1.6, sy: 0.4 });
+      st.ball([px + 0.02, 0.6, pz - 0.3], 0.08, blk, 0, 6, 4, { sy: 2 });
+      st.tube([px + 0.12, 0.6, pz + 0.3], [px + 0.12, 0.8, pz + 0.3], 0.01, 0.05, 7, hex(0xd8a25a)); st.ball([px + 0.12, 0.84, pz + 0.3], 0.06, hex(0xff8fb0), 0, 7, 5);
+      S(px - 0.35, pz - 0.35, px + 0.35, pz + 0.35);
+    }
+    // ---- teto: ventilador e pendentes coloridos ----
+    for (const [x, z, c] of [[-1.6, 4.6, C.pink], [0.6, 4.6, C.cyan], [2.1, 3.0, hex(0xffd23f)]]) pendant(st, x, 2.2, z, c);
+    st.tube([0, H, 2.8], [0, H - 0.35, 2.8], 0.02, 0.02, 6, C.metal, 1);
+    const fan = new Mesh(); fan.ball([0, 0, 0], 0.08, white, 1, 8, 4); for (let k = 0; k < 4; k++) { fan.tf = M.RY(k * Math.PI / 2); fan.box(0.08, -0.01, -0.06, 0.7, 0.0, 0.06, hex(0xf0e2d0)); } fan.tf = null;
+    const up = (m, o) => Rn.upload(m, o);
+    const lights = [[-1.6, 2.2, 4.6], [0.6, 2.2, 4.6], [2.1, 2.2, 3.0], [0, 2.9, 7.5], [-3, 2.6, 2.7], [0, 2.4, 0.6]];
+    const spots = [
+      { id: "door", x: 0, z: 0.55, r: 0.62, act: "door", label: "Sair da sorveteria" },
+      { id: "balcao", x: -0.5, z: 4.75, r: 0.7, act: "order", label: "Pedir sorvete", face: [-0.5, 5.6] },
+      { id: "picole", x: -W + 1.25, z: 2.75, r: 0.6, act: "picole", label: "Pegar um picolé", face: [-W, 2.75] },
+      { id: "neide", x: 1.2, z: 4.75, r: 0.55, act: "talk", who: "neide", label: "Falar com a Neide", face: [1.2, 6.8] },
+      ...tables.map(([tx, tz], i) => ({ id: "mesa" + i, x: tx - 1.15, z: tz, r: 0.42, act: "seat", at: [tx - 0.72, tz], yaw: 0, label: "Sentar na mesinha", face: [tx, tz] })),
+    ];
+    return {
+      id: "sorveteria", name: "SORVETERIA PINGUIM", W, D, H, base: [{ g: up(fl, { outline: false }), tex }, { g: up(st), tex }, { g: up(thin, { outline: false }), tex }],
+      dyn: { fanS: { g: up(fan), mo: M.T(0, H - 0.35, 2.8) } }, decks: [], solids, spots, lights, tables,
+      npcs: [
+        { look: "neide", x: 0.4, z: 6.8, yaw: Math.PI / 2, idle: "calm", who: "neide" },
+        { look: "julie", x: 0.35, z: 4.55, yaw: -Math.PI / 2 + 0.25, idle: "calm", who: "julie", julie: 1 },
+        { look: "fig12", x: 2.1 + 0.72, z: 3.9, yaw: Math.PI, idle: "seat" },
+      ],
+      spawn: [0, 1.5, 0],
+      scene: { sun: V.norm([0.18, 0.95, 0.22]), top: hex(0xfde6ef), mid: hex(0xfde6ef), hz: hex(0xfde6ef), fog: hex(0xfde6ef), fogd: 0.004, shade: hex(0xd4b4cc), ink: hex(0x1b1530), ink_w: 1.5, amb: [0.92, 0.88, 0.88], night: 0.36, wet: 0, winc: [9, 9, 9] },
+    };
+  }
+  return { T, makeTex, buildDiscos, buildLan, buildSorveteria, coverURL, labelURL, drawCover, palOf, LINES, phoneMesh };
 })();
