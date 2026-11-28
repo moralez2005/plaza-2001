@@ -61,6 +61,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;outline:no
 .goals{list-style:none;padding:0;margin:6px 0;display:grid;gap:4px;font-size:14px}
 .goals li::before{content:"○ ";font-weight:900}
 .goals li.done{color:#1fae5a;font-weight:800}.goals li.done::before{content:"✔ "}
+.fkeys{display:none!important}body.festaK .fkeys{display:flex!important}body.festaK .keys:not(.fkeys){display:none!important}
 .keys{width:min(1180px,100%);display:flex;flex-wrap:wrap;gap:8px 10px;justify-content:center;font-size:14px}
 .keys span{background:#fff;border:2px solid var(--ink);border-radius:10px;padding:4px 10px;box-shadow:3px 3px 0 var(--ink)}
 kbd{font:900 12px Rubik,sans-serif;background:var(--ink);color:#fff;border-radius:5px;padding:1px 6px}
@@ -331,6 +332,7 @@ html.embed body{padding:8px 8px 0;gap:6px;background:#1b1530;min-height:0;height
     <b>Metas</b><ul class="goals" id="goals"></ul>
   </div></div>
 </div></div>
+<div class="keys fkeys"><span><kbd>Setas</kbd> andar (a escada da esquerda sobe)</span><span><kbd>Enter</kbd> conversar / pegar</span><span><kbd>Espaço</kbd> dançar / parar</span><span><kbd>J</kbd> troca o passo</span><span><kbd>K</kbd> passo especial (K.F.: break)</span><span><kbd>L</kbd> dança a dois</span><span><kbd>N</kbd> próxima música</span><span><kbd>Esc</kbd> pausa</span></div>
 <div class="keys">
   <span><kbd>W</kbd> remar</span><span><kbd>A</kbd><kbd>D</kbd> virar / girar no ar</span><span><kbd>S</kbd> frear</span>
   <span><kbd>Espaço</kbd> segure e solte = pular</span><span><kbd>J</kbd> <b id="kJ">flip</b></span><span><kbd>L</kbd> <b id="kL">grab (segure)</b></span>
@@ -484,10 +486,12 @@ const FEST={on:0,i:0,slow:0};
 function festPlay(i){const S=RADIO.festa(),n=S.set.length;FEST.i=((i%n)+n)%n;FEST.slow=0;const f=S.set[FEST.i];
   RADIO.playTrack({a:f.a,t:f.t,id:f.id,s:f.s||0,once:1,onEnd:()=>{if(FEST.on&&!FEST.slow)festPlay(FEST.i+1)},onFail:()=>{if(FEST.on&&!FEST.slow)setTimeout(()=>festPlay(FEST.i+1),400)}});
   toastC('♪ DJ Luskinha: '+f.a+' — '+f.t)}
+function festBeat(){if(!FEST.on)return;const S=RADIO.festa(),f=FEST.slow?S.lenta:S.set[FEST.i];game.festaSync&&game.festaSync({bpm:(f&&f.bpm)||124,t:RADIO.ready()?RADIO.time():0,slow:FEST.slow})}
+setInterval(festBeat,500);
 function festSlow(){const L=RADIO.festa().lenta;FEST.slow=1;RADIO.playTrack({a:L.a,t:L.t,id:L.id,s:0,once:1,onEnd:()=>{FEST.slow=0;if(FEST.on)festPlay(FEST.i+1)},onFail:()=>{FEST.slow=0;if(FEST.on)festPlay(FEST.i+1)}});toastC('♪ '+L.a+' — '+L.t)}
-ui.festa=(ev,d)=>{if(ev==='on'){FEST.on=1;festPlay((d&&d.i)||0)}else if(ev==='slow')festSlow();else if(ev==='next'&&FEST.on&&!FEST.slow)festPlay(FEST.i+1);else if(ev==='off'){FEST.on=0;FEST.slow=0}};
+ui.festa=(ev,d)=>{if(ev==='on'){FEST.on=1;festPlay((d&&d.i)||0)}else if(ev==='slow')festSlow();else if(ev==='next'&&FEST.on&&(!FEST.slow||(d&&d.force)))festPlay(FEST.i+1);else if(ev==='off'){FEST.on=0;FEST.slow=0}};
 ui.inside=(ev,d)=>{
-  if(ev==='enter'){$('screen').classList.add('inside');if(d.name==='VAVÁ DISCOS')tvStart();$('inName').textContent=d.name;$('mmBox').classList.remove('on');clearTimeout(dmQ);clearTimeout(dmMini);$('dm').className='dm';DISC.set('');SHOP.radioWas=RADIO.active;RADIO.hold(true);if(RADIO.active)RADIO.pause(true);clearInterval(SHOP.tm);SHOP.tm=setInterval(shopTick,400);inSpot(null);if(d.skates)setTimeout(()=>toastC('Patins na porta, chinelo no pé 🩴'),900)}
+  if(ev==='enter'){document.body.classList.toggle('festaK',d.id==='festa');$('screen').classList.add('inside');if(d.name==='VAVÁ DISCOS')tvStart();$('inName').textContent=d.name;$('mmBox').classList.remove('on');clearTimeout(dmQ);clearTimeout(dmMini);$('dm').className='dm';DISC.set('');SHOP.radioWas=RADIO.active;RADIO.hold(true);if(RADIO.active)RADIO.pause(true);clearInterval(SHOP.tm);SHOP.tm=setInterval(shopTick,400);inSpot(null);if(d.skates)setTimeout(()=>toastC('Patins na porta, chinelo no pé 🩴'),900)}
   else if(ev==='spot')inSpot(d);
   else if(ev==='say'&&d.mini){toastC(d.line)}
   else if(ev==='say'){$('sayW').textContent=d.who;$('sayL').textContent='“'+d.line+'”';const b=$('say');b.classList.remove('on');void b.offsetWidth;b.classList.add('on');clearTimeout(SHOP.sayT);SHOP.sayT=setTimeout(()=>b.classList.remove('on'),4200)}
@@ -498,7 +502,7 @@ ui.inside=(ev,d)=>{
   else if(ev==='lounge'){inSpot(d.on?{label:d.seat?'Sentado na mesinha… Enter levanta':'Curtindo o som… Enter levanta'}:null);if(d.on)$('inPL').parentNode.querySelector('kbd').textContent='Enter';}
   else if(ev==='lift')shopStop();
   else if(ev==='leave'){inSpot(null);fadeDo(()=>game.exitPlace())}
-  else if(ev==='exit'){if(FEST.on){FEST.on=0;FEST.slow=0;SHOP.ai=0}$('screen').classList.remove('inside');tvStop();SHOP.dz=null;$('mmBox').classList.add('on');inSpot(null);$('say').classList.remove('on');clearInterval(SHOP.tm);for(const o of ['digO','insO','lanO'])$(o).classList.remove('on');INO=null;placeOn=null;MG.stop();
+  else if(ev==='exit'){document.body.classList.remove('festaK');if(FEST.on){FEST.on=0;FEST.slow=0;SHOP.ai=0}$('screen').classList.remove('inside');tvStop();SHOP.dz=null;$('mmBox').classList.add('on');inSpot(null);$('say').classList.remove('on');clearInterval(SHOP.tm);for(const o of ['digO','insO','lanO'])$(o).classList.remove('on');INO=null;placeOn=null;MG.stop();
     if(d.reset){RADIO.hold(false);RADIO.setVol(null);if(SHOP.ai>=0){SHOP.ai=-1;$('np').classList.remove('on');RADIO.stopTrack()}return}
     $('ndl').classList.remove('on');
     RADIO.setVol(null);RADIO.hold(false);
@@ -722,6 +726,7 @@ addEventListener('keydown',e=>{const k=e.key.toLowerCase();
   if(game.inside&&!paused&&game.lounging){if(k==='enter'||k==='escape'||k===' '||k==='e'){e.preventDefault();game.release()}return}
   if(game.inside&&!paused&&k==='f'){game.phones();return}
   if(game.inside&&!paused&&k==='q'){game.door();return}
+  if(game.inside==='festa'&&!paused){if(k===' '){e.preventDefault();if(!e.repeat)game.festaKey('dance');return}if(k==='j'||k==='k'||k==='l'){if(!e.repeat)game.festaKey(k==='j'?'next':k==='k'?'special':'pair');return}}
   if(game.inside&&!paused){if(k==='enter'||k==='e'||k===' '){e.preventDefault();if(!e.repeat)game.interact();return}if(k==='n'){if(FEST.on)ui.festa('next');else shopSkip(1);return}if(k==='b'){shopSkip(-1);return}if(k==='f'||k==='r'||k==='c')return}
   if(dlgOn){if(k==='enter'){e.preventDefault();game.acceptMission();dlg(false);return}if(k==='escape'){e.preventDefault();dlg(false);return}}
   // fita passando: controles do videocassete

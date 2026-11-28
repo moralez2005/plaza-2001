@@ -862,7 +862,8 @@ const INSIDE = (() => {
   // gente olhando a pista. Teto alto com cordão de luzinhas, folhas de palmeira penduradas e o globo.
   function buildFesta(Rn, tex) {
     const st = new Mesh(), fl = new Mesh(), thin = new Mesh();
-    const W = 6.5, D = 15, H = 6.4, MY = 3.2, MX = 4.4, MZ0 = 6.0, MZB = 13.6, solids = [];
+    const W = 8.5, D = 20, H = 7.2, MY = 3.4, MX = 5.9, MZ0 = 7.0, MZB = 17.6, solids = [], solidsUp = [];
+    const SU = (x0, z0, x1, z1) => solidsUp.push([x0, z0, x1, z1]);
     const S = (x0, z0, x1, z1) => solids.push([x0, z0, x1, z1]);
     const bamboo = hex(0xc8a05a), bambooD = hex(0x8a6a32), wood = hex(0x5a3a22), woodD = hex(0x3a2416), straw = hex(0xd8b870), leaf = hex(0x2f9a4a), leafD = hex(0x1f7a3a);
     const pink = hex(0xff4fa3), cyan = hex(0x3fd0ff), yel = hex(0xffd23f), purple = hex(0x8c5cff), blk = hex(0x16141c);
@@ -876,14 +877,14 @@ const INSIDE = (() => {
     // ---- mezanino em U ----
     const deck = (x0, z0, x1, z1) => { st.box(x0, MY - 0.25, z0, x1, MY, z1, woodD, { top: wood }); };
     deck(-W, MZ0, -MX, D); deck(MX, MZ0, W, D); deck(-MX, MZB, MX, D);
-    for (const [x, z] of [[-MX, MZ0], [-MX, 9.8], [-MX, MZB], [MX, MZ0], [MX, 9.8], [MX, MZB], [-1.6, MZB], [1.6, MZB]]) { st.tube([x, 0, z], [x, MY - 0.25, z], 0.11, 0.11, 7, bamboo); S(x - 0.15, z - 0.15, x + 0.15, z + 0.15); }
+    for (const [x, z] of [[-MX, MZ0], [-MX, 10.5], [-MX, 14.0], [-MX, MZB], [MX, MZ0], [MX, 10.5], [MX, 14.0], [MX, MZB], [-2.2, MZB], [2.2, MZB]]) { st.tube([x, 0, z], [x, MY - 0.25, z], 0.11, 0.11, 7, bamboo); S(x - 0.15, z - 0.15, x + 0.15, z + 0.15); }
     // guarda-corpo (borda de dentro do U e as pontas da frente)
     const rail = (a, b) => {
       const L = Math.hypot(b[0] - a[0], b[2] - a[2]), n = Math.max(1, Math.round(L / 0.6));
       for (let i = 0; i <= n; i++) { const p = V.lerp(a, b, i / n); st.tube(p, [p[0], MY + 1.0, p[2]], 0.025, 0.025, 4, bamboo); }
       st.tube([a[0], MY + 1.0, a[2]], [b[0], MY + 1.0, b[2]], 0.045, 0.045, 6, bambooD); st.tube([a[0], MY + 0.5, a[2]], [b[0], MY + 0.5, b[2]], 0.025, 0.025, 4, bamboo);
     };
-    rail([-MX, MY, MZ0], [-MX, MY, MZB]); rail([-MX, MY, MZB], [MX, MY, MZB]); rail([MX, MY, MZB], [MX, MY, MZ0]); rail([MX, MY, MZ0], [W, MY, MZ0]);
+    rail([-MX, MY, MZ0], [-MX, MY, MZB]); rail([-MX, MY, MZB], [MX, MY, MZB]); rail([MX, MY, MZB], [MX, MY, MZ0]); rail([MX, MY, MZ0], [W, MY, MZ0]); rail([-W + 1.2, MY, MZ0], [-MX, MY, MZ0]);
     // franja de palha embaixo da borda do mezanino (cara de quiosque) e colares de flor pendurados no guarda-corpo
     for (const [a, b] of [[[-MX, MZ0], [-MX, MZB]], [[-MX, MZB], [MX, MZB]], [[MX, MZB], [MX, MZ0]]]) {
       const L = Math.hypot(b[0] - a[0], b[1] - a[1]), n = Math.round(L / 0.12);
@@ -896,34 +897,34 @@ const INSIDE = (() => {
     }
     // escada pro mezanino (parede esquerda, sobe da entrada até a ponta do mezanino)
     {
-      const n = 13, z0 = 0.95, z1 = MZ0, x0 = -W, x1 = -W + 1.15;
+      const n = 15, z0 = 1.2, z1 = MZ0, x0 = -W, x1 = -W + 1.15;
       for (let i = 0; i < n; i++) { const za = z0 + ((z1 - z0) * i) / n, zb = z0 + ((z1 - z0) * (i + 1)) / n, y = (MY * (i + 1)) / n; st.box(x0, 0, za, x1, y, zb, i % 2 ? wood : woodD, { top: hex(0x7a5232) }); }
       for (let i = 0; i <= 6; i++) { const u = i / 6, z = z0 + (z1 - z0) * u, y = MY * u; st.tube([x1, y, z], [x1, y + 0.95, z], 0.022, 0.022, 4, bamboo); }
       st.tube([x1, 0.95, z0], [x1, MY + 0.95, z1], 0.035, 0.035, 5, bambooD);
-      S(x0, z0, x1 + 0.05, z1);
+      S(x1 - 0.02, z0, x1 + 0.08, z1 - 0.6); // corrimão (a escada em si é andável: o jogo calcula a altura)
     }
     // ---- pista com piso de luz (as placas acendem pelo jogo) ----
-    const PX0 = -3, PZ0 = 5.0, TS = 0.75, NX = 8, NZ = 7;
+    const PX0 = -4.5, PZ0 = 6.0, TS = 0.75, NX = 12, NZ = 10;
     st.box(PX0 - 0.12, 0, PZ0 - 0.12, PX0 + NX * TS + 0.12, 0.03, PZ0 + NZ * TS + 0.12, hex(0xb8bcc4), { m: 1 });
     const tileG = new Mesh(); tileG.box(-TS / 2 + 0.03, 0.03, -TS / 2 + 0.03, TS / 2 - 0.03, 0.05, TS / 2 - 0.03, hex(0xffffff), { m: 2 });
     // ---- palco e cabine do DJ ----
-    st.box(-2.8, 0, 11.2, 2.8, 0.4, 13.5, blk, { top: hex(0x24202e) });
-    st.box(-2.8, 0.04, 11.17, 2.8, 0.1, 11.2, pink, { m: 2 });
-    S(-2.8, 11.2, 2.8, 13.5);
-    st.box(-1.5, 0.4, 11.55, 1.5, 1.32, 12.05, hex(0x1c1a24), { top: hex(0x2a2632) });
-    dec(fl, [0, 0.9, 11.54], [-1, 0, 0], [0, 1, 0], 2.6, 0.65, T.fDJ);
+    st.box(-3.2, 0, 15.0, 3.2, 0.4, 17.4, blk, { top: hex(0x24202e) });
+    st.box(-3.2, 0.04, 14.97, 3.2, 0.1, 15.0, pink, { m: 2 });
+    S(-3.2, 15.0, 3.2, 17.4);
+    st.box(-1.5, 0.4, 15.35, 1.5, 1.32, 15.85, hex(0x1c1a24), { top: hex(0x2a2632) });
+    dec(fl, [0, 0.9, 15.34], [-1, 0, 0], [0, 1, 0], 2.6, 0.65, T.fDJ);
     for (const sx of [-0.78, 0.78]) {
-      st.tf = M.T(sx, 1.32, 11.8);
+      st.tf = M.T(sx, 1.32, 15.6);
       st.box(-0.3, 0, -0.22, 0.3, 0.08, 0.22, hex(0x2a2a32)); st.tube([0, 0.08, 0], [0, 0.095, 0], 0.17, 0.17, 18, hex(0x101014));
       st.tube([0, 0.095, 0], [0, 0.1, 0], 0.06, 0.06, 10, sx < 0 ? pink : cyan); st.box(0.2, 0.08, 0.1, 0.26, 0.12, 0.16, C.metal, { m: 1 });
       st.tf = null;
     }
-    st.box(-0.24, 1.32, 11.62, 0.24, 1.42, 11.98, hex(0x2a2a32));
-    for (let k = 0; k < 4; k++) st.box(-0.18 + k * 0.1, 1.42, 11.7, -0.14 + k * 0.1, 1.45, 11.9, [pink, cyan, yel, hex(0x7dff9a)][k], { m: 2 });
+    st.box(-0.24, 1.32, 15.42, 0.24, 1.42, 15.78, hex(0x2a2a32));
+    for (let k = 0; k < 4; k++) st.box(-0.18 + k * 0.1, 1.42, 15.5, -0.14 + k * 0.1, 1.45, 15.7, [pink, cyan, yel, hex(0x7dff9a)][k], { m: 2 });
     for (const sx of [-1, 1]) {
-      const x = sx * 2.35;
-      st.box(x - 0.38, 0.4, 11.3, x + 0.38, 2.3, 12.0, blk);
-      for (const [y, r] of [[0.85, 0.26], [1.55, 0.26], [2.05, 0.1]]) { st.tube([x, y, 11.29], [x, y, 11.27], r, r, 14, hex(0x2a2832)); st.tube([x, y, 11.27], [x, y, 11.26], r * 0.35, r * 0.35, 10, hex(0x4a4652), 1); }
+      const x = sx * 2.75;
+      st.box(x - 0.38, 0.4, 15.1, x + 0.38, 2.3, 15.8, blk);
+      for (const [y, r] of [[0.85, 0.26], [1.55, 0.26], [2.05, 0.1]]) { st.tube([x, y, 15.09], [x, y, 15.07], r, r, 14, hex(0x2a2832)); st.tube([x, y, 15.07], [x, y, 15.06], r * 0.35, r * 0.35, 10, hex(0x4a4652), 1); }
     }
     // neon da casa no fundo (embaixo do mezanino de trás) e coqueiros de neon dos lados
     dec(fl, [0, 2.3, D - 0.04], [-1, 0, 0], [0, 1, 0], 4.6, 0.86, T.fNeon, [1.6, 1.6, 1.6]);
@@ -934,43 +935,43 @@ const INSIDE = (() => {
       for (let k = 0; k < 6; k++) { const tip = [p[0] + (k - 2.5) * 0.24 * s, p[1] + Math.sin(k * 1.1) * 0.12 - 0.15 * s, p[2] - 0.04], mid = [(p[0] + tip[0]) / 2, p[1] + 0.12 * s, p[2] - 0.04]; m.tube(p, mid, 0.025, 0.025, 4, pink, 2); m.tube(mid, tip, 0.025, 0.02, 4, pink, 2); }
       void nx;
     };
-    neonPalm(thin, 3.6, 0.45, D - 0.08, 0, 1.0); neonPalm(thin, -3.6, 0.45, D - 0.08, 0, 1.0);
+    neonPalm(thin, 4.6, 0.45, D - 0.08, 0, 1.0); neonPalm(thin, -4.6, 0.45, D - 0.08, 0, 1.0);
     // ---- bar do Kiko (embaixo do mezanino da direita) ----
     {
-      const x0 = 4.6, x1 = 5.15, z0 = 6.7, z1 = 12.0;
+      const x0 = 6.1, x1 = 6.65, z0 = 8.5, z1 = 15.5;
       st.box(x0, 0, z0, x1, 1.08, z1, bamboo, { top: hex(0x6a4422) });
       for (let z = z0 + 0.1; z < z1; z += 0.16) st.tube([x0 - 0.01, 0, z], [x0 - 0.01, 1.0, z], 0.045, 0.045, 5, ((z * 7) | 0) % 2 ? bamboo : bambooD, 0, { cap: false });
       S(x0, z0, x1, z1);
       st.box(W - 0.45, 0, z0, W, 0.9, z1, woodD, { top: wood });
       for (let k = 0; k < 2; k++) st.box(W - 0.4, 1.4 + k * 0.5, z0, W, 1.44 + k * 0.5, z1, wood);
       const bc = [0x2fae6a, 0xff8a1f, 0xffd23f, 0x3fd0ff, 0xff4fa3, 0x8a5a2a, 0xe0302b, 0xf4f4f4];
-      for (let k = 0; k < 2; k++) for (let i = 0; i < 24; i++) { const z = z0 + 0.15 + i * 0.22, y = 1.44 + k * 0.5, c = hex(bc[(i * 3 + k) % bc.length]); st.tube([W - 0.22, y, z], [W - 0.22, y + 0.22, z], 0.04, 0.04, 6, c, 3); st.tube([W - 0.22, y + 0.22, z], [W - 0.22, y + 0.3, z], 0.04, 0.014, 6, c, 3); }
+      for (let k = 0; k < 2; k++) for (let i = 0; i < 31; i++) { const z = z0 + 0.15 + i * 0.22, y = 1.44 + k * 0.5, c = hex(bc[(i * 3 + k) % bc.length]); st.tube([W - 0.22, y, z], [W - 0.22, y + 0.22, z], 0.04, 0.04, 6, c, 3); st.tube([W - 0.22, y + 0.22, z], [W - 0.22, y + 0.3, z], 0.04, 0.014, 6, c, 3); }
       // coco com canudinho, copos e abacaxi no balcão
-      for (const [z, k] of [[7.4, 0], [8.6, 1], [10.1, 2], [11.3, 0]]) {
-        if (k === 0) { st.ball([4.88, 1.17, z], 0.09, hex(0x5a8a2a), 0, 7, 5); st.tube([4.88, 1.22, z], [4.82, 1.36, z + 0.03], 0.008, 0.008, 3, pink); }
-        else if (k === 1) for (let j = 0; j < 3; j++) st.tube([4.85, 1.08, z + j * 0.12], [4.85, 1.22, z + j * 0.12], 0.035, 0.04, 7, [yel, pink, hex(0xff8a1f)][j], 3);
-        else { st.ball([4.88, 1.2, z], 0.1, hex(0xf0b030), 0, 7, 5, { sy: 1.3 }); for (let j = 0; j < 5; j++) leafQ(st, [4.88, 1.3, z], [4.88 + Math.cos(j * 1.25) * 0.08, 1.48, z + Math.sin(j * 1.25) * 0.08], 0.03, leaf); }
+      for (const [z, k] of [[9.2, 0], [10.8, 1], [12.6, 2], [14.4, 0]]) {
+        if (k === 0) { st.ball([6.38, 1.17, z], 0.09, hex(0x5a8a2a), 0, 7, 5); st.tube([6.38, 1.22, z], [6.32, 1.36, z + 0.03], 0.008, 0.008, 3, pink); }
+        else if (k === 1) for (let j = 0; j < 3; j++) st.tube([6.35, 1.08, z + j * 0.12], [6.35, 1.22, z + j * 0.12], 0.035, 0.04, 7, [yel, pink, hex(0xff8a1f)][j], 3);
+        else { st.ball([6.38, 1.2, z], 0.1, hex(0xf0b030), 0, 7, 5, { sy: 1.3 }); for (let j = 0; j < 5; j++) leafQ(st, [6.38, 1.3, z], [6.38 + Math.cos(j * 1.25) * 0.08, 1.48, z + Math.sin(j * 1.25) * 0.08], 0.03, leaf); }
       }
-      dec(fl, [W - 0.04, 2.45, 9.35], [0, 0, 1], [0, 1, 0], 1.6, 0.8, T.fBar);
-      for (const z of [7.2, 9.3, 11.4]) pendant(st, 5.0, 2.35, z, [pink, yel, cyan][(z | 0) % 3]);
+      dec(fl, [W - 0.04, 2.45, 12.0], [0, 0, 1], [0, 1, 0], 1.6, 0.8, T.fBar);
+      for (const z of [9.5, 12.0, 14.5]) pendant(st, 6.4, 2.35, z, [pink, yel, cyan][(z | 0) % 3]);
     }
     // ---- mesa de salgadinhos e refri (embaixo do mezanino da esquerda) ----
     {
-      const x0 = -W, x1 = -5.55, z0 = 7.0, z1 = 10.2;
+      const x0 = -W, x1 = -7.55, z0 = 9.0, z1 = 12.4;
       st.box(x0, 0, z0, x1, 0.82, z1, hex(0xff4fa3), { top: hex(0xfff0f6) });
       for (let z = z0; z < z1; z += 0.3) st.box(x1 - 0.005, 0.5, z, x1 + 0.005, 0.82, z + 0.15, hex(0xffffff));
       S(x0, z0, x1, z1);
-      for (const [z, c] of [[7.35, 0xd88a3a], [8.0, 0xe8b840], [8.7, 0xc8702a], [9.4, 0xe8c860]]) {
-        st.tube([-6.0, 0.82, z], [-6.0, 0.9, z], 0.14, 0.2, 10, hex(0xf4f4f4));
-        for (let j = 0; j < 6; j++) st.ball([-6.0 + Math.cos(j * 1.05) * 0.09, 0.93, z + Math.sin(j * 1.05) * 0.09], 0.045, hex(c), 0, 5, 3);
+      for (const [z, c] of [[9.35, 0xd88a3a], [10.0, 0xe8b840], [10.7, 0xc8702a], [11.4, 0xe8c860]]) {
+        st.tube([-8.0, 0.82, z], [-8.0, 0.9, z], 0.14, 0.2, 10, hex(0xf4f4f4));
+        for (let j = 0; j < 6; j++) st.ball([-8.0 + Math.cos(j * 1.05) * 0.09, 0.93, z + Math.sin(j * 1.05) * 0.09], 0.045, hex(c), 0, 5, 3);
       }
-      for (let j = 0; j < 4; j++) { const z = 9.75 + (j % 2) * 0.16, x = -6.2 + ((j / 2) | 0) * 0.16, c = hex([0x3a1a10, 0x2fae6a, 0xff8a1f, 0x3a1a10][j]); st.tube([x, 0.82, z], [x, 1.1, z], 0.045, 0.045, 7, c, 3); st.tube([x, 1.1, z], [x, 1.2, z], 0.045, 0.018, 7, c, 3); }
-      for (let j = 0; j < 4; j++) st.tube([-5.75, 0.82 + j * 0.03, 7.0 + 0.1], [-5.75, 0.85 + j * 0.03, 7.1], 0.04, 0.045, 7, hex(0xf4f4f4));
-      dec(fl, [-W + 0.04, 1.4, 8.6], [0, 0, -1], [0, 1, 0], 2.0, 0.25, T.fSnack);
+      for (let j = 0; j < 4; j++) { const z = 11.75 + (j % 2) * 0.16, x = -8.2 + ((j / 2) | 0) * 0.16, c = hex([0x3a1a10, 0x2fae6a, 0xff8a1f, 0x3a1a10][j]); st.tube([x, 0.82, z], [x, 1.1, z], 0.045, 0.045, 7, c, 3); st.tube([x, 1.1, z], [x, 1.2, z], 0.045, 0.018, 7, c, 3); }
+      for (let j = 0; j < 4; j++) st.tube([-7.75, 0.82 + j * 0.03, 9.1], [-7.75, 0.85 + j * 0.03, 9.1], 0.04, 0.045, 7, hex(0xf4f4f4));
+      dec(fl, [-W + 0.04, 1.4, 10.6], [0, 0, -1], [0, 1, 0], 2.0, 0.25, T.fSnack);
     }
     // ---- entrada: tochas tiki, plantas grandes, mesinhas altas e boas-vindas ----
     for (const sx of [-1, 1]) {
-      const x = sx * 2.1, z = 0.9;
+      const x = sx * 2.4, z = 1.0;
       st.tube([x, 0, z], [x, 1.55, z], 0.045, 0.04, 6, bamboo); st.tube([x, 1.5, z], [x, 1.72, z], 0.08, 0.11, 8, woodD);
       thin.ball([x, 1.85, z], 0.08, hex(0xff9a2a), 2, 7, 5, { sy: 1.7 }); thin.ball([x, 1.8, z], 0.05, hex(0xffe14d), 2, 6, 4, { sy: 1.4 });
       S(x - 0.12, z - 0.12, x + 0.12, z + 0.12);
@@ -980,51 +981,59 @@ const INSIDE = (() => {
       for (let k = 0; k < 9; k++) { const a = k * 0.7, r = (0.5 + (k % 3) * 0.18) * s, h = (1.1 + (k % 4) * 0.25) * s; leafQ(st, [x, 0.55 * s, z], [x + Math.cos(a) * r, h, z + Math.sin(a) * r], 0.16 * s, k % 2 ? leaf : leafD); }
       S(x - 0.32 * s, z - 0.32 * s, x + 0.32 * s, z + 0.32 * s);
     };
-    plant(-5.4, 0.7); plant(5.6, 0.7); plant(-3.3, 12.9, 0.9); plant(3.3, 12.9, 0.9); plant(5.85, 13.2, 1.1);
-    const tables = [[-2.9, 3.0], [2.9, 3.0]];
+    plant(-6.4, 0.8); plant(7.6, 0.8); plant(-3.9, 16.6, 0.9); plant(3.9, 16.6, 0.9); plant(7.6, 16.6, 1.1); plant(-7.6, 16.6, 1.1);
+    const tables = [[-3.6, 3.4], [3.6, 3.4], [-5.4, 5.0], [5.4, 5.0]];
     for (const [x, z] of tables) { st.tube([x, 0, z], [x, 1.05, z], 0.035, 0.035, 6, C.metal, 1); st.tube([x, 0, z], [x, 0.03, z], 0.22, 0.22, 10, C.metal, 1); st.tube([x, 1.05, z], [x, 1.08, z], 0.32, 0.32, 14, bamboo); S(x - 0.34, z - 0.34, x + 0.34, z + 0.34); }
     dec(fl, [0, 2.65, 0.04], [1, 0, 0], [0, 1, 0], 2.2, 0.28, T.fWelcome);
     // ---- pranchas de surfe nas paredes (lá em cima, acima do mezanino) ----
-    for (const sx of [-1, 1]) for (const [k, z] of [[0, 7.4], [1, 9.6], [2, 11.8]]) {
+    for (const sx of [-1, 1]) for (const [k, z] of [[0, 9.5], [1, 12.5], [2, 15.5]]) {
       const x = sx * (W - 0.1), c = [hex(0xff8a1f), cyan, pink][(k + (sx > 0 ? 1 : 0)) % 3];
-      st.ball([x, 4.6, z], 0.5, c, 0, 10, 6, { sx: 0.06, sy: 2.4, sz: 0.55 });
-      st.box(x - 0.035, 3.55, z - 0.04, x + 0.035, 5.65, z + 0.04, hex(0xffffff));
+      st.ball([x, 5.4, z], 0.5, c, 0, 10, 6, { sx: 0.06, sy: 2.4, sz: 0.55 });
+      st.box(x - 0.035, 4.35, z - 0.04, x + 0.035, 6.45, z + 0.04, hex(0xffffff));
     }
     // ---- mezanino: mesinhas altas com banquinhos ----
-    for (const [x, z] of [[-5.5, 8.0], [-5.5, 11.4], [5.5, 8.0], [5.5, 11.4], [-2.6, 14.3], [2.6, 14.3]]) {
+    for (const [x, z] of [[-7.4, 9.6], [-7.4, 13.6], [7.4, 9.6], [7.4, 13.6], [-3.8, 19.0], [3.8, 19.0]]) {
+      SU(x - 0.32, z - 0.32, x + 0.32, z + 0.32);
       st.tube([x, MY, z], [x, MY + 1.0, z], 0.03, 0.03, 6, C.metal, 1); st.tube([x, MY + 1.0, z], [x, MY + 1.03, z], 0.28, 0.28, 12, bamboo);
-      for (const d of [-0.45, 0.45]) { st.tube([x + (Math.abs(x) > 5 ? 0 : d), MY, z + (Math.abs(x) > 5 ? d : 0)], [x + (Math.abs(x) > 5 ? 0 : d), MY + 0.66, z + (Math.abs(x) > 5 ? d : 0)], 0.025, 0.025, 4, C.metal, 1); st.tube([x + (Math.abs(x) > 5 ? 0 : d), MY + 0.66, z + (Math.abs(x) > 5 ? d : 0)], [x + (Math.abs(x) > 5 ? 0 : d), MY + 0.7, z + (Math.abs(x) > 5 ? d : 0)], 0.16, 0.16, 10, pink); }
+      for (const d of [-0.45, 0.45]) { st.tube([x + (Math.abs(x) > 6 ? 0 : d), MY, z + (Math.abs(x) > 6 ? d : 0)], [x + (Math.abs(x) > 6 ? 0 : d), MY + 0.66, z + (Math.abs(x) > 6 ? d : 0)], 0.025, 0.025, 4, C.metal, 1); st.tube([x + (Math.abs(x) > 6 ? 0 : d), MY + 0.66, z + (Math.abs(x) > 6 ? d : 0)], [x + (Math.abs(x) > 6 ? 0 : d), MY + 0.7, z + (Math.abs(x) > 6 ? d : 0)], 0.16, 0.16, 10, pink); }
     }
     // ---- teto: folhas de palmeira penduradas e o cordão de luzinhas em zigue-zague ----
-    for (let k = 0; k < 14; k++) {
-      const x = -MX + 0.4 + (k % 7) * 1.25, z = k < 7 ? 5.2 : 11.0, a = k * 1.7;
+    for (let k = 0; k < 18; k++) {
+      const x = -MX + 0.5 + (k % 9) * 1.35, z = k < 9 ? 6.4 : 14.2, a = k * 1.7;
       for (let j = 0; j < 4; j++) { const b = a + j * 1.57; leafQ(thin, [x, H, z], [x + Math.cos(b) * 0.9, H - 0.75 - (j % 2) * 0.3, z + Math.sin(b) * 0.9], 0.22, j % 2 ? leaf : leafD); }
     }
     const bulbs = [];
-    for (let k = 0; k < 6; k++) {
-      const z = 4.2 + k * 1.75, a = [-MX, H - 0.5, z], b = [MX, H - 0.5, z + 0.9];
+    for (let k = 0; k < 8; k++) {
+      const z = 4.4 + k * 1.75, a = [-MX, H - 0.5, z], b = [MX, H - 0.5, z + 0.9];
       for (let j = 0; j <= 16; j++) { const u = j / 16, p = V.lerp(a, b, u); p[1] -= Math.sin(u * Math.PI) * 0.6; if (j) thin.tube(V.lerp(a, b, (j - 1) / 16).map((v, i) => (i === 1 ? H - 0.5 - Math.sin(((j - 1) / 16) * Math.PI) * 0.6 : v)), p, 0.006, 0.006, 3, blk, 0, { cap: false }); thin.ball(p, 0.04, [pink, yel, cyan, hex(0x7dff9a), purple][(j + k) % 5], 2, 5, 3); bulbs.push(p); }
     }
     const up = (m, o) => Rn.upload(m, o);
     const tileUp = up(tileG, { outline: false });
+    // moving heads no teto (cabeça preta + feixe de luz) e lasers saindo da cabine do DJ
+    const headG = up((() => { const m = new Mesh(); m.box(-0.14, -0.1, -0.14, 0.14, 0.12, 0.14, blk); m.tube([0, -0.1, 0], [0, -0.16, 0], 0.1, 0.1, 8, hex(0xffffff), 2); return m; })());
+    const beamG = [pink, cyan, purple, yel, hex(0x5fe08a), hex(0xffffff)].map((c) => up((() => { const m = new Mesh(); m.tube([0, 0, 0], [0, -1, 0], 0.04, 0.38, 10, c, 6, { cap: false }); return m; })(), { outline: false }));
+    const laserG = [hex(0x5fe08a), pink, cyan].map((c) => up((() => { const m = new Mesh(); m.tube([0, 0, 0], [0, 0, 1], 0.012, 0.012, 4, c, 2); return m; })(), { outline: false }));
+    const heads = [], beams = [], lasers = [];
+    for (let k = 0; k < 6; k++) { const x = -3.6 + k * 1.44, z = k % 2 ? 8.2 : 11.6; heads.push({ g: headG, mo: M.T(x, H - 0.25, z), x, z }); beams.push({ g: beamG[k], mo: M.I(), x, z, k }); }
+    for (let k = 0; k < 6; k++) lasers.push({ g: laserG[k % 3], mo: M.I(), k, hidden: true });
     const floor = [];
     for (let i = 0; i < NX; i++) for (let j = 0; j < NZ; j++) floor.push({ g: tileUp, mo: M.T(PX0 + (i + 0.5) * TS, 0, PZ0 + (j + 0.5) * TS), tint: [1, 1, 1], i, j });
-    const lights = [[-2, 5.4, 6.2], [2, 5.4, 6.2], [-2, 5.4, 9.8], [2, 5.4, 9.8], [0, 3.0, 12.2], [5.2, 2.3, 7.6], [5.2, 2.3, 11.0], [-5.6, 2.3, 8.6], [0, 2.4, 1.6], [-2.1, 1.9, 0.9], [2.1, 1.9, 0.9], [-5.5, 5.0, 10.0], [5.5, 5.0, 10.0], [0, 5.0, 14.3], [0, 2.3, 14.6]];
+    // luzes: 0-5 pista (piscam no ritmo), 6-7 palco, 8-10 bar, 11 salgadinho, 12-14 entrada e tochas, 15-18 mezanino, 19 neon do fundo
+    const lights = [[-3, 5.6, 7.5], [0, 5.6, 7.5], [3, 5.6, 7.5], [-3, 5.6, 12], [0, 5.6, 12], [3, 5.6, 12], [-1.5, 3.2, 16.2], [1.5, 3.2, 16.2], [6.6, 2.3, 9.6], [6.6, 2.3, 12.2], [6.6, 2.3, 14.6], [-7.6, 2.3, 10.6], [0, 2.4, 1.6], [-2.4, 2.0, 1.0], [2.4, 2.0, 1.0], [-7.2, 5.4, 11], [7.2, 5.4, 11], [-3, 5.4, 18.8], [3, 5.4, 18.8], [0, 2.4, 19.6]];
     const P2 = (x, z) => ({ x, z });
     const spots = [
       { id: "door", x: 0, z: 0.55, r: 0.62, act: "door", label: "Sair da festa" },
-      { id: "snack", x: -5.05, z: 8.4, r: 0.6, act: "snack", label: "Pegar um salgadinho", face: [-6.2, 8.4] },
-      { id: "bar", x: 4.1, z: 9.3, r: 0.6, act: "drink", label: "Pedir um refri no bar", face: [5.2, 9.3] },
-      { id: "dance", x: 0, z: 7.6, r: 1.3, act: "dance", label: "Dançar" },
-      { id: "dj", x: 0, z: 10.75, r: 0.55, act: "talk", who: "lucas", label: "Falar com o DJ Luskinha", face: [0, 12.5] },
+      { id: "snack", x: -7.05, z: 10.4, r: 0.6, act: "snack", label: "Pegar um salgadinho", face: [-8.2, 10.4] },
+      { id: "bar", x: 5.6, z: 12.0, r: 0.6, act: "drink", label: "Pedir um refri no Kiko", face: [6.6, 12.0] },
+      { id: "dj", x: 0, z: 14.55, r: 0.55, act: "talk", who: "lucas", label: "Falar com o DJ Luskinha", face: [0, 16.4] },
     ];
     void P2;
     return {
       id: "festa", name: "ALOHA CLUB", W, D, H, MY, base: [{ g: up(fl, { outline: false }), tex }, { g: up(st), tex }, { g: up(thin, { outline: false }), tex }],
-      dyn: { floor }, decks: [], solids, spots, lights, tables, ball: [0, 7.6], floorRect: [PX0, PZ0, NX, NZ, TS],
+      dyn: { floor, heads, beams, lasers }, decks: [], solids, solidsUp, spots, lights, tables, ball: [0, 10.0], floorRect: [PX0, PZ0, NX, NZ, TS], MX, MZ0, MZB, stairs: [-W, -W + 1.15, 1.2, MZ0],
       npcs: [],
       spawn: [0, 1.5, 0],
-      scene: { sun: V.norm([0.18, 0.95, 0.22]), top: hex(0x14102a), mid: hex(0x14102a), hz: hex(0x14102a), fog: hex(0x14102a), fogd: 0.012, shade: hex(0x3a2a6a), ink: hex(0x0a0814), ink_w: 1.5, amb: [0.62, 0.52, 0.8], night: 0.75, wet: 0, winc: [9, 9, 9] },
+      scene: { sun: V.norm([0.18, 0.95, 0.22]), top: hex(0x0c0820), mid: hex(0x0c0820), hz: hex(0x0c0820), fog: hex(0x120a2a), fogd: 0.022, shade: hex(0x2a1a5a), ink: hex(0x05030c), ink_w: 1.5, amb: [0.46, 0.38, 0.7], night: 0.9, wet: 0, winc: [9, 9, 9], uv: 0.85 },
     };
   }
   return { T, makeTex, buildDiscos, buildLan, buildSorveteria, buildFesta, coverURL, labelURL, drawCover, palOf, LINES, phoneMesh };

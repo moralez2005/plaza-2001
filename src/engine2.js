@@ -68,7 +68,7 @@ const E = (() => {
   }
 
   // ---------- construção de malhas ----------
-  // materiais: 0 tinta fosca, 1 metal, 2 aceso, 3 vidro, 4 decalque do atlas, 5 sombra (atlas, translúcida)
+  // materiais: 0 tinta fosca, 1 metal, 2 aceso, 3 vidro, 4 decalque do atlas, 5 sombra (atlas, translúcida), 6 feixe de luz (bem transparente)
   class Mesh {
     constructor() {
       this.v = []; // px py pz nx ny nz r g b m u v
@@ -195,18 +195,20 @@ attribute vec3 B;uniform mat4 BN[12];uniform float SK;
 uniform mat4 VP;uniform mat4 MO;uniform float SM;
 varying vec3 vN;varying vec3 vC;varying vec3 vW;varying float vM;varying vec2 vU;
 void main(){mat4 W=MO;if(SK>.5)W=BN[int(B.x)]*(1.-B.z)+BN[int(B.y)]*B.z;vec4 w=W*vec4(P,1.);vW=w.xyz;vN=mat3(W)*mix(N,S,SM*step(.15,abs(M-.25)));vC=C;vM=M;vU=U;gl_Position=VP*w;}`;
+  const LC_DEF = new Float32Array(Array.from({ length: 24 }, () => [1, 0.74, 0.42]).flat()), NOFO = new Float32Array([0, 0]);
   const FS = `precision mediump float;varying vec3 vN;varying vec3 vC;varying vec3 vW;varying float vM;varying vec2 vU;
 uniform vec3 EYE;uniform vec3 SUN;uniform vec3 FOG;uniform float FOGD;uniform vec3 SHADE;uniform vec3 SKYT;uniform sampler2D TEX;uniform vec3 TINT;uniform float PASS;
-uniform vec3 AMB;uniform float NIGHT;uniform float WET;uniform vec3 WINC;uniform vec3 LP[24];uniform float NL;
+uniform vec3 AMB;uniform float NIGHT;uniform float WET;uniform vec3 WINC;uniform vec3 LP[24];uniform vec3 LC[24];uniform float NL;uniform float UVL;uniform vec4 FR;uniform vec2 FO;
 float hh(vec3 p){return fract(sin(dot(p,vec3(12.9898,78.233,37.719)))*43758.5453);}
 void main(){
  vec3 n=normalize(vN);vec3 v=normalize(vW-EYE);if(dot(n,v)>0.)n=-n;
  float l=dot(n,SUN);
  float b1=smoothstep(-.36,-.3,l),band=smoothstep(.15,.21,l),b3=smoothstep(.66,.72,l);
  vec3 base=vC*TINT;float a=1.;
+ if(vM>5.5){if(PASS<.5)discard;float rr=1.-abs(dot(n,-v));float d0=length(vW-EYE);gl_FragColor=vec4(mix(base*1.1,FOG,1.-exp(-d0*FOGD)),.05+.16*(1.-rr));return;}
  if(vM>3.5){vec4 t=texture2D(TEX,vU);
    if(vM>4.5){a=t.a*.55;base=SHADE*.35;if(PASS<.5)discard;}
-   else{if(t.a<.5)discard;base=t.rgb*vC;}}
+   else{if(FO.x!=0.||FO.y!=0.){if(vU.x>FR.x&&vU.x<FR.z&&vU.y>FR.y&&vU.y<FR.w)t=texture2D(TEX,vU+FO);}if(t.a<.5)discard;base=t.rgb*vC;}}
  vec3 c=base*mix(mix(SHADE*.8,SHADE,b1),vec3(1.04,1.,.96),band)*(1.+.08*b3);
  float rim=1.-abs(dot(n,-v));
  if(vM>.5&&vM<1.5){vec3 r=reflect(v,n);float sp=dot(r,SUN);c=mix(c,mix(SKYT,vec3(1.),step(.0,r.y)*.3),.35)+step(.82,sp)*.7+step(.97,sp)*.4;}
@@ -219,9 +221,11 @@ void main(){
   c*=vM>3.5&&vM<4.5?mix(AMB,vec3(1.),.3):AMB;
   if(NIGHT>.01){
    if(vM<.5&&distance(vC,WINC)<.03&&hh(floor(vW*vec3(.8,.38,.8)))>.42){c=mix(c,vec3(1.,.8,.46),NIGHT*.92);}
-   else{float g=0.;for(int i=0;i<24;i++){if(float(i)>=NL)break;vec3 dd=vW-LP[i];dd.y*=.55;g+=1.-smoothstep(.6,7.,length(dd));}
-    c+=base*vec3(1.,.74,.42)*min(g,1.3)*.75*NIGHT+vec3(1.,.8,.5)*min(g,1.3)*.05*NIGHT;}
+   else{vec3 g=vec3(0.);for(int i=0;i<24;i++){if(float(i)>=NL)break;vec3 dd=vW-LP[i];dd.y*=.55;g+=LC[i]*(1.-smoothstep(.6,7.,length(dd)));}
+    g=min(g,vec3(1.3));c+=base*g*.75*NIGHT+g*vec3(1.,1.08,1.19)*.05*NIGHT;}
   }
+  if(UVL>.01){float lu=dot(base,vec3(.3,.59,.11)),mx=max(base.r,max(base.g,base.b)),sat=mx-min(base.r,min(base.g,base.b));
+   c=c*(1.-.25*UVL)+UVL*(smoothstep(.58,.93,lu)*vec3(.72,.62,1.)*.85+smoothstep(.42,.75,sat)*smoothstep(.45,.85,mx)*base*.6);}
   if(WET>.01&&n.y>.85&&vM<.5){vec3 r=reflect(v,n);c=c*(1.-.28*WET)+SKYT*.12*WET+step(.9,dot(r,SUN))*.25*WET;}
  }
  if(PASS>.5&&a>.99&&vM<4.5)discard;
@@ -355,7 +359,7 @@ void main(){vec4 t=texture2D(T,uv);vec3 c=t.rgb;float l=dot(c,vec3(.299,.587,.11
         out[b + 12] = v[a + 9]; out[b + 13] = v[a + 10]; out[b + 14] = v[a + 11];
         out[b + 15] = ww[i * 3] || 0; out[b + 16] = ww[i * 3 + 1] || 0; out[b + 17] = ww[i * 3 + 2] || 0;
         if (out[b + 15] || out[b + 16]) skin = 1;
-        if (v[a + 9] === 3 || v[a + 9] === 5) trans = 1;
+        if (v[a + 9] === 3 || v[a + 9] === 5 || v[a + 9] === 6) trans = 1;
       }
       const buf = gl.createBuffer();
       gl.bindBuffer(gl.ARRAY_BUFFER, buf);
@@ -443,6 +447,8 @@ void main(){vec4 t=texture2D(T,uv);vec3 c=t.rgb;float l=dot(c,vec3(.299,.587,.11
       const nl = sc.lights ? Math.min(24, sc.lights.length / 3) : 0;
       gl.uniform1f(pm.u.NL, nl);
       if (nl && pm.u["LP[0]"]) gl.uniform3fv(pm.u["LP[0]"], sc.lights);
+      if (pm.u["LC[0]"]) gl.uniform3fv(pm.u["LC[0]"], sc.lightCols || LC_DEF);
+      gl.uniform1f(pm.u.UVL, sc.uv || 0);
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, atlas);
       gl.uniform1i(pm.u.TEX, 0);
@@ -459,6 +465,7 @@ void main(){vec4 t=texture2D(T,uv);vec3 c=t.rgb;float l=dot(c,vec3(.299,.587,.11
           if (o.bones) gl.uniformMatrix4fv(pm.u["BN[0]"], false, o.bones);
           gl.uniform1f(pm.u.SM, o.g.smooth);
           gl.uniform3fv(pm.u.TINT, o.tint || [1, 1, 1]);
+          if (o.face) { gl.uniform4fv(pm.u.FR, o.face.r); gl.uniform2fv(pm.u.FO, o.face.o); } else gl.uniform2fv(pm.u.FO, NOFO);
           gl.drawArrays(gl.TRIANGLES, 0, o.g.count);
           tris += o.g.count / 3;
         }

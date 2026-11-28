@@ -14,8 +14,11 @@ Anotações do que ainda vai entrar no PLAZA 2001. Nada disso está no jogo aind
 Já tem: o Aloha Club (dois andares, decoração havaiana), DJ Luskinha, Mila, Diogo, Cabeça, Breno, Ana Lívia, a galera
 dançando, o set do DJ, as conversas de cada personagem, o esbarrão do Kauã na Mila e a música lenta.
 
+Na v26: casa maior com mezanino andável, ~40 pessoas, luz negra e luzes no ritmo, 14 passos de dança + break do K.F.,
+expressões no rosto, dança a dois, a música lenta de cada protagonista e a batalha da Kauane.
+
 Falta:
-- **Gol bolinha vermelho** do Kauã, cena da carteira nova (o K.F. convencendo ele) e a chegada de carro à noite.
+- **Gol bolinha vermelho** do Kauã: cena da carta na pista (só ele e o K.F., de tarde), buscar a galera de carro à noite e chegar na festa (fase oficial).
 - **Carros da cidade:** melhorar o visual de todos.
 - **Cidade maior** (se der).
 - **Mais 6 músicas no set:** CeCe Peniston, Ultra Naté, Livin' Joy, Everything But The Girl, Snap! e Lasgo.

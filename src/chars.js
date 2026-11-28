@@ -18,14 +18,14 @@ const CHARS = (() => {
   FACE.lucas = [0, 2048];
   FACE.mila = [512, 2048];
   FACE.diogo = [1024, 2048]; FACE.breno = [1280, 2048]; FACE.cabeca = [1536, 2048]; FACE.analivia = [1792, 2048];
-  for (let i = 0; i < 12; i++) FACE["fx" + i] = [i * 128, 2304, 128];
+  for (let i = 0; i < 28; i++) FACE["fx" + i] = [(i % 16) * 128, 2304 + Math.floor(i / 16) * 128, 128];
   const SPR = { cloud: R(1920, 256, 128, 128), dollar: R(1920, 384, 128, 128), checker: R(1024, 960, 64, 64), cat: R(1088, 960, 64, 64), nerd: R(512, 1920, 128, 128), shark: R(1536, 256, 128, 384), lion: R(1664, 256, 128, 384), crown: R(1792, 256, 128, 384), eq: R(256, 2048, 256, 128), reggae: R(768, 2048, 128, 128), num: R(896, 2048, 128, 128), hib: R(768, 2176, 128, 128), star: R(896, 2176, 128, 128) };
 
   const LOOKS = {
     kf: {
       cam: { body: 0xc9ced8, trim: 0xe8242c, lens: 0x2a2d38 },
       name: "K.F.", face: "kf", skin: 0xc68e62, hair: 0x2b170c, top: 0xff6a1a, top2: 0xd8460a, pants: 0x4f86d6, shoe: 0xe02a2a, shoeToe: 0xffffff, shoe2: 0xe02a2a, sole: 0xf4f1ea, tee: "loose", flare: 1.3,
-      phones: 0xe8262b, deck: 0x3fd0ff, deckShape: "shark", hairStyle: "afro", sleeve: "short", belt: true, print: "nerd", walkman: true, earbud: "both", wristband: 0xe8262b,
+      deck: 0x3fd0ff, deckShape: "shark", hairStyle: "afro", sleeve: "short", belt: true, print: "nerd", wristband: 0xe8262b,
       len: { thigh: 0.49, shin: 0.49, torso: 0.5, up: 0.31, fore: 0.29 }, headScale: 0.9, shoulder: 1.14, pantsR: 1.0, pyAdd: 0.06,
       headProf: "mature", stance: "regular", shades: true, ride: { lean: 0.2, twist: 0.32, hy: -1.05, hp: 0.02 }, idle: "peace",
     },
@@ -84,7 +84,8 @@ const CHARS = (() => {
     { name: "Padre Antônio", skin: 0xf0c7a4, hair: 0x8a8a8a, hairStyle: "short", top: 0x1b1530, top2: 0x2a2440, pants: 0x1b1530, shoe: 0x111111, npc: { old: 1, glasses: 0x2a2a2a, mouth: "smile" } },
   ];
   // variantes só pra cutscene: K.F. sem o fone grande (com fone de botão) e Julie com o outro lado do fone
-  LOOKS.kf_ear = Object.assign({}, LOOKS.kf, { earbud: "one", name: "K.F." });
+  // (o K.F. não usa mais fone no dia a dia; só na cena do pôr do sol ele divide o fone de botão com a Julie)
+  LOOKS.kf_ear = Object.assign({}, LOOKS.kf, { earbud: "one", walkman: true, phones: 0xe8262b, name: "K.F." });
   LOOKS.julie_ear = Object.assign({}, LOOKS.julie, { earbud: true, earSide: -1, name: "Julie" });
   // Seu Vavá dos Discos: senhor de idade estiloso — chapéu de feltro preto com fita vermelha, óculos de aro
   // dourado, bigode e cavanhaque brancos, jaqueta de camurça com gola de pelúcia, camisa estampada e sapato bicolor
@@ -165,6 +166,22 @@ const CHARS = (() => {
     { name: "Vini", skin: 0xe8b894, hair: 0x3a2a1a, hairStyle: "quiff", top: 0x1b1530, top2: 0x2a2440, print: "star", pants: 0x5a6a7a, flare: 0.6, shoe: 0x2f6fe8, lei: [0x3fd0ff, 0xffffff, 0xff4fa3], wristband: 0x2f6fe8, npc: { mouth: "smile" } },
     { name: "Lari", skin: 0xc98d68, hair: 0x2a1810, hairStyle: "chanel", top: 0xff6a6a, top2: 0xe04a4a, pants: 0xe8e0cc, flare: 1.1, pantsR: 0.82, shoe: 0xff6a6a, scale: 0.86, shoulder: 0.88, lei: [0xffffff, 0xffd23f, 0x5fe08a], npc: { lash: 1, lips: 0xc8405a, mouth: "smile", freckles: 1 } },
     { name: "Fábio", skin: 0xf0c49c, hair: 0x1b1210, hairStyle: "guard", capC: 0x1b1530, top: 0xa8e07a, top2: 0x88c05a, print: "hib", pants: 0x2a2a3a, shoe: 0xf4f4f4, lei: [0xff4fa3, 0xffffff, 0xffd23f], npc: { mouth: "smile", glasses: 0x1b1530 } },
+    { name: "Paty", skin: 0xf6d6c2, hair: 0x2a1a10, hairStyle: "long", part: "center", top: 0x3fd0ff, top2: 0x2fb0e0, crop: true, pants: 0xf4f4f4, flare: 1.2, pantsR: 0.82, shoe: 0xff4fa3, platform: 1, scale: 0.87, shoulder: 0.9, lei: [0xffd23f, 0xff4fa3, 0xffffff], npc: { lash: 1, lips: 0xe0507a, mouth: "smile" } },
+    { name: "Dênis", skin: 0x6e452c, hair: 0x1b1210, hairStyle: "short", top: 0xffffff, top2: 0xe8e8e8, print: "star", pants: 0x2a3a6a, flare: 0.6, shoe: 0x1b1530, chainBig: 0xd5dbe8, shades: true, lei: [0xff8a1f, 0xffffff, 0x5fe08a], npc: { mouth: "smile" } },
+    { name: "Bia", skin: 0xc98d68, hair: 0xd84a8a, hairStyle: "bob", top: 0x1b1530, top2: 0x2a2440, crop: true, pants: 0x8c5cff, flare: 1, pantsR: 0.85, shoe: 0xffffff, scale: 0.86, shoulder: 0.88, wristband: 0x5fe08a, lei: [0x5fe08a, 0xff4fa3, 0xffd23f], npc: { lash: 1, lips: 0x6a2a5a, mouth: "o" } },
+    { name: "Marcão", skin: 0x8a5a3c, hair: 0x1b1210, hairStyle: "bald", top: 0xff4fa3, top2: 0xe0308a, print: "hib", pants: 0xc8b896, bermuda: true, socks: 0x8a5a3c, shoe: 0xf4f4f4, len: { thigh: 0.5, shin: 0.5, torso: 0.52, up: 0.32, fore: 0.3 }, shoulder: 1.15, lei: [0xffffff, 0xffd23f, 0xff4fa3], npc: { mouth: "smile", beard: 0x1b1210 } },
+    { name: "Gi", skin: 0xf0c7a4, hair: 0xf0d27a, hairStyle: "bun", top: 0xff8a1f, top2: 0xe06a10, crop: true, pants: 0x1b1a22, flare: 1.1, pantsR: 0.84, shoe: 0xf4f4f4, scale: 0.86, shoulder: 0.88, lei: [0xff4fa3, 0x3fd0ff, 0xffffff], npc: { lash: 1, lips: 0xd04a5a, mouth: "smile", freckles: 1 } },
+    { name: "Rodrigo", skin: 0xe8b894, hair: 0x6a3a1a, hairStyle: "shaggy", top: 0x2f6fd8, top2: 0x1f4fb8, jacket: true, inner: 0xf4f4f4, pants: 0x5a6a7a, flare: 0.5, shoe: 0x2a2a30, lei: [0xffd23f, 0xff8a1f, 0xffffff], npc: { mouth: "smile" } },
+    { name: "Tati", skin: 0x5a3a26, hair: 0x1b1210, hairStyle: "afro", top: 0xff4fa3, top2: 0xe0308a, crop: true, pants: 0xfafafa, flare: 1.3, pantsR: 0.84, shoe: 0xffd23f, platform: 1, scale: 0.9, shoulder: 0.9, lei: [0xffffff, 0x5fe08a, 0xffd23f], npc: { lash: 1, lips: 0x8a3a4a, mouth: "smile" } },
+    { name: "Caio", skin: 0xf0c49c, hair: 0xe8cf8a, hairStyle: "spiky", top: 0x5fe08a, top2: 0x3fc06a, print: "num", pants: 0x2a2a3a, flare: 0.7, shoe: 0xff4fa3, wristband: 0xffd23f, lei: [0xff4fa3, 0xffffff, 0x3fd0ff], npc: { mouth: "o", freckles: 1 } },
+    { name: "Lu", skin: 0xe8b894, hair: 0x3a2214, hairStyle: "chanel", top: 0xffd23f, top2: 0xffb81f, pants: 0x2f6fd8, flare: 1.1, pantsR: 0.82, shoe: 0xffffff, glasses: true, glassCol: 0xff4fa3, scale: 0.86, shoulder: 0.88, lei: [0xff8a1f, 0xffffff, 0xff4fa3], npc: { lash: 1, lips: 0xc8405a, mouth: "smile" } },
+    { name: "Beto", skin: 0xc98b62, hair: 0x2b170c, hairStyle: "cap", capC: 0xe0302b, top: 0x1b1530, top2: 0x2a2440, print: "num", pants: 0x7a7a5a, bermuda: true, cargo: true, socks: 0xffffff, shoe: 0xf4f4f4, lei: [0xffd23f, 0xff4fa3, 0xffffff], npc: { mouth: "smile" } },
+    { name: "Mari Luz", skin: 0xf3cdb4, hair: 0x8a5a2a, hairStyle: "long", part: "side", top: 0x8c5cff, top2: 0x6a3ee0, crop: true, pants: 0x9cc0e8, flare: 1.2, pantsR: 0.82, shoe: 0xffffff, scale: 0.87, shoulder: 0.9, lei: [0xffffff, 0xff4fa3, 0xffd23f], npc: { lash: 1, lips: 0xb83a5a, mouth: "smile" } },
+    { name: "Jefinho", skin: 0x8a5a3c, hair: 0x1b1210, hairStyle: "taper", top: 0xffffff, top2: 0xe8e8e8, print: "hib", pants: 0x1b1a22, flare: 0.6, shoe: 0xe8262b, wristband: 0xffffff, lei: [0x3fd0ff, 0xffd23f, 0xff4fa3], npc: { mouth: "smile" } },
+    { name: "Nina Rosa", skin: 0xd8a47e, hair: 0x1b1210, hairStyle: "long", top: 0xff6a6a, top2: 0xe04a4a, crop: true, pants: 0x1b1a22, flare: 1, pantsR: 0.84, shoe: 0xff6a6a, scale: 0.86, shoulder: 0.88, lei: [0xffd23f, 0xffffff, 0x5fe08a], npc: { lash: 1, lips: 0xa83a4a, mouth: "o" } },
+    { name: "Guto", skin: 0xf0c7a4, hair: 0x3a2a1a, hairStyle: "quiff", hairTip: 0xe8cf8a, top: 0xff8a1f, top2: 0xe06a10, jacket: true, inner: 0x1b1530, pants: 0x2a3a5a, flare: 0.5, shoe: 0xf4f4f4, shades: true, lei: [0xff4fa3, 0xffffff, 0x3fd0ff], npc: { mouth: "smile" } },
+    { name: "Dani", skin: 0xc98d68, hair: 0xc84a2a, hairStyle: "chanel", top: 0x5fe08a, top2: 0x3fc06a, pants: 0xe8e0cc, flare: 1.1, pantsR: 0.82, shoe: 0x2f6fe8, scale: 0.87, shoulder: 0.9, lei: [0xffffff, 0xff8a1f, 0xff4fa3], npc: { lash: 1, lips: 0xc8405a, mouth: "smile", freckles: 1 } },
+    { name: "Kiko do bar", skin: 0xc68e62, hair: 0x2b170c, hairStyle: "short", top: 0xffd23f, top2: 0xe8b81f, print: "hib", apron: 0x1b1530, pants: 0x2a2a3a, shoe: 0x1b1530, lei: [0xff4fa3, 0xffffff, 0xffd23f], npc: { mouth: "smile", mustache: 0x2b170c } },
   ];
   FX.forEach((t, i) => (LOOKS["fx" + i] = Object.assign({ face: "fx" + i, sleeve: "short", tee: "loose", shoeToe: t.shoe, sole: 0xf4f1ea, lace: t.shoe, socks: t.skin, flare: 0.4, pantsR: 0.8, idle: "calm" }, t)));
   // Neide da Sorveteria Pinguim: atendente de avental rosa e cabelo preso
@@ -556,8 +573,68 @@ const CHARS = (() => {
     }
     g.restore();
   }
+  // ---------- expressões: cópias do rosto com olhos e boca trocados (o shader troca na hora) ----------
+  // happy: olhos fechados rindo; goofy: sorriso bobo; nervous: olho arregalado, boca tremida e gotinha de suor;
+  // smile: olhar suave e sorriso; surprise: boca em "o"; sing: olhos fechados e boca aberta (curtindo a música)
+  const EXPR_LIST = { kf: ["goofy", "happy"], julie: ["happy", "smile"], kaua: ["nervous", "happy"], mila: ["smile", "happy"], gabi: ["happy", "surprise"], kauane: ["happy", "surprise"],
+    diogo: ["happy"], cabeca: ["happy"], breno: ["happy"], analivia: ["happy"], lucas: ["happy"] };
+  const EXPR = {};
+  {
+    let k = 0;
+    for (const key in EXPR_LIST) for (const e of EXPR_LIST[key]) { (EXPR[key] = EXPR[key] || {})[e] = [(k % 8) * 256, 2688 + Math.floor(k / 8) * 256, 256]; k++; }
+    for (let i = 0; i < 28; i++) ["happy", "sing"].forEach((e, j) => { const q = i * 2 + j; (EXPR["fx" + i] = EXPR["fx" + i] || {})[e] = [(q % 16) * 128, 3456 + Math.floor(q / 16) * 128, 128]; });
+  }
+  function faceExpr(g, key, L, ex0, slot) {
+    const keep = FACE[key];
+    FACE[key] = slot; face(g, key, L); FACE[key] = keep;
+    const [X0, Y0, SZ = 256] = slot, skin = "#" + L.skin.toString(16).padStart(6, "0");
+    g.save();
+    if (SZ !== 256) { g.translate(X0, Y0); g.scale(SZ / 256, SZ / 256); }
+    const X = SZ !== 256 ? 0 : X0, Y = SZ !== 256 ? 0 : Y0, ex = (s) => X + 128 + s * 42, ey = Y + 118, my = Y + 196;
+    const cover = (x, y, rx, ry) => { g.fillStyle = skin; g.beginPath(); g.ellipse(x, y, rx, ry, 0, 0, 7); g.fill(); };
+    const blushA = (a) => { g.fillStyle = `rgba(255,90,110,${a})`; for (const s of [-1, 1]) { g.beginPath(); g.ellipse(ex(s) + s * 12, ey + 40, 22, 11, 0, 0, 7); g.fill(); } };
+    g.strokeStyle = INK; g.lineCap = "round"; g.lineJoin = "round";
+    const closedUp = () => { for (const s of [-1, 1]) { cover(ex(s), ey, 36, 28); g.lineWidth = 8; g.beginPath(); g.moveTo(ex(s) - 22, ey + 6); g.quadraticCurveTo(ex(s), ey - 16, ex(s) + 22, ey + 6); g.stroke(); } };
+    const closedDown = () => { for (const s of [-1, 1]) { cover(ex(s), ey, 36, 28); g.lineWidth = 8; g.beginPath(); g.moveTo(ex(s) - 22, ey - 2); g.quadraticCurveTo(ex(s), ey + 12, ex(s) + 22, ey - 2); g.stroke(); } };
+    const mouthCover = () => cover(X + 128, my - 4, 40, 22);
+    if (ex0 === "happy") {
+      closedUp(); mouthCover(); blushA(0.4);
+      g.fillStyle = "#5a1622"; g.beginPath(); g.moveTo(X + 100, my - 12); g.quadraticCurveTo(X + 128, my + 26, X + 156, my - 12); g.closePath(); g.fill(); g.lineWidth = 6; g.stroke();
+      g.fillStyle = "#ff7a8a"; g.beginPath(); g.ellipse(X + 128, my + 4, 12, 6, 0, 0, 7); g.fill();
+      g.fillStyle = "#ffffff"; g.fillRect(X + 108, my - 11, 40, 6);
+    } else if (ex0 === "sing") {
+      closedDown(); mouthCover(); blushA(0.25);
+      g.fillStyle = "#5a1622"; g.beginPath(); g.ellipse(X + 128, my - 2, 13, 17, 0, 0, 7); g.fill(); g.lineWidth = 6; g.stroke();
+    } else if (ex0 === "goofy") {
+      mouthCover(); blushA(0.45);
+      g.lineWidth = 7; g.beginPath(); g.moveTo(X + 94, my - 16); g.quadraticCurveTo(X + 130, my + 18, X + 164, my - 20); g.stroke();
+      g.lineWidth = 5; g.beginPath(); g.moveTo(X + 92, my - 20); g.lineTo(X + 96, my - 10); g.moveTo(X + 166, my - 24); g.lineTo(X + 162, my - 14); g.stroke();
+    } else if (ex0 === "nervous") {
+      for (const s of [-1, 1]) { cover(ex(s), ey, 36, 28); g.fillStyle = "#ffffff"; g.beginPath(); g.ellipse(ex(s), ey, 24, 22, 0, 0, 7); g.fill(); g.lineWidth = 5; g.stroke(); g.fillStyle = INK; g.beginPath(); g.arc(ex(s) + 2, ey + 2, 6, 0, 7); g.fill(); }
+      mouthCover(); blushA(0.5);
+      g.lineWidth = 6; g.beginPath(); g.moveTo(X + 100, my - 6); for (let i = 1; i <= 6; i++) g.lineTo(X + 100 + i * 9.5, my - 6 + (i % 2 ? -7 : 5)); g.stroke();
+      g.fillStyle = "#9fe0ff"; g.strokeStyle = "#2a6aa8"; g.lineWidth = 4; g.beginPath(); g.moveTo(X + 214, Y + 62); g.quadraticCurveTo(X + 232, Y + 96, X + 214, Y + 104); g.quadraticCurveTo(X + 196, Y + 96, X + 214, Y + 62); g.fill(); g.stroke();
+    } else if (ex0 === "smile") {
+      for (const s of [-1, 1]) { g.fillStyle = skin; g.beginPath(); g.ellipse(ex(s), ey - 12, 36, 16, 0, 0, 7); g.fill(); g.strokeStyle = INK; g.lineWidth = 7; g.beginPath(); g.moveTo(ex(s) - 24, ey - 2); g.quadraticCurveTo(ex(s), ey - 10, ex(s) + 24, ey - 2); g.stroke(); }
+      mouthCover(); blushA(0.38);
+      g.lineWidth = 7; g.beginPath(); g.moveTo(X + 104, my - 12); g.quadraticCurveTo(X + 128, my + 10, X + 152, my - 12); g.stroke();
+    } else if (ex0 === "surprise") {
+      mouthCover();
+      g.fillStyle = "#5a1622"; g.beginPath(); g.ellipse(X + 128, my - 2, 11, 14, 0, 0, 7); g.fill(); g.lineWidth = 6; g.stroke();
+      for (const s of [-1, 1]) { g.lineWidth = 6; g.beginPath(); g.moveTo(ex(s) - 20, ey - 58); g.quadraticCurveTo(ex(s), ey - 70, ex(s) + 20, ey - 58); g.stroke(); }
+    }
+    g.restore();
+  }
+  // retângulo do rosto no atlas e o deslocamento até a expressão (pro shader)
+  function faceUV(key, e) {
+    const b = FACE[key], v = EXPR[key] && EXPR[key][e];
+    if (!b || !v) return null;
+    const bs = b[2] || 256;
+    return { r: new Float32Array([b[0] / AW, b[1] / AH, (b[0] + bs) / AW, (b[1] + bs) / AH]), o: new Float32Array([(v[0] - b[0]) / AW, (v[1] - b[1]) / AH]) };
+  }
   function paint(g) {
     for (const k in FACE) face(g, k, LOOKS[k]);
+    for (const k in EXPR) for (const e in EXPR[k]) if (LOOKS[k] && FACE[k]) faceExpr(g, k, LOOKS[k], e, EXPR[k][e]);
     // estampas da galera da festa: banda de reggae (inventada), número de regata, hibisco havaiano, estrela
     {
       let x = 768 + 64, y = 2048 + 64;
@@ -1583,7 +1660,7 @@ const CHARS = (() => {
       const b = M.mul(base, M.mul(lift, M.mul(M.S(s, s, s), rot)));
       const fb = feetBase ? M.mul(feetBase, M.mul(lift, M.mul(M.S(s, s, s), rot))) : b;
       const L = lenOf(look);
-      const pp = p.stand ? Object.assign({}, p, { py: L.thigh + L.shin + 0.235 }) : look.pyAdd ? Object.assign({}, p, { py: p.py + look.pyAdd }) : p;
+      const pp = p.stand ? Object.assign({}, p, { py: L.thigh + L.shin + 0.235 - (p.dip || 0) }) : look.pyAdd ? Object.assign({}, p, { py: p.py + look.pyAdd }) : p;
       const F = frames(b, pp, fb, look);
       for (let i = 0; i < 12; i++) body.bones.set(M.mul(F[i], bindInv[i]), i * 16);
       out.F = F;
@@ -1608,7 +1685,48 @@ const CHARS = (() => {
     hips: (t) => ({ stand: 1, px: 0, py: 0.93, pz: 0, lean: 0.05, twist: 0.2, hy: -0.7, hp: 0, hF: [0.0, 0.98, 0.32], hB: [0.0, 0.98, -0.32], lf: 0, lb: 0 }),
   };
 
-  return { LOOKS, TOWN, makeRig, paint, IDLE, SELFIE, BONE, frames, BIND, lenOf };
+  // ---------- danças (B = batida da música, contínua; a = intensidade 0.6–1.2) ----------
+  // passos com cara de balada dos anos 90/2000: dois-pra-lá, running man, cabbage patch, raise the roof, Travolta,
+  // vogue, Aserejé (mão rolando), robô, pulinho eurodance, Macarena, shuffle, soquinho pro alto, balanço com o copo,
+  // rebolado com mão no cabelo. E o break do K.F.: toprock, footwork, freeze e giro de costas.
+  const DANCE_NAMES = ["Dois pra lá", "Running man", "Cabbage patch", "Raise the roof", "Travolta", "Vogue", "Aserejé", "Robô", "Pulinho eurodance", "Macarena", "Shuffle", "Soquinho", "Balanço com o copo", "Rebolado"];
+  const BREAK_NAMES = ["Toprock", "Footwork", "Freeze", "Giro de costas"];
+  function dance(k, B, a = 1) {
+    const T2 = Math.PI * 2, f = ((B % 1) + 1) % 1, on = Math.exp(-f * 7), down = 0.5 + 0.5 * Math.cos(T2 * B), side = Math.sin(Math.PI * B), side2 = Math.sin(Math.PI * B / 2);
+    const P = (o) => Object.assign({ stand: 1, walk: 0, px: 0, py: 0.94, pz: 0, lean: 0.04, twist: 0, hy: 0, hp: 0.05, hr: 0, roll: 0, hF: [0.1, 0.95, 0.27], hB: [0.1, 0.95, -0.27], lf: 0, lb: 0, fxF: 0, fxB: 0, fzxF: 0.17, fzxB: -0.17, dip: 0 }, o);
+    switch (k) {
+      case 0: return P({ dip: 0.08 * down * a, pz: side * 0.06 * a, twist: side * 0.16 * a, roll: -side * 0.05, hp: 0.04 + down * 0.08, hy: side * 0.15, fzxF: 0.19 + Math.max(0, side) * 0.1, fzxB: -0.19 + Math.min(0, side) * 0.1, lf: Math.max(0, -side) * 0.04, lb: Math.max(0, side) * 0.04,
+        hF: [0.3 + side * 0.09, 1.28 + down * 0.07, 0.28], hB: [0.3 - side * 0.09, 1.28 + down * 0.07, -0.28] });
+      case 1: { const u = B % 2, A = u < 1, w = A ? f : 0, wb = A ? 0 : f, upF = A ? Math.sin(f * Math.PI) : 0, upB = A ? 0 : Math.sin(f * Math.PI);
+        return P({ dip: 0.06 * on * a, lean: 0.1, hp: 0.1, fxF: upF * 0.12 - wb * 0.14, fxB: upB * 0.12 - w * 0.14, lf: upF * 0.2 * a, lb: upB * 0.2 * a, hF: [0.22 + (upF - upB) * 0.2, 1.36, 0.28], hB: [0.22 + (upB - upF) * 0.2, 1.36, -0.28], twist: (upF - upB) * 0.12 }); }
+      case 2: { const an = Math.PI * B; return P({ dip: 0.05 * down * a, twist: Math.sin(an) * 0.28 * a, pz: Math.sin(an) * 0.04, hp: 0.08, hy: Math.sin(an) * 0.2, hF: [0.38 + Math.cos(an) * 0.13, 1.38 + Math.sin(an) * 0.13, 0.07], hB: [0.38 + Math.cos(an) * 0.13, 1.38 + Math.sin(an) * 0.13, -0.07] }); }
+      case 3: return P({ dip: 0.07 * down * a, hp: -0.12, lean: -0.02, twist: side * 0.08, hF: [0.16, 2.02 + on * 0.16 * a, 0.3], hB: [0.16, 2.02 + on * 0.16 * a, -0.3], fzxF: 0.21, fzxB: -0.21 });
+      case 4: { const up = (B % 2) < 1; return P({ dip: 0.04 * down * a, pz: side * 0.06, roll: -side * 0.08, twist: up ? 0.22 : -0.15, hy: up ? 0.35 : -0.2, hp: up ? -0.12 : 0.15, hF: up ? [0.3, 2.2, 0.55] : [0.38, 0.98, -0.2], hB: [0.06, 1.08, -0.32], fzxF: 0.2 + (up ? 0.06 : 0), lf: up ? 0 : 0.03 }); }
+      case 5: { const q = Math.floor(B) % 4, F = [[[0.32, 1.82, 0.22], [0.32, 1.82, -0.22], 0.3], [[0.08, 2.2, 0.12], [0.34, 1.66, -0.05], -0.35], [[0.36, 1.58, -0.06], [0.36, 1.76, 0.06], 0.15], [[0.22, 1.8, 0.32], [0.22, 1.8, -0.32], -0.1]][q];
+        return P({ dip: 0.03 * on, hF: F[0], hB: F[1], hy: F[2] * 1.2, twist: F[2] * 0.5, hp: -0.04, pz: (q % 2 ? -1 : 1) * 0.04, roll: (q % 2 ? 1 : -1) * 0.05 }); }
+      case 6: { const wave = (B % 8) >= 6, an = T2 * B * 2;
+        return wave ? P({ dip: 0.05 * down, twist: side * 0.2, hF: [0.28, 2.0, 0.22 + side * 0.3], hB: [0.28, 2.0, -0.22 + side * 0.3], hy: side * 0.3 })
+          : P({ dip: 0.06 * down * a, pz: side * 0.04, twist: side * 0.1, hp: 0.1, hF: [0.4 + Math.cos(an) * 0.08, 1.4 + Math.sin(an) * 0.08, 0.09], hB: [0.4 + Math.cos(an + Math.PI) * 0.08, 1.4 + Math.sin(an + Math.PI) * 0.08, -0.09] }); }
+      case 7: { const q = Math.floor(B * 2) % 4, sn = [0, 1, 0, -1][q]; return P({ dip: 0.02, twist: sn * 0.3, hy: -sn * 0.5, hp: q % 2 ? 0.1 : -0.05, lean: 0.02, hF: [0.48, q < 2 ? 1.5 : 1.25, 0.3], hB: [0.48, q < 2 ? 1.25 : 1.5, -0.3] }); }
+      case 8: { const hop = Math.max(0, Math.sin(T2 * B)); return P({ dip: -0.1 * hop * a + 0.04 * (1 - hop), lf: 0.1 * hop, lb: 0.1 * hop, hp: -0.18, hF: [0.14, 2.15, 0.34 + Math.sin(T2 * B) * 0.1], hB: [0.14, 2.15, -0.34 - Math.sin(T2 * B) * 0.1], fzxF: 0.14, fzxB: -0.14 }); }
+      case 9: { const q = Math.floor(B) % 8, out = [0.55, 1.52], L = [[out, out, 0.22, -0.22], [out, out, 0.22, -0.22], [out, out, 0.22, -0.22], [out, out, 0.22, -0.22], [[0.24, 1.6], out, -0.13, -0.22], [[0.24, 1.6], [0.24, 1.6], -0.13, 0.13], [[-0.02, 2.0], [0.24, 1.6], 0.13, 0.13], [[-0.02, 2.0], [-0.02, 2.0], 0.13, -0.13]][q];
+        const hipS = q >= 6 ? Math.sin(T2 * B * 2) * 0.06 : 0;
+        return P({ dip: 0.04 * down, pz: hipS + side * 0.03, roll: -hipS, hF: [L[0][0], L[0][1], q === 0 ? 0.2 : L[2]], hB: [L[1][0], L[1][1], q < 1 ? -0.27 : L[3]], hy: side * 0.15 }); }
+      case 10: { const hs = Math.floor(B * 2) % 2; return P({ dip: 0.05 * on, fzxF: hs ? 0.28 : 0.12, fzxB: hs ? -0.12 : -0.28, fxF: hs ? 0.06 : -0.04, fxB: hs ? -0.04 : 0.06, lean: 0.08, twist: (hs ? 1 : -1) * 0.12, hF: [0.24 + (hs ? 0.14 : -0.05), 1.22, 0.3], hB: [0.24 + (hs ? -0.05 : 0.14), 1.22, -0.3], hp: 0.12 }); }
+      case 11: return P({ dip: 0.06 * down * a, hp: 0.06 + on * 0.18, lean: 0.06 + on * 0.06, hF: [0.28, 1.8 + on * 0.42 * a, 0.2], hB: [0.18, 1.18, -0.3], twist: 0.1 });
+      case 12: return P({ dip: 0.03 * down, pz: side2 * 0.05, roll: -side2 * 0.05, hy: side2 * 0.25, hp: 0.06 + down * 0.05, hF: [0.32, 1.4, 0.2], hB: [0.08, 1.08, -0.3], twist: side2 * 0.1 });
+      case 13: { const an = Math.PI * B; return P({ dip: 0.05 * down, pz: Math.sin(an) * 0.08 * a, px: Math.cos(an) * 0.03, roll: -Math.sin(an) * 0.1, twist: Math.sin(an) * 0.12, hy: -Math.sin(an) * 0.3, hp: -0.02, hF: [0.06, 1.98, 0.14], hB: [0.04, 1.1, -0.3] }); }
+      // ---- break do K.F. ----
+      case 20: { const u = B % 4, q = Math.floor(u), x = q === 0 || q === 2, sd = q < 2 ? 1 : -1;
+        return P({ dip: 0.06 + 0.04 * down, lean: 0.12, twist: x ? sd * 0.35 : 0, hy: x ? -sd * 0.2 : 0, fzxF: x && sd > 0 ? -0.06 : 0.2, fxF: x && sd > 0 ? 0.2 : 0, fzxB: x && sd < 0 ? 0.06 : -0.2, fxB: x && sd < 0 ? 0.2 : 0,
+          hF: x ? [0.38, 1.42, 0.5] : [0.38, 1.3, 0.06], hB: x ? [0.38, 1.42, -0.5] : [0.38, 1.3, -0.06], hp: 0.12 }); }
+      case 21: case 23: { const an = Math.PI * B; return P({ stand: 0, py: 0.48, lean: 0.55, hp: -0.2, twist: Math.sin(an) * 0.25, hB: [0.32, 0.24, -0.22, 1], hF: [0.3 + Math.sin(an) * 0.1, 0.5, 0.25],
+          fxF: 0.22 + Math.cos(an) * 0.25, fzxF: 0.25 + Math.sin(an) * 0.22, fxB: 0.05 - Math.cos(an) * 0.25, fzxB: -0.25 + Math.sin(an) * 0.15, lf: 0.02, lb: 0.02 }); }
+      case 22: return P({ stand: 0, py: 0.5, lean: 0.35, roll: 0.95, hp: -0.3, hy: 0.4, hB: [0.1, 0.22, -0.38, 1], hF: [0.25, 1.1, 0.42], fxF: 0.35, fzxF: 0.3, lf: 0.35, fxB: 0.15, fzxB: 0.05, lb: 0.28 });
+    }
+    return P({});
+  }
+  return { LOOKS, TOWN, makeRig, paint, IDLE, SELFIE, BONE, frames, BIND, lenOf, faceUV, dance, DANCE_NAMES, BREAK_NAMES };
 })();
 ART.makeRig = CHARS.makeRig;
 ART.LOOKS = CHARS.LOOKS;

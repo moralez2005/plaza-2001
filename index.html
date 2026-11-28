@@ -61,6 +61,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;outline:no
 .goals{list-style:none;padding:0;margin:6px 0;display:grid;gap:4px;font-size:14px}
 .goals li::before{content:"○ ";font-weight:900}
 .goals li.done{color:#1fae5a;font-weight:800}.goals li.done::before{content:"✔ "}
+.fkeys{display:none!important}body.festaK .fkeys{display:flex!important}body.festaK .keys:not(.fkeys){display:none!important}
 .keys{width:min(1180px,100%);display:flex;flex-wrap:wrap;gap:8px 10px;justify-content:center;font-size:14px}
 .keys span{background:#fff;border:2px solid var(--ink);border-radius:10px;padding:4px 10px;box-shadow:3px 3px 0 var(--ink)}
 kbd{font:900 12px Rubik,sans-serif;background:var(--ink);color:#fff;border-radius:5px;padding:1px 6px}
@@ -331,6 +332,7 @@ html.embed body{padding:8px 8px 0;gap:6px;background:#1b1530;min-height:0;height
     <b>Metas</b><ul class="goals" id="goals"></ul>
   </div></div>
 </div></div>
+<div class="keys fkeys"><span><kbd>Setas</kbd> andar (a escada da esquerda sobe)</span><span><kbd>Enter</kbd> conversar / pegar</span><span><kbd>Espaço</kbd> dançar / parar</span><span><kbd>J</kbd> troca o passo</span><span><kbd>K</kbd> passo especial (K.F.: break)</span><span><kbd>L</kbd> dança a dois</span><span><kbd>N</kbd> próxima música</span><span><kbd>Esc</kbd> pausa</span></div>
 <div class="keys">
   <span><kbd>W</kbd> remar</span><span><kbd>A</kbd><kbd>D</kbd> virar / girar no ar</span><span><kbd>S</kbd> frear</span>
   <span><kbd>Espaço</kbd> segure e solte = pular</span><span><kbd>J</kbd> <b id="kJ">flip</b></span><span><kbd>L</kbd> <b id="kL">grab (segure)</b></span>
@@ -410,7 +412,7 @@ const E = (() => {
   }
 
   // ---------- construção de malhas ----------
-  // materiais: 0 tinta fosca, 1 metal, 2 aceso, 3 vidro, 4 decalque do atlas, 5 sombra (atlas, translúcida)
+  // materiais: 0 tinta fosca, 1 metal, 2 aceso, 3 vidro, 4 decalque do atlas, 5 sombra (atlas, translúcida), 6 feixe de luz (bem transparente)
   class Mesh {
     constructor() {
       this.v = []; // px py pz nx ny nz r g b m u v
@@ -537,18 +539,20 @@ attribute vec3 B;uniform mat4 BN[12];uniform float SK;
 uniform mat4 VP;uniform mat4 MO;uniform float SM;
 varying vec3 vN;varying vec3 vC;varying vec3 vW;varying float vM;varying vec2 vU;
 void main(){mat4 W=MO;if(SK>.5)W=BN[int(B.x)]*(1.-B.z)+BN[int(B.y)]*B.z;vec4 w=W*vec4(P,1.);vW=w.xyz;vN=mat3(W)*mix(N,S,SM*step(.15,abs(M-.25)));vC=C;vM=M;vU=U;gl_Position=VP*w;}`;
+  const LC_DEF = new Float32Array(Array.from({ length: 24 }, () => [1, 0.74, 0.42]).flat()), NOFO = new Float32Array([0, 0]);
   const FS = `precision mediump float;varying vec3 vN;varying vec3 vC;varying vec3 vW;varying float vM;varying vec2 vU;
 uniform vec3 EYE;uniform vec3 SUN;uniform vec3 FOG;uniform float FOGD;uniform vec3 SHADE;uniform vec3 SKYT;uniform sampler2D TEX;uniform vec3 TINT;uniform float PASS;
-uniform vec3 AMB;uniform float NIGHT;uniform float WET;uniform vec3 WINC;uniform vec3 LP[24];uniform float NL;
+uniform vec3 AMB;uniform float NIGHT;uniform float WET;uniform vec3 WINC;uniform vec3 LP[24];uniform vec3 LC[24];uniform float NL;uniform float UVL;uniform vec4 FR;uniform vec2 FO;
 float hh(vec3 p){return fract(sin(dot(p,vec3(12.9898,78.233,37.719)))*43758.5453);}
 void main(){
  vec3 n=normalize(vN);vec3 v=normalize(vW-EYE);if(dot(n,v)>0.)n=-n;
  float l=dot(n,SUN);
  float b1=smoothstep(-.36,-.3,l),band=smoothstep(.15,.21,l),b3=smoothstep(.66,.72,l);
  vec3 base=vC*TINT;float a=1.;
+ if(vM>5.5){if(PASS<.5)discard;float rr=1.-abs(dot(n,-v));float d0=length(vW-EYE);gl_FragColor=vec4(mix(base*1.1,FOG,1.-exp(-d0*FOGD)),.05+.16*(1.-rr));return;}
  if(vM>3.5){vec4 t=texture2D(TEX,vU);
    if(vM>4.5){a=t.a*.55;base=SHADE*.35;if(PASS<.5)discard;}
-   else{if(t.a<.5)discard;base=t.rgb*vC;}}
+   else{if(FO.x!=0.||FO.y!=0.){if(vU.x>FR.x&&vU.x<FR.z&&vU.y>FR.y&&vU.y<FR.w)t=texture2D(TEX,vU+FO);}if(t.a<.5)discard;base=t.rgb*vC;}}
  vec3 c=base*mix(mix(SHADE*.8,SHADE,b1),vec3(1.04,1.,.96),band)*(1.+.08*b3);
  float rim=1.-abs(dot(n,-v));
  if(vM>.5&&vM<1.5){vec3 r=reflect(v,n);float sp=dot(r,SUN);c=mix(c,mix(SKYT,vec3(1.),step(.0,r.y)*.3),.35)+step(.82,sp)*.7+step(.97,sp)*.4;}
@@ -561,9 +565,11 @@ void main(){
   c*=vM>3.5&&vM<4.5?mix(AMB,vec3(1.),.3):AMB;
   if(NIGHT>.01){
    if(vM<.5&&distance(vC,WINC)<.03&&hh(floor(vW*vec3(.8,.38,.8)))>.42){c=mix(c,vec3(1.,.8,.46),NIGHT*.92);}
-   else{float g=0.;for(int i=0;i<24;i++){if(float(i)>=NL)break;vec3 dd=vW-LP[i];dd.y*=.55;g+=1.-smoothstep(.6,7.,length(dd));}
-    c+=base*vec3(1.,.74,.42)*min(g,1.3)*.75*NIGHT+vec3(1.,.8,.5)*min(g,1.3)*.05*NIGHT;}
+   else{vec3 g=vec3(0.);for(int i=0;i<24;i++){if(float(i)>=NL)break;vec3 dd=vW-LP[i];dd.y*=.55;g+=LC[i]*(1.-smoothstep(.6,7.,length(dd)));}
+    g=min(g,vec3(1.3));c+=base*g*.75*NIGHT+g*vec3(1.,1.08,1.19)*.05*NIGHT;}
   }
+  if(UVL>.01){float lu=dot(base,vec3(.3,.59,.11)),mx=max(base.r,max(base.g,base.b)),sat=mx-min(base.r,min(base.g,base.b));
+   c=c*(1.-.25*UVL)+UVL*(smoothstep(.58,.93,lu)*vec3(.72,.62,1.)*.85+smoothstep(.42,.75,sat)*smoothstep(.45,.85,mx)*base*.6);}
   if(WET>.01&&n.y>.85&&vM<.5){vec3 r=reflect(v,n);c=c*(1.-.28*WET)+SKYT*.12*WET+step(.9,dot(r,SUN))*.25*WET;}
  }
  if(PASS>.5&&a>.99&&vM<4.5)discard;
@@ -697,7 +703,7 @@ void main(){vec4 t=texture2D(T,uv);vec3 c=t.rgb;float l=dot(c,vec3(.299,.587,.11
         out[b + 12] = v[a + 9]; out[b + 13] = v[a + 10]; out[b + 14] = v[a + 11];
         out[b + 15] = ww[i * 3] || 0; out[b + 16] = ww[i * 3 + 1] || 0; out[b + 17] = ww[i * 3 + 2] || 0;
         if (out[b + 15] || out[b + 16]) skin = 1;
-        if (v[a + 9] === 3 || v[a + 9] === 5) trans = 1;
+        if (v[a + 9] === 3 || v[a + 9] === 5 || v[a + 9] === 6) trans = 1;
       }
       const buf = gl.createBuffer();
       gl.bindBuffer(gl.ARRAY_BUFFER, buf);
@@ -785,6 +791,8 @@ void main(){vec4 t=texture2D(T,uv);vec3 c=t.rgb;float l=dot(c,vec3(.299,.587,.11
       const nl = sc.lights ? Math.min(24, sc.lights.length / 3) : 0;
       gl.uniform1f(pm.u.NL, nl);
       if (nl && pm.u["LP[0]"]) gl.uniform3fv(pm.u["LP[0]"], sc.lights);
+      if (pm.u["LC[0]"]) gl.uniform3fv(pm.u["LC[0]"], sc.lightCols || LC_DEF);
+      gl.uniform1f(pm.u.UVL, sc.uv || 0);
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, atlas);
       gl.uniform1i(pm.u.TEX, 0);
@@ -801,6 +809,7 @@ void main(){vec4 t=texture2D(T,uv);vec3 c=t.rgb;float l=dot(c,vec3(.299,.587,.11
           if (o.bones) gl.uniformMatrix4fv(pm.u["BN[0]"], false, o.bones);
           gl.uniform1f(pm.u.SM, o.g.smooth);
           gl.uniform3fv(pm.u.TINT, o.tint || [1, 1, 1]);
+          if (o.face) { gl.uniform4fv(pm.u.FR, o.face.r); gl.uniform2fv(pm.u.FO, o.face.o); } else gl.uniform2fv(pm.u.FO, NOFO);
           gl.drawArrays(gl.TRIANGLES, 0, o.g.count);
           tris += o.g.count / 3;
         }
@@ -1457,14 +1466,14 @@ const CHARS = (() => {
   FACE.lucas = [0, 2048];
   FACE.mila = [512, 2048];
   FACE.diogo = [1024, 2048]; FACE.breno = [1280, 2048]; FACE.cabeca = [1536, 2048]; FACE.analivia = [1792, 2048];
-  for (let i = 0; i < 12; i++) FACE["fx" + i] = [i * 128, 2304, 128];
+  for (let i = 0; i < 28; i++) FACE["fx" + i] = [(i % 16) * 128, 2304 + Math.floor(i / 16) * 128, 128];
   const SPR = { cloud: R(1920, 256, 128, 128), dollar: R(1920, 384, 128, 128), checker: R(1024, 960, 64, 64), cat: R(1088, 960, 64, 64), nerd: R(512, 1920, 128, 128), shark: R(1536, 256, 128, 384), lion: R(1664, 256, 128, 384), crown: R(1792, 256, 128, 384), eq: R(256, 2048, 256, 128), reggae: R(768, 2048, 128, 128), num: R(896, 2048, 128, 128), hib: R(768, 2176, 128, 128), star: R(896, 2176, 128, 128) };
 
   const LOOKS = {
     kf: {
       cam: { body: 0xc9ced8, trim: 0xe8242c, lens: 0x2a2d38 },
       name: "K.F.", face: "kf", skin: 0xc68e62, hair: 0x2b170c, top: 0xff6a1a, top2: 0xd8460a, pants: 0x4f86d6, shoe: 0xe02a2a, shoeToe: 0xffffff, shoe2: 0xe02a2a, sole: 0xf4f1ea, tee: "loose", flare: 1.3,
-      phones: 0xe8262b, deck: 0x3fd0ff, deckShape: "shark", hairStyle: "afro", sleeve: "short", belt: true, print: "nerd", walkman: true, earbud: "both", wristband: 0xe8262b,
+      deck: 0x3fd0ff, deckShape: "shark", hairStyle: "afro", sleeve: "short", belt: true, print: "nerd", wristband: 0xe8262b,
       len: { thigh: 0.49, shin: 0.49, torso: 0.5, up: 0.31, fore: 0.29 }, headScale: 0.9, shoulder: 1.14, pantsR: 1.0, pyAdd: 0.06,
       headProf: "mature", stance: "regular", shades: true, ride: { lean: 0.2, twist: 0.32, hy: -1.05, hp: 0.02 }, idle: "peace",
     },
@@ -1523,7 +1532,8 @@ const CHARS = (() => {
     { name: "Padre Antônio", skin: 0xf0c7a4, hair: 0x8a8a8a, hairStyle: "short", top: 0x1b1530, top2: 0x2a2440, pants: 0x1b1530, shoe: 0x111111, npc: { old: 1, glasses: 0x2a2a2a, mouth: "smile" } },
   ];
   // variantes só pra cutscene: K.F. sem o fone grande (com fone de botão) e Julie com o outro lado do fone
-  LOOKS.kf_ear = Object.assign({}, LOOKS.kf, { earbud: "one", name: "K.F." });
+  // (o K.F. não usa mais fone no dia a dia; só na cena do pôr do sol ele divide o fone de botão com a Julie)
+  LOOKS.kf_ear = Object.assign({}, LOOKS.kf, { earbud: "one", walkman: true, phones: 0xe8262b, name: "K.F." });
   LOOKS.julie_ear = Object.assign({}, LOOKS.julie, { earbud: true, earSide: -1, name: "Julie" });
   // Seu Vavá dos Discos: senhor de idade estiloso — chapéu de feltro preto com fita vermelha, óculos de aro
   // dourado, bigode e cavanhaque brancos, jaqueta de camurça com gola de pelúcia, camisa estampada e sapato bicolor
@@ -1604,6 +1614,22 @@ const CHARS = (() => {
     { name: "Vini", skin: 0xe8b894, hair: 0x3a2a1a, hairStyle: "quiff", top: 0x1b1530, top2: 0x2a2440, print: "star", pants: 0x5a6a7a, flare: 0.6, shoe: 0x2f6fe8, lei: [0x3fd0ff, 0xffffff, 0xff4fa3], wristband: 0x2f6fe8, npc: { mouth: "smile" } },
     { name: "Lari", skin: 0xc98d68, hair: 0x2a1810, hairStyle: "chanel", top: 0xff6a6a, top2: 0xe04a4a, pants: 0xe8e0cc, flare: 1.1, pantsR: 0.82, shoe: 0xff6a6a, scale: 0.86, shoulder: 0.88, lei: [0xffffff, 0xffd23f, 0x5fe08a], npc: { lash: 1, lips: 0xc8405a, mouth: "smile", freckles: 1 } },
     { name: "Fábio", skin: 0xf0c49c, hair: 0x1b1210, hairStyle: "guard", capC: 0x1b1530, top: 0xa8e07a, top2: 0x88c05a, print: "hib", pants: 0x2a2a3a, shoe: 0xf4f4f4, lei: [0xff4fa3, 0xffffff, 0xffd23f], npc: { mouth: "smile", glasses: 0x1b1530 } },
+    { name: "Paty", skin: 0xf6d6c2, hair: 0x2a1a10, hairStyle: "long", part: "center", top: 0x3fd0ff, top2: 0x2fb0e0, crop: true, pants: 0xf4f4f4, flare: 1.2, pantsR: 0.82, shoe: 0xff4fa3, platform: 1, scale: 0.87, shoulder: 0.9, lei: [0xffd23f, 0xff4fa3, 0xffffff], npc: { lash: 1, lips: 0xe0507a, mouth: "smile" } },
+    { name: "Dênis", skin: 0x6e452c, hair: 0x1b1210, hairStyle: "short", top: 0xffffff, top2: 0xe8e8e8, print: "star", pants: 0x2a3a6a, flare: 0.6, shoe: 0x1b1530, chainBig: 0xd5dbe8, shades: true, lei: [0xff8a1f, 0xffffff, 0x5fe08a], npc: { mouth: "smile" } },
+    { name: "Bia", skin: 0xc98d68, hair: 0xd84a8a, hairStyle: "bob", top: 0x1b1530, top2: 0x2a2440, crop: true, pants: 0x8c5cff, flare: 1, pantsR: 0.85, shoe: 0xffffff, scale: 0.86, shoulder: 0.88, wristband: 0x5fe08a, lei: [0x5fe08a, 0xff4fa3, 0xffd23f], npc: { lash: 1, lips: 0x6a2a5a, mouth: "o" } },
+    { name: "Marcão", skin: 0x8a5a3c, hair: 0x1b1210, hairStyle: "bald", top: 0xff4fa3, top2: 0xe0308a, print: "hib", pants: 0xc8b896, bermuda: true, socks: 0x8a5a3c, shoe: 0xf4f4f4, len: { thigh: 0.5, shin: 0.5, torso: 0.52, up: 0.32, fore: 0.3 }, shoulder: 1.15, lei: [0xffffff, 0xffd23f, 0xff4fa3], npc: { mouth: "smile", beard: 0x1b1210 } },
+    { name: "Gi", skin: 0xf0c7a4, hair: 0xf0d27a, hairStyle: "bun", top: 0xff8a1f, top2: 0xe06a10, crop: true, pants: 0x1b1a22, flare: 1.1, pantsR: 0.84, shoe: 0xf4f4f4, scale: 0.86, shoulder: 0.88, lei: [0xff4fa3, 0x3fd0ff, 0xffffff], npc: { lash: 1, lips: 0xd04a5a, mouth: "smile", freckles: 1 } },
+    { name: "Rodrigo", skin: 0xe8b894, hair: 0x6a3a1a, hairStyle: "shaggy", top: 0x2f6fd8, top2: 0x1f4fb8, jacket: true, inner: 0xf4f4f4, pants: 0x5a6a7a, flare: 0.5, shoe: 0x2a2a30, lei: [0xffd23f, 0xff8a1f, 0xffffff], npc: { mouth: "smile" } },
+    { name: "Tati", skin: 0x5a3a26, hair: 0x1b1210, hairStyle: "afro", top: 0xff4fa3, top2: 0xe0308a, crop: true, pants: 0xfafafa, flare: 1.3, pantsR: 0.84, shoe: 0xffd23f, platform: 1, scale: 0.9, shoulder: 0.9, lei: [0xffffff, 0x5fe08a, 0xffd23f], npc: { lash: 1, lips: 0x8a3a4a, mouth: "smile" } },
+    { name: "Caio", skin: 0xf0c49c, hair: 0xe8cf8a, hairStyle: "spiky", top: 0x5fe08a, top2: 0x3fc06a, print: "num", pants: 0x2a2a3a, flare: 0.7, shoe: 0xff4fa3, wristband: 0xffd23f, lei: [0xff4fa3, 0xffffff, 0x3fd0ff], npc: { mouth: "o", freckles: 1 } },
+    { name: "Lu", skin: 0xe8b894, hair: 0x3a2214, hairStyle: "chanel", top: 0xffd23f, top2: 0xffb81f, pants: 0x2f6fd8, flare: 1.1, pantsR: 0.82, shoe: 0xffffff, glasses: true, glassCol: 0xff4fa3, scale: 0.86, shoulder: 0.88, lei: [0xff8a1f, 0xffffff, 0xff4fa3], npc: { lash: 1, lips: 0xc8405a, mouth: "smile" } },
+    { name: "Beto", skin: 0xc98b62, hair: 0x2b170c, hairStyle: "cap", capC: 0xe0302b, top: 0x1b1530, top2: 0x2a2440, print: "num", pants: 0x7a7a5a, bermuda: true, cargo: true, socks: 0xffffff, shoe: 0xf4f4f4, lei: [0xffd23f, 0xff4fa3, 0xffffff], npc: { mouth: "smile" } },
+    { name: "Mari Luz", skin: 0xf3cdb4, hair: 0x8a5a2a, hairStyle: "long", part: "side", top: 0x8c5cff, top2: 0x6a3ee0, crop: true, pants: 0x9cc0e8, flare: 1.2, pantsR: 0.82, shoe: 0xffffff, scale: 0.87, shoulder: 0.9, lei: [0xffffff, 0xff4fa3, 0xffd23f], npc: { lash: 1, lips: 0xb83a5a, mouth: "smile" } },
+    { name: "Jefinho", skin: 0x8a5a3c, hair: 0x1b1210, hairStyle: "taper", top: 0xffffff, top2: 0xe8e8e8, print: "hib", pants: 0x1b1a22, flare: 0.6, shoe: 0xe8262b, wristband: 0xffffff, lei: [0x3fd0ff, 0xffd23f, 0xff4fa3], npc: { mouth: "smile" } },
+    { name: "Nina Rosa", skin: 0xd8a47e, hair: 0x1b1210, hairStyle: "long", top: 0xff6a6a, top2: 0xe04a4a, crop: true, pants: 0x1b1a22, flare: 1, pantsR: 0.84, shoe: 0xff6a6a, scale: 0.86, shoulder: 0.88, lei: [0xffd23f, 0xffffff, 0x5fe08a], npc: { lash: 1, lips: 0xa83a4a, mouth: "o" } },
+    { name: "Guto", skin: 0xf0c7a4, hair: 0x3a2a1a, hairStyle: "quiff", hairTip: 0xe8cf8a, top: 0xff8a1f, top2: 0xe06a10, jacket: true, inner: 0x1b1530, pants: 0x2a3a5a, flare: 0.5, shoe: 0xf4f4f4, shades: true, lei: [0xff4fa3, 0xffffff, 0x3fd0ff], npc: { mouth: "smile" } },
+    { name: "Dani", skin: 0xc98d68, hair: 0xc84a2a, hairStyle: "chanel", top: 0x5fe08a, top2: 0x3fc06a, pants: 0xe8e0cc, flare: 1.1, pantsR: 0.82, shoe: 0x2f6fe8, scale: 0.87, shoulder: 0.9, lei: [0xffffff, 0xff8a1f, 0xff4fa3], npc: { lash: 1, lips: 0xc8405a, mouth: "smile", freckles: 1 } },
+    { name: "Kiko do bar", skin: 0xc68e62, hair: 0x2b170c, hairStyle: "short", top: 0xffd23f, top2: 0xe8b81f, print: "hib", apron: 0x1b1530, pants: 0x2a2a3a, shoe: 0x1b1530, lei: [0xff4fa3, 0xffffff, 0xffd23f], npc: { mouth: "smile", mustache: 0x2b170c } },
   ];
   FX.forEach((t, i) => (LOOKS["fx" + i] = Object.assign({ face: "fx" + i, sleeve: "short", tee: "loose", shoeToe: t.shoe, sole: 0xf4f1ea, lace: t.shoe, socks: t.skin, flare: 0.4, pantsR: 0.8, idle: "calm" }, t)));
   // Neide da Sorveteria Pinguim: atendente de avental rosa e cabelo preso
@@ -1995,8 +2021,68 @@ const CHARS = (() => {
     }
     g.restore();
   }
+  // ---------- expressões: cópias do rosto com olhos e boca trocados (o shader troca na hora) ----------
+  // happy: olhos fechados rindo; goofy: sorriso bobo; nervous: olho arregalado, boca tremida e gotinha de suor;
+  // smile: olhar suave e sorriso; surprise: boca em "o"; sing: olhos fechados e boca aberta (curtindo a música)
+  const EXPR_LIST = { kf: ["goofy", "happy"], julie: ["happy", "smile"], kaua: ["nervous", "happy"], mila: ["smile", "happy"], gabi: ["happy", "surprise"], kauane: ["happy", "surprise"],
+    diogo: ["happy"], cabeca: ["happy"], breno: ["happy"], analivia: ["happy"], lucas: ["happy"] };
+  const EXPR = {};
+  {
+    let k = 0;
+    for (const key in EXPR_LIST) for (const e of EXPR_LIST[key]) { (EXPR[key] = EXPR[key] || {})[e] = [(k % 8) * 256, 2688 + Math.floor(k / 8) * 256, 256]; k++; }
+    for (let i = 0; i < 28; i++) ["happy", "sing"].forEach((e, j) => { const q = i * 2 + j; (EXPR["fx" + i] = EXPR["fx" + i] || {})[e] = [(q % 16) * 128, 3456 + Math.floor(q / 16) * 128, 128]; });
+  }
+  function faceExpr(g, key, L, ex0, slot) {
+    const keep = FACE[key];
+    FACE[key] = slot; face(g, key, L); FACE[key] = keep;
+    const [X0, Y0, SZ = 256] = slot, skin = "#" + L.skin.toString(16).padStart(6, "0");
+    g.save();
+    if (SZ !== 256) { g.translate(X0, Y0); g.scale(SZ / 256, SZ / 256); }
+    const X = SZ !== 256 ? 0 : X0, Y = SZ !== 256 ? 0 : Y0, ex = (s) => X + 128 + s * 42, ey = Y + 118, my = Y + 196;
+    const cover = (x, y, rx, ry) => { g.fillStyle = skin; g.beginPath(); g.ellipse(x, y, rx, ry, 0, 0, 7); g.fill(); };
+    const blushA = (a) => { g.fillStyle = `rgba(255,90,110,${a})`; for (const s of [-1, 1]) { g.beginPath(); g.ellipse(ex(s) + s * 12, ey + 40, 22, 11, 0, 0, 7); g.fill(); } };
+    g.strokeStyle = INK; g.lineCap = "round"; g.lineJoin = "round";
+    const closedUp = () => { for (const s of [-1, 1]) { cover(ex(s), ey, 36, 28); g.lineWidth = 8; g.beginPath(); g.moveTo(ex(s) - 22, ey + 6); g.quadraticCurveTo(ex(s), ey - 16, ex(s) + 22, ey + 6); g.stroke(); } };
+    const closedDown = () => { for (const s of [-1, 1]) { cover(ex(s), ey, 36, 28); g.lineWidth = 8; g.beginPath(); g.moveTo(ex(s) - 22, ey - 2); g.quadraticCurveTo(ex(s), ey + 12, ex(s) + 22, ey - 2); g.stroke(); } };
+    const mouthCover = () => cover(X + 128, my - 4, 40, 22);
+    if (ex0 === "happy") {
+      closedUp(); mouthCover(); blushA(0.4);
+      g.fillStyle = "#5a1622"; g.beginPath(); g.moveTo(X + 100, my - 12); g.quadraticCurveTo(X + 128, my + 26, X + 156, my - 12); g.closePath(); g.fill(); g.lineWidth = 6; g.stroke();
+      g.fillStyle = "#ff7a8a"; g.beginPath(); g.ellipse(X + 128, my + 4, 12, 6, 0, 0, 7); g.fill();
+      g.fillStyle = "#ffffff"; g.fillRect(X + 108, my - 11, 40, 6);
+    } else if (ex0 === "sing") {
+      closedDown(); mouthCover(); blushA(0.25);
+      g.fillStyle = "#5a1622"; g.beginPath(); g.ellipse(X + 128, my - 2, 13, 17, 0, 0, 7); g.fill(); g.lineWidth = 6; g.stroke();
+    } else if (ex0 === "goofy") {
+      mouthCover(); blushA(0.45);
+      g.lineWidth = 7; g.beginPath(); g.moveTo(X + 94, my - 16); g.quadraticCurveTo(X + 130, my + 18, X + 164, my - 20); g.stroke();
+      g.lineWidth = 5; g.beginPath(); g.moveTo(X + 92, my - 20); g.lineTo(X + 96, my - 10); g.moveTo(X + 166, my - 24); g.lineTo(X + 162, my - 14); g.stroke();
+    } else if (ex0 === "nervous") {
+      for (const s of [-1, 1]) { cover(ex(s), ey, 36, 28); g.fillStyle = "#ffffff"; g.beginPath(); g.ellipse(ex(s), ey, 24, 22, 0, 0, 7); g.fill(); g.lineWidth = 5; g.stroke(); g.fillStyle = INK; g.beginPath(); g.arc(ex(s) + 2, ey + 2, 6, 0, 7); g.fill(); }
+      mouthCover(); blushA(0.5);
+      g.lineWidth = 6; g.beginPath(); g.moveTo(X + 100, my - 6); for (let i = 1; i <= 6; i++) g.lineTo(X + 100 + i * 9.5, my - 6 + (i % 2 ? -7 : 5)); g.stroke();
+      g.fillStyle = "#9fe0ff"; g.strokeStyle = "#2a6aa8"; g.lineWidth = 4; g.beginPath(); g.moveTo(X + 214, Y + 62); g.quadraticCurveTo(X + 232, Y + 96, X + 214, Y + 104); g.quadraticCurveTo(X + 196, Y + 96, X + 214, Y + 62); g.fill(); g.stroke();
+    } else if (ex0 === "smile") {
+      for (const s of [-1, 1]) { g.fillStyle = skin; g.beginPath(); g.ellipse(ex(s), ey - 12, 36, 16, 0, 0, 7); g.fill(); g.strokeStyle = INK; g.lineWidth = 7; g.beginPath(); g.moveTo(ex(s) - 24, ey - 2); g.quadraticCurveTo(ex(s), ey - 10, ex(s) + 24, ey - 2); g.stroke(); }
+      mouthCover(); blushA(0.38);
+      g.lineWidth = 7; g.beginPath(); g.moveTo(X + 104, my - 12); g.quadraticCurveTo(X + 128, my + 10, X + 152, my - 12); g.stroke();
+    } else if (ex0 === "surprise") {
+      mouthCover();
+      g.fillStyle = "#5a1622"; g.beginPath(); g.ellipse(X + 128, my - 2, 11, 14, 0, 0, 7); g.fill(); g.lineWidth = 6; g.stroke();
+      for (const s of [-1, 1]) { g.lineWidth = 6; g.beginPath(); g.moveTo(ex(s) - 20, ey - 58); g.quadraticCurveTo(ex(s), ey - 70, ex(s) + 20, ey - 58); g.stroke(); }
+    }
+    g.restore();
+  }
+  // retângulo do rosto no atlas e o deslocamento até a expressão (pro shader)
+  function faceUV(key, e) {
+    const b = FACE[key], v = EXPR[key] && EXPR[key][e];
+    if (!b || !v) return null;
+    const bs = b[2] || 256;
+    return { r: new Float32Array([b[0] / AW, b[1] / AH, (b[0] + bs) / AW, (b[1] + bs) / AH]), o: new Float32Array([(v[0] - b[0]) / AW, (v[1] - b[1]) / AH]) };
+  }
   function paint(g) {
     for (const k in FACE) face(g, k, LOOKS[k]);
+    for (const k in EXPR) for (const e in EXPR[k]) if (LOOKS[k] && FACE[k]) faceExpr(g, k, LOOKS[k], e, EXPR[k][e]);
     // estampas da galera da festa: banda de reggae (inventada), número de regata, hibisco havaiano, estrela
     {
       let x = 768 + 64, y = 2048 + 64;
@@ -3022,7 +3108,7 @@ const CHARS = (() => {
       const b = M.mul(base, M.mul(lift, M.mul(M.S(s, s, s), rot)));
       const fb = feetBase ? M.mul(feetBase, M.mul(lift, M.mul(M.S(s, s, s), rot))) : b;
       const L = lenOf(look);
-      const pp = p.stand ? Object.assign({}, p, { py: L.thigh + L.shin + 0.235 }) : look.pyAdd ? Object.assign({}, p, { py: p.py + look.pyAdd }) : p;
+      const pp = p.stand ? Object.assign({}, p, { py: L.thigh + L.shin + 0.235 - (p.dip || 0) }) : look.pyAdd ? Object.assign({}, p, { py: p.py + look.pyAdd }) : p;
       const F = frames(b, pp, fb, look);
       for (let i = 0; i < 12; i++) body.bones.set(M.mul(F[i], bindInv[i]), i * 16);
       out.F = F;
@@ -3047,7 +3133,48 @@ const CHARS = (() => {
     hips: (t) => ({ stand: 1, px: 0, py: 0.93, pz: 0, lean: 0.05, twist: 0.2, hy: -0.7, hp: 0, hF: [0.0, 0.98, 0.32], hB: [0.0, 0.98, -0.32], lf: 0, lb: 0 }),
   };
 
-  return { LOOKS, TOWN, makeRig, paint, IDLE, SELFIE, BONE, frames, BIND, lenOf };
+  // ---------- danças (B = batida da música, contínua; a = intensidade 0.6–1.2) ----------
+  // passos com cara de balada dos anos 90/2000: dois-pra-lá, running man, cabbage patch, raise the roof, Travolta,
+  // vogue, Aserejé (mão rolando), robô, pulinho eurodance, Macarena, shuffle, soquinho pro alto, balanço com o copo,
+  // rebolado com mão no cabelo. E o break do K.F.: toprock, footwork, freeze e giro de costas.
+  const DANCE_NAMES = ["Dois pra lá", "Running man", "Cabbage patch", "Raise the roof", "Travolta", "Vogue", "Aserejé", "Robô", "Pulinho eurodance", "Macarena", "Shuffle", "Soquinho", "Balanço com o copo", "Rebolado"];
+  const BREAK_NAMES = ["Toprock", "Footwork", "Freeze", "Giro de costas"];
+  function dance(k, B, a = 1) {
+    const T2 = Math.PI * 2, f = ((B % 1) + 1) % 1, on = Math.exp(-f * 7), down = 0.5 + 0.5 * Math.cos(T2 * B), side = Math.sin(Math.PI * B), side2 = Math.sin(Math.PI * B / 2);
+    const P = (o) => Object.assign({ stand: 1, walk: 0, px: 0, py: 0.94, pz: 0, lean: 0.04, twist: 0, hy: 0, hp: 0.05, hr: 0, roll: 0, hF: [0.1, 0.95, 0.27], hB: [0.1, 0.95, -0.27], lf: 0, lb: 0, fxF: 0, fxB: 0, fzxF: 0.17, fzxB: -0.17, dip: 0 }, o);
+    switch (k) {
+      case 0: return P({ dip: 0.08 * down * a, pz: side * 0.06 * a, twist: side * 0.16 * a, roll: -side * 0.05, hp: 0.04 + down * 0.08, hy: side * 0.15, fzxF: 0.19 + Math.max(0, side) * 0.1, fzxB: -0.19 + Math.min(0, side) * 0.1, lf: Math.max(0, -side) * 0.04, lb: Math.max(0, side) * 0.04,
+        hF: [0.3 + side * 0.09, 1.28 + down * 0.07, 0.28], hB: [0.3 - side * 0.09, 1.28 + down * 0.07, -0.28] });
+      case 1: { const u = B % 2, A = u < 1, w = A ? f : 0, wb = A ? 0 : f, upF = A ? Math.sin(f * Math.PI) : 0, upB = A ? 0 : Math.sin(f * Math.PI);
+        return P({ dip: 0.06 * on * a, lean: 0.1, hp: 0.1, fxF: upF * 0.12 - wb * 0.14, fxB: upB * 0.12 - w * 0.14, lf: upF * 0.2 * a, lb: upB * 0.2 * a, hF: [0.22 + (upF - upB) * 0.2, 1.36, 0.28], hB: [0.22 + (upB - upF) * 0.2, 1.36, -0.28], twist: (upF - upB) * 0.12 }); }
+      case 2: { const an = Math.PI * B; return P({ dip: 0.05 * down * a, twist: Math.sin(an) * 0.28 * a, pz: Math.sin(an) * 0.04, hp: 0.08, hy: Math.sin(an) * 0.2, hF: [0.38 + Math.cos(an) * 0.13, 1.38 + Math.sin(an) * 0.13, 0.07], hB: [0.38 + Math.cos(an) * 0.13, 1.38 + Math.sin(an) * 0.13, -0.07] }); }
+      case 3: return P({ dip: 0.07 * down * a, hp: -0.12, lean: -0.02, twist: side * 0.08, hF: [0.16, 2.02 + on * 0.16 * a, 0.3], hB: [0.16, 2.02 + on * 0.16 * a, -0.3], fzxF: 0.21, fzxB: -0.21 });
+      case 4: { const up = (B % 2) < 1; return P({ dip: 0.04 * down * a, pz: side * 0.06, roll: -side * 0.08, twist: up ? 0.22 : -0.15, hy: up ? 0.35 : -0.2, hp: up ? -0.12 : 0.15, hF: up ? [0.3, 2.2, 0.55] : [0.38, 0.98, -0.2], hB: [0.06, 1.08, -0.32], fzxF: 0.2 + (up ? 0.06 : 0), lf: up ? 0 : 0.03 }); }
+      case 5: { const q = Math.floor(B) % 4, F = [[[0.32, 1.82, 0.22], [0.32, 1.82, -0.22], 0.3], [[0.08, 2.2, 0.12], [0.34, 1.66, -0.05], -0.35], [[0.36, 1.58, -0.06], [0.36, 1.76, 0.06], 0.15], [[0.22, 1.8, 0.32], [0.22, 1.8, -0.32], -0.1]][q];
+        return P({ dip: 0.03 * on, hF: F[0], hB: F[1], hy: F[2] * 1.2, twist: F[2] * 0.5, hp: -0.04, pz: (q % 2 ? -1 : 1) * 0.04, roll: (q % 2 ? 1 : -1) * 0.05 }); }
+      case 6: { const wave = (B % 8) >= 6, an = T2 * B * 2;
+        return wave ? P({ dip: 0.05 * down, twist: side * 0.2, hF: [0.28, 2.0, 0.22 + side * 0.3], hB: [0.28, 2.0, -0.22 + side * 0.3], hy: side * 0.3 })
+          : P({ dip: 0.06 * down * a, pz: side * 0.04, twist: side * 0.1, hp: 0.1, hF: [0.4 + Math.cos(an) * 0.08, 1.4 + Math.sin(an) * 0.08, 0.09], hB: [0.4 + Math.cos(an + Math.PI) * 0.08, 1.4 + Math.sin(an + Math.PI) * 0.08, -0.09] }); }
+      case 7: { const q = Math.floor(B * 2) % 4, sn = [0, 1, 0, -1][q]; return P({ dip: 0.02, twist: sn * 0.3, hy: -sn * 0.5, hp: q % 2 ? 0.1 : -0.05, lean: 0.02, hF: [0.48, q < 2 ? 1.5 : 1.25, 0.3], hB: [0.48, q < 2 ? 1.25 : 1.5, -0.3] }); }
+      case 8: { const hop = Math.max(0, Math.sin(T2 * B)); return P({ dip: -0.1 * hop * a + 0.04 * (1 - hop), lf: 0.1 * hop, lb: 0.1 * hop, hp: -0.18, hF: [0.14, 2.15, 0.34 + Math.sin(T2 * B) * 0.1], hB: [0.14, 2.15, -0.34 - Math.sin(T2 * B) * 0.1], fzxF: 0.14, fzxB: -0.14 }); }
+      case 9: { const q = Math.floor(B) % 8, out = [0.55, 1.52], L = [[out, out, 0.22, -0.22], [out, out, 0.22, -0.22], [out, out, 0.22, -0.22], [out, out, 0.22, -0.22], [[0.24, 1.6], out, -0.13, -0.22], [[0.24, 1.6], [0.24, 1.6], -0.13, 0.13], [[-0.02, 2.0], [0.24, 1.6], 0.13, 0.13], [[-0.02, 2.0], [-0.02, 2.0], 0.13, -0.13]][q];
+        const hipS = q >= 6 ? Math.sin(T2 * B * 2) * 0.06 : 0;
+        return P({ dip: 0.04 * down, pz: hipS + side * 0.03, roll: -hipS, hF: [L[0][0], L[0][1], q === 0 ? 0.2 : L[2]], hB: [L[1][0], L[1][1], q < 1 ? -0.27 : L[3]], hy: side * 0.15 }); }
+      case 10: { const hs = Math.floor(B * 2) % 2; return P({ dip: 0.05 * on, fzxF: hs ? 0.28 : 0.12, fzxB: hs ? -0.12 : -0.28, fxF: hs ? 0.06 : -0.04, fxB: hs ? -0.04 : 0.06, lean: 0.08, twist: (hs ? 1 : -1) * 0.12, hF: [0.24 + (hs ? 0.14 : -0.05), 1.22, 0.3], hB: [0.24 + (hs ? -0.05 : 0.14), 1.22, -0.3], hp: 0.12 }); }
+      case 11: return P({ dip: 0.06 * down * a, hp: 0.06 + on * 0.18, lean: 0.06 + on * 0.06, hF: [0.28, 1.8 + on * 0.42 * a, 0.2], hB: [0.18, 1.18, -0.3], twist: 0.1 });
+      case 12: return P({ dip: 0.03 * down, pz: side2 * 0.05, roll: -side2 * 0.05, hy: side2 * 0.25, hp: 0.06 + down * 0.05, hF: [0.32, 1.4, 0.2], hB: [0.08, 1.08, -0.3], twist: side2 * 0.1 });
+      case 13: { const an = Math.PI * B; return P({ dip: 0.05 * down, pz: Math.sin(an) * 0.08 * a, px: Math.cos(an) * 0.03, roll: -Math.sin(an) * 0.1, twist: Math.sin(an) * 0.12, hy: -Math.sin(an) * 0.3, hp: -0.02, hF: [0.06, 1.98, 0.14], hB: [0.04, 1.1, -0.3] }); }
+      // ---- break do K.F. ----
+      case 20: { const u = B % 4, q = Math.floor(u), x = q === 0 || q === 2, sd = q < 2 ? 1 : -1;
+        return P({ dip: 0.06 + 0.04 * down, lean: 0.12, twist: x ? sd * 0.35 : 0, hy: x ? -sd * 0.2 : 0, fzxF: x && sd > 0 ? -0.06 : 0.2, fxF: x && sd > 0 ? 0.2 : 0, fzxB: x && sd < 0 ? 0.06 : -0.2, fxB: x && sd < 0 ? 0.2 : 0,
+          hF: x ? [0.38, 1.42, 0.5] : [0.38, 1.3, 0.06], hB: x ? [0.38, 1.42, -0.5] : [0.38, 1.3, -0.06], hp: 0.12 }); }
+      case 21: case 23: { const an = Math.PI * B; return P({ stand: 0, py: 0.48, lean: 0.55, hp: -0.2, twist: Math.sin(an) * 0.25, hB: [0.32, 0.24, -0.22, 1], hF: [0.3 + Math.sin(an) * 0.1, 0.5, 0.25],
+          fxF: 0.22 + Math.cos(an) * 0.25, fzxF: 0.25 + Math.sin(an) * 0.22, fxB: 0.05 - Math.cos(an) * 0.25, fzxB: -0.25 + Math.sin(an) * 0.15, lf: 0.02, lb: 0.02 }); }
+      case 22: return P({ stand: 0, py: 0.5, lean: 0.35, roll: 0.95, hp: -0.3, hy: 0.4, hB: [0.1, 0.22, -0.38, 1], hF: [0.25, 1.1, 0.42], fxF: 0.35, fzxF: 0.3, lf: 0.35, fxB: 0.15, fzxB: 0.05, lb: 0.28 });
+    }
+    return P({});
+  }
+  return { LOOKS, TOWN, makeRig, paint, IDLE, SELFIE, BONE, frames, BIND, lenOf, faceUV, dance, DANCE_NAMES, BREAK_NAMES };
 })();
 ART.makeRig = CHARS.makeRig;
 ART.LOOKS = CHARS.LOOKS;
@@ -5782,24 +5909,24 @@ const RADIO = (() => {
   // set do DJ Luskinha no Aloha Club (house dos anos 90, eurodance e paradas de 2000) e a música lenta
   const FESTA = {
     set: [
-      { a: "Spiller", t: "Groovejet (If This Ain't Love)", id: "Cc_nUcKYlAs" },
-      { a: "Modjo", t: "Lady (Hear Me Tonight)", id: "mMfxI3r_LyA" },
-      { a: "Stardust", t: "Music Sounds Better With You", id: "Hf244LCkkLc" },
-      { a: "Daft Punk", t: "One More Time", id: "fa5IWHDbftI" },
-      { a: "Kylie Minogue", t: "Can't Get You Out Of My Head", id: "c18441Eh_WE" },
-      { a: "Robin S", t: "Show Me Love", id: "Wx7I4yWJnXI" },
-      { a: "Crystal Waters", t: "Gypsy Woman (She's Homeless)", id: "_KztNIg4cvE" },
-      { a: "Corona", t: "The Rhythm Of The Night", id: "LL8zTK1Ffu0" },
-      { a: "Haddaway", t: "What Is Love", id: "HEXWRTEbj1I" },
-      { a: "Gala", t: "Freed From Desire", id: "AxmzkDqndtM" },
-      { a: "Alice Deejay", t: "Better Off Alone", id: "Ck0LO6b6OQc" },
-      { a: "Eiffel 65", t: "Blue (Da Ba Dee)", id: "XgztfRBc2jM" },
-      { a: "ATB", t: "9 PM (Till I Come)", id: "QFGMQZyvnmY" },
-      { a: "Bomfunk MC's", t: "Freestyler", id: "pQICGZd9-SA" },
-      { a: "Darude", t: "Sandstorm", id: "y6120QOlsfU" },
-      { a: "Rouge", t: "Ragatanga", id: "QsG8gMARRyw" },
+      { a: "Spiller", t: "Groovejet (If This Ain't Love)", id: "Cc_nUcKYlAs", bpm: 123 },
+      { a: "Modjo", t: "Lady (Hear Me Tonight)", id: "mMfxI3r_LyA", bpm: 126 },
+      { a: "Stardust", t: "Music Sounds Better With You", id: "Hf244LCkkLc", bpm: 124 },
+      { a: "Daft Punk", t: "One More Time", id: "fa5IWHDbftI", bpm: 123 },
+      { a: "Kylie Minogue", t: "Can't Get You Out Of My Head", id: "c18441Eh_WE", bpm: 126 },
+      { a: "Robin S", t: "Show Me Love", id: "Wx7I4yWJnXI", bpm: 120 },
+      { a: "Crystal Waters", t: "Gypsy Woman (She's Homeless)", id: "_KztNIg4cvE", bpm: 120 },
+      { a: "Corona", t: "The Rhythm Of The Night", id: "LL8zTK1Ffu0", bpm: 128 },
+      { a: "Haddaway", t: "What Is Love", id: "HEXWRTEbj1I", bpm: 124 },
+      { a: "Gala", t: "Freed From Desire", id: "AxmzkDqndtM", bpm: 129 },
+      { a: "Alice Deejay", t: "Better Off Alone", id: "Ck0LO6b6OQc", bpm: 137 },
+      { a: "Eiffel 65", t: "Blue (Da Ba Dee)", id: "XgztfRBc2jM", bpm: 128 },
+      { a: "ATB", t: "9 PM (Till I Come)", id: "QFGMQZyvnmY", bpm: 131 },
+      { a: "Bomfunk MC's", t: "Freestyler", id: "pQICGZd9-SA", bpm: 164 },
+      { a: "Darude", t: "Sandstorm", id: "y6120QOlsfU", bpm: 136 },
+      { a: "Rouge", t: "Ragatanga", id: "QsG8gMARRyw", bpm: 120 },
     ],
-    lenta: { a: "3 Doors Down", t: "Here Without You (Acoustic)", id: "ZNVylYnrHsA" },
+    lenta: { a: "3 Doors Down", t: "Here Without You (Acoustic)", id: "ZNVylYnrHsA", bpm: 72 },
   };
   const SPECIAL = { juntos: { id: "iGbPR36zGx4", t: "Wherever You Will Go", a: "The Calling", s: 0 } };
   let spec = null, ALB_CACHE = null, holdOn = false;
@@ -6919,7 +7046,8 @@ const INSIDE = (() => {
   // gente olhando a pista. Teto alto com cordão de luzinhas, folhas de palmeira penduradas e o globo.
   function buildFesta(Rn, tex) {
     const st = new Mesh(), fl = new Mesh(), thin = new Mesh();
-    const W = 6.5, D = 15, H = 6.4, MY = 3.2, MX = 4.4, MZ0 = 6.0, MZB = 13.6, solids = [];
+    const W = 8.5, D = 20, H = 7.2, MY = 3.4, MX = 5.9, MZ0 = 7.0, MZB = 17.6, solids = [], solidsUp = [];
+    const SU = (x0, z0, x1, z1) => solidsUp.push([x0, z0, x1, z1]);
     const S = (x0, z0, x1, z1) => solids.push([x0, z0, x1, z1]);
     const bamboo = hex(0xc8a05a), bambooD = hex(0x8a6a32), wood = hex(0x5a3a22), woodD = hex(0x3a2416), straw = hex(0xd8b870), leaf = hex(0x2f9a4a), leafD = hex(0x1f7a3a);
     const pink = hex(0xff4fa3), cyan = hex(0x3fd0ff), yel = hex(0xffd23f), purple = hex(0x8c5cff), blk = hex(0x16141c);
@@ -6933,14 +7061,14 @@ const INSIDE = (() => {
     // ---- mezanino em U ----
     const deck = (x0, z0, x1, z1) => { st.box(x0, MY - 0.25, z0, x1, MY, z1, woodD, { top: wood }); };
     deck(-W, MZ0, -MX, D); deck(MX, MZ0, W, D); deck(-MX, MZB, MX, D);
-    for (const [x, z] of [[-MX, MZ0], [-MX, 9.8], [-MX, MZB], [MX, MZ0], [MX, 9.8], [MX, MZB], [-1.6, MZB], [1.6, MZB]]) { st.tube([x, 0, z], [x, MY - 0.25, z], 0.11, 0.11, 7, bamboo); S(x - 0.15, z - 0.15, x + 0.15, z + 0.15); }
+    for (const [x, z] of [[-MX, MZ0], [-MX, 10.5], [-MX, 14.0], [-MX, MZB], [MX, MZ0], [MX, 10.5], [MX, 14.0], [MX, MZB], [-2.2, MZB], [2.2, MZB]]) { st.tube([x, 0, z], [x, MY - 0.25, z], 0.11, 0.11, 7, bamboo); S(x - 0.15, z - 0.15, x + 0.15, z + 0.15); }
     // guarda-corpo (borda de dentro do U e as pontas da frente)
     const rail = (a, b) => {
       const L = Math.hypot(b[0] - a[0], b[2] - a[2]), n = Math.max(1, Math.round(L / 0.6));
       for (let i = 0; i <= n; i++) { const p = V.lerp(a, b, i / n); st.tube(p, [p[0], MY + 1.0, p[2]], 0.025, 0.025, 4, bamboo); }
       st.tube([a[0], MY + 1.0, a[2]], [b[0], MY + 1.0, b[2]], 0.045, 0.045, 6, bambooD); st.tube([a[0], MY + 0.5, a[2]], [b[0], MY + 0.5, b[2]], 0.025, 0.025, 4, bamboo);
     };
-    rail([-MX, MY, MZ0], [-MX, MY, MZB]); rail([-MX, MY, MZB], [MX, MY, MZB]); rail([MX, MY, MZB], [MX, MY, MZ0]); rail([MX, MY, MZ0], [W, MY, MZ0]);
+    rail([-MX, MY, MZ0], [-MX, MY, MZB]); rail([-MX, MY, MZB], [MX, MY, MZB]); rail([MX, MY, MZB], [MX, MY, MZ0]); rail([MX, MY, MZ0], [W, MY, MZ0]); rail([-W + 1.2, MY, MZ0], [-MX, MY, MZ0]);
     // franja de palha embaixo da borda do mezanino (cara de quiosque) e colares de flor pendurados no guarda-corpo
     for (const [a, b] of [[[-MX, MZ0], [-MX, MZB]], [[-MX, MZB], [MX, MZB]], [[MX, MZB], [MX, MZ0]]]) {
       const L = Math.hypot(b[0] - a[0], b[1] - a[1]), n = Math.round(L / 0.12);
@@ -6953,34 +7081,34 @@ const INSIDE = (() => {
     }
     // escada pro mezanino (parede esquerda, sobe da entrada até a ponta do mezanino)
     {
-      const n = 13, z0 = 0.95, z1 = MZ0, x0 = -W, x1 = -W + 1.15;
+      const n = 15, z0 = 1.2, z1 = MZ0, x0 = -W, x1 = -W + 1.15;
       for (let i = 0; i < n; i++) { const za = z0 + ((z1 - z0) * i) / n, zb = z0 + ((z1 - z0) * (i + 1)) / n, y = (MY * (i + 1)) / n; st.box(x0, 0, za, x1, y, zb, i % 2 ? wood : woodD, { top: hex(0x7a5232) }); }
       for (let i = 0; i <= 6; i++) { const u = i / 6, z = z0 + (z1 - z0) * u, y = MY * u; st.tube([x1, y, z], [x1, y + 0.95, z], 0.022, 0.022, 4, bamboo); }
       st.tube([x1, 0.95, z0], [x1, MY + 0.95, z1], 0.035, 0.035, 5, bambooD);
-      S(x0, z0, x1 + 0.05, z1);
+      S(x1 - 0.02, z0, x1 + 0.08, z1 - 0.6); // corrimão (a escada em si é andável: o jogo calcula a altura)
     }
     // ---- pista com piso de luz (as placas acendem pelo jogo) ----
-    const PX0 = -3, PZ0 = 5.0, TS = 0.75, NX = 8, NZ = 7;
+    const PX0 = -4.5, PZ0 = 6.0, TS = 0.75, NX = 12, NZ = 10;
     st.box(PX0 - 0.12, 0, PZ0 - 0.12, PX0 + NX * TS + 0.12, 0.03, PZ0 + NZ * TS + 0.12, hex(0xb8bcc4), { m: 1 });
     const tileG = new Mesh(); tileG.box(-TS / 2 + 0.03, 0.03, -TS / 2 + 0.03, TS / 2 - 0.03, 0.05, TS / 2 - 0.03, hex(0xffffff), { m: 2 });
     // ---- palco e cabine do DJ ----
-    st.box(-2.8, 0, 11.2, 2.8, 0.4, 13.5, blk, { top: hex(0x24202e) });
-    st.box(-2.8, 0.04, 11.17, 2.8, 0.1, 11.2, pink, { m: 2 });
-    S(-2.8, 11.2, 2.8, 13.5);
-    st.box(-1.5, 0.4, 11.55, 1.5, 1.32, 12.05, hex(0x1c1a24), { top: hex(0x2a2632) });
-    dec(fl, [0, 0.9, 11.54], [-1, 0, 0], [0, 1, 0], 2.6, 0.65, T.fDJ);
+    st.box(-3.2, 0, 15.0, 3.2, 0.4, 17.4, blk, { top: hex(0x24202e) });
+    st.box(-3.2, 0.04, 14.97, 3.2, 0.1, 15.0, pink, { m: 2 });
+    S(-3.2, 15.0, 3.2, 17.4);
+    st.box(-1.5, 0.4, 15.35, 1.5, 1.32, 15.85, hex(0x1c1a24), { top: hex(0x2a2632) });
+    dec(fl, [0, 0.9, 15.34], [-1, 0, 0], [0, 1, 0], 2.6, 0.65, T.fDJ);
     for (const sx of [-0.78, 0.78]) {
-      st.tf = M.T(sx, 1.32, 11.8);
+      st.tf = M.T(sx, 1.32, 15.6);
       st.box(-0.3, 0, -0.22, 0.3, 0.08, 0.22, hex(0x2a2a32)); st.tube([0, 0.08, 0], [0, 0.095, 0], 0.17, 0.17, 18, hex(0x101014));
       st.tube([0, 0.095, 0], [0, 0.1, 0], 0.06, 0.06, 10, sx < 0 ? pink : cyan); st.box(0.2, 0.08, 0.1, 0.26, 0.12, 0.16, C.metal, { m: 1 });
       st.tf = null;
     }
-    st.box(-0.24, 1.32, 11.62, 0.24, 1.42, 11.98, hex(0x2a2a32));
-    for (let k = 0; k < 4; k++) st.box(-0.18 + k * 0.1, 1.42, 11.7, -0.14 + k * 0.1, 1.45, 11.9, [pink, cyan, yel, hex(0x7dff9a)][k], { m: 2 });
+    st.box(-0.24, 1.32, 15.42, 0.24, 1.42, 15.78, hex(0x2a2a32));
+    for (let k = 0; k < 4; k++) st.box(-0.18 + k * 0.1, 1.42, 15.5, -0.14 + k * 0.1, 1.45, 15.7, [pink, cyan, yel, hex(0x7dff9a)][k], { m: 2 });
     for (const sx of [-1, 1]) {
-      const x = sx * 2.35;
-      st.box(x - 0.38, 0.4, 11.3, x + 0.38, 2.3, 12.0, blk);
-      for (const [y, r] of [[0.85, 0.26], [1.55, 0.26], [2.05, 0.1]]) { st.tube([x, y, 11.29], [x, y, 11.27], r, r, 14, hex(0x2a2832)); st.tube([x, y, 11.27], [x, y, 11.26], r * 0.35, r * 0.35, 10, hex(0x4a4652), 1); }
+      const x = sx * 2.75;
+      st.box(x - 0.38, 0.4, 15.1, x + 0.38, 2.3, 15.8, blk);
+      for (const [y, r] of [[0.85, 0.26], [1.55, 0.26], [2.05, 0.1]]) { st.tube([x, y, 15.09], [x, y, 15.07], r, r, 14, hex(0x2a2832)); st.tube([x, y, 15.07], [x, y, 15.06], r * 0.35, r * 0.35, 10, hex(0x4a4652), 1); }
     }
     // neon da casa no fundo (embaixo do mezanino de trás) e coqueiros de neon dos lados
     dec(fl, [0, 2.3, D - 0.04], [-1, 0, 0], [0, 1, 0], 4.6, 0.86, T.fNeon, [1.6, 1.6, 1.6]);
@@ -6991,43 +7119,43 @@ const INSIDE = (() => {
       for (let k = 0; k < 6; k++) { const tip = [p[0] + (k - 2.5) * 0.24 * s, p[1] + Math.sin(k * 1.1) * 0.12 - 0.15 * s, p[2] - 0.04], mid = [(p[0] + tip[0]) / 2, p[1] + 0.12 * s, p[2] - 0.04]; m.tube(p, mid, 0.025, 0.025, 4, pink, 2); m.tube(mid, tip, 0.025, 0.02, 4, pink, 2); }
       void nx;
     };
-    neonPalm(thin, 3.6, 0.45, D - 0.08, 0, 1.0); neonPalm(thin, -3.6, 0.45, D - 0.08, 0, 1.0);
+    neonPalm(thin, 4.6, 0.45, D - 0.08, 0, 1.0); neonPalm(thin, -4.6, 0.45, D - 0.08, 0, 1.0);
     // ---- bar do Kiko (embaixo do mezanino da direita) ----
     {
-      const x0 = 4.6, x1 = 5.15, z0 = 6.7, z1 = 12.0;
+      const x0 = 6.1, x1 = 6.65, z0 = 8.5, z1 = 15.5;
       st.box(x0, 0, z0, x1, 1.08, z1, bamboo, { top: hex(0x6a4422) });
       for (let z = z0 + 0.1; z < z1; z += 0.16) st.tube([x0 - 0.01, 0, z], [x0 - 0.01, 1.0, z], 0.045, 0.045, 5, ((z * 7) | 0) % 2 ? bamboo : bambooD, 0, { cap: false });
       S(x0, z0, x1, z1);
       st.box(W - 0.45, 0, z0, W, 0.9, z1, woodD, { top: wood });
       for (let k = 0; k < 2; k++) st.box(W - 0.4, 1.4 + k * 0.5, z0, W, 1.44 + k * 0.5, z1, wood);
       const bc = [0x2fae6a, 0xff8a1f, 0xffd23f, 0x3fd0ff, 0xff4fa3, 0x8a5a2a, 0xe0302b, 0xf4f4f4];
-      for (let k = 0; k < 2; k++) for (let i = 0; i < 24; i++) { const z = z0 + 0.15 + i * 0.22, y = 1.44 + k * 0.5, c = hex(bc[(i * 3 + k) % bc.length]); st.tube([W - 0.22, y, z], [W - 0.22, y + 0.22, z], 0.04, 0.04, 6, c, 3); st.tube([W - 0.22, y + 0.22, z], [W - 0.22, y + 0.3, z], 0.04, 0.014, 6, c, 3); }
+      for (let k = 0; k < 2; k++) for (let i = 0; i < 31; i++) { const z = z0 + 0.15 + i * 0.22, y = 1.44 + k * 0.5, c = hex(bc[(i * 3 + k) % bc.length]); st.tube([W - 0.22, y, z], [W - 0.22, y + 0.22, z], 0.04, 0.04, 6, c, 3); st.tube([W - 0.22, y + 0.22, z], [W - 0.22, y + 0.3, z], 0.04, 0.014, 6, c, 3); }
       // coco com canudinho, copos e abacaxi no balcão
-      for (const [z, k] of [[7.4, 0], [8.6, 1], [10.1, 2], [11.3, 0]]) {
-        if (k === 0) { st.ball([4.88, 1.17, z], 0.09, hex(0x5a8a2a), 0, 7, 5); st.tube([4.88, 1.22, z], [4.82, 1.36, z + 0.03], 0.008, 0.008, 3, pink); }
-        else if (k === 1) for (let j = 0; j < 3; j++) st.tube([4.85, 1.08, z + j * 0.12], [4.85, 1.22, z + j * 0.12], 0.035, 0.04, 7, [yel, pink, hex(0xff8a1f)][j], 3);
-        else { st.ball([4.88, 1.2, z], 0.1, hex(0xf0b030), 0, 7, 5, { sy: 1.3 }); for (let j = 0; j < 5; j++) leafQ(st, [4.88, 1.3, z], [4.88 + Math.cos(j * 1.25) * 0.08, 1.48, z + Math.sin(j * 1.25) * 0.08], 0.03, leaf); }
+      for (const [z, k] of [[9.2, 0], [10.8, 1], [12.6, 2], [14.4, 0]]) {
+        if (k === 0) { st.ball([6.38, 1.17, z], 0.09, hex(0x5a8a2a), 0, 7, 5); st.tube([6.38, 1.22, z], [6.32, 1.36, z + 0.03], 0.008, 0.008, 3, pink); }
+        else if (k === 1) for (let j = 0; j < 3; j++) st.tube([6.35, 1.08, z + j * 0.12], [6.35, 1.22, z + j * 0.12], 0.035, 0.04, 7, [yel, pink, hex(0xff8a1f)][j], 3);
+        else { st.ball([6.38, 1.2, z], 0.1, hex(0xf0b030), 0, 7, 5, { sy: 1.3 }); for (let j = 0; j < 5; j++) leafQ(st, [6.38, 1.3, z], [6.38 + Math.cos(j * 1.25) * 0.08, 1.48, z + Math.sin(j * 1.25) * 0.08], 0.03, leaf); }
       }
-      dec(fl, [W - 0.04, 2.45, 9.35], [0, 0, 1], [0, 1, 0], 1.6, 0.8, T.fBar);
-      for (const z of [7.2, 9.3, 11.4]) pendant(st, 5.0, 2.35, z, [pink, yel, cyan][(z | 0) % 3]);
+      dec(fl, [W - 0.04, 2.45, 12.0], [0, 0, 1], [0, 1, 0], 1.6, 0.8, T.fBar);
+      for (const z of [9.5, 12.0, 14.5]) pendant(st, 6.4, 2.35, z, [pink, yel, cyan][(z | 0) % 3]);
     }
     // ---- mesa de salgadinhos e refri (embaixo do mezanino da esquerda) ----
     {
-      const x0 = -W, x1 = -5.55, z0 = 7.0, z1 = 10.2;
+      const x0 = -W, x1 = -7.55, z0 = 9.0, z1 = 12.4;
       st.box(x0, 0, z0, x1, 0.82, z1, hex(0xff4fa3), { top: hex(0xfff0f6) });
       for (let z = z0; z < z1; z += 0.3) st.box(x1 - 0.005, 0.5, z, x1 + 0.005, 0.82, z + 0.15, hex(0xffffff));
       S(x0, z0, x1, z1);
-      for (const [z, c] of [[7.35, 0xd88a3a], [8.0, 0xe8b840], [8.7, 0xc8702a], [9.4, 0xe8c860]]) {
-        st.tube([-6.0, 0.82, z], [-6.0, 0.9, z], 0.14, 0.2, 10, hex(0xf4f4f4));
-        for (let j = 0; j < 6; j++) st.ball([-6.0 + Math.cos(j * 1.05) * 0.09, 0.93, z + Math.sin(j * 1.05) * 0.09], 0.045, hex(c), 0, 5, 3);
+      for (const [z, c] of [[9.35, 0xd88a3a], [10.0, 0xe8b840], [10.7, 0xc8702a], [11.4, 0xe8c860]]) {
+        st.tube([-8.0, 0.82, z], [-8.0, 0.9, z], 0.14, 0.2, 10, hex(0xf4f4f4));
+        for (let j = 0; j < 6; j++) st.ball([-8.0 + Math.cos(j * 1.05) * 0.09, 0.93, z + Math.sin(j * 1.05) * 0.09], 0.045, hex(c), 0, 5, 3);
       }
-      for (let j = 0; j < 4; j++) { const z = 9.75 + (j % 2) * 0.16, x = -6.2 + ((j / 2) | 0) * 0.16, c = hex([0x3a1a10, 0x2fae6a, 0xff8a1f, 0x3a1a10][j]); st.tube([x, 0.82, z], [x, 1.1, z], 0.045, 0.045, 7, c, 3); st.tube([x, 1.1, z], [x, 1.2, z], 0.045, 0.018, 7, c, 3); }
-      for (let j = 0; j < 4; j++) st.tube([-5.75, 0.82 + j * 0.03, 7.0 + 0.1], [-5.75, 0.85 + j * 0.03, 7.1], 0.04, 0.045, 7, hex(0xf4f4f4));
-      dec(fl, [-W + 0.04, 1.4, 8.6], [0, 0, -1], [0, 1, 0], 2.0, 0.25, T.fSnack);
+      for (let j = 0; j < 4; j++) { const z = 11.75 + (j % 2) * 0.16, x = -8.2 + ((j / 2) | 0) * 0.16, c = hex([0x3a1a10, 0x2fae6a, 0xff8a1f, 0x3a1a10][j]); st.tube([x, 0.82, z], [x, 1.1, z], 0.045, 0.045, 7, c, 3); st.tube([x, 1.1, z], [x, 1.2, z], 0.045, 0.018, 7, c, 3); }
+      for (let j = 0; j < 4; j++) st.tube([-7.75, 0.82 + j * 0.03, 9.1], [-7.75, 0.85 + j * 0.03, 9.1], 0.04, 0.045, 7, hex(0xf4f4f4));
+      dec(fl, [-W + 0.04, 1.4, 10.6], [0, 0, -1], [0, 1, 0], 2.0, 0.25, T.fSnack);
     }
     // ---- entrada: tochas tiki, plantas grandes, mesinhas altas e boas-vindas ----
     for (const sx of [-1, 1]) {
-      const x = sx * 2.1, z = 0.9;
+      const x = sx * 2.4, z = 1.0;
       st.tube([x, 0, z], [x, 1.55, z], 0.045, 0.04, 6, bamboo); st.tube([x, 1.5, z], [x, 1.72, z], 0.08, 0.11, 8, woodD);
       thin.ball([x, 1.85, z], 0.08, hex(0xff9a2a), 2, 7, 5, { sy: 1.7 }); thin.ball([x, 1.8, z], 0.05, hex(0xffe14d), 2, 6, 4, { sy: 1.4 });
       S(x - 0.12, z - 0.12, x + 0.12, z + 0.12);
@@ -7037,51 +7165,59 @@ const INSIDE = (() => {
       for (let k = 0; k < 9; k++) { const a = k * 0.7, r = (0.5 + (k % 3) * 0.18) * s, h = (1.1 + (k % 4) * 0.25) * s; leafQ(st, [x, 0.55 * s, z], [x + Math.cos(a) * r, h, z + Math.sin(a) * r], 0.16 * s, k % 2 ? leaf : leafD); }
       S(x - 0.32 * s, z - 0.32 * s, x + 0.32 * s, z + 0.32 * s);
     };
-    plant(-5.4, 0.7); plant(5.6, 0.7); plant(-3.3, 12.9, 0.9); plant(3.3, 12.9, 0.9); plant(5.85, 13.2, 1.1);
-    const tables = [[-2.9, 3.0], [2.9, 3.0]];
+    plant(-6.4, 0.8); plant(7.6, 0.8); plant(-3.9, 16.6, 0.9); plant(3.9, 16.6, 0.9); plant(7.6, 16.6, 1.1); plant(-7.6, 16.6, 1.1);
+    const tables = [[-3.6, 3.4], [3.6, 3.4], [-5.4, 5.0], [5.4, 5.0]];
     for (const [x, z] of tables) { st.tube([x, 0, z], [x, 1.05, z], 0.035, 0.035, 6, C.metal, 1); st.tube([x, 0, z], [x, 0.03, z], 0.22, 0.22, 10, C.metal, 1); st.tube([x, 1.05, z], [x, 1.08, z], 0.32, 0.32, 14, bamboo); S(x - 0.34, z - 0.34, x + 0.34, z + 0.34); }
     dec(fl, [0, 2.65, 0.04], [1, 0, 0], [0, 1, 0], 2.2, 0.28, T.fWelcome);
     // ---- pranchas de surfe nas paredes (lá em cima, acima do mezanino) ----
-    for (const sx of [-1, 1]) for (const [k, z] of [[0, 7.4], [1, 9.6], [2, 11.8]]) {
+    for (const sx of [-1, 1]) for (const [k, z] of [[0, 9.5], [1, 12.5], [2, 15.5]]) {
       const x = sx * (W - 0.1), c = [hex(0xff8a1f), cyan, pink][(k + (sx > 0 ? 1 : 0)) % 3];
-      st.ball([x, 4.6, z], 0.5, c, 0, 10, 6, { sx: 0.06, sy: 2.4, sz: 0.55 });
-      st.box(x - 0.035, 3.55, z - 0.04, x + 0.035, 5.65, z + 0.04, hex(0xffffff));
+      st.ball([x, 5.4, z], 0.5, c, 0, 10, 6, { sx: 0.06, sy: 2.4, sz: 0.55 });
+      st.box(x - 0.035, 4.35, z - 0.04, x + 0.035, 6.45, z + 0.04, hex(0xffffff));
     }
     // ---- mezanino: mesinhas altas com banquinhos ----
-    for (const [x, z] of [[-5.5, 8.0], [-5.5, 11.4], [5.5, 8.0], [5.5, 11.4], [-2.6, 14.3], [2.6, 14.3]]) {
+    for (const [x, z] of [[-7.4, 9.6], [-7.4, 13.6], [7.4, 9.6], [7.4, 13.6], [-3.8, 19.0], [3.8, 19.0]]) {
+      SU(x - 0.32, z - 0.32, x + 0.32, z + 0.32);
       st.tube([x, MY, z], [x, MY + 1.0, z], 0.03, 0.03, 6, C.metal, 1); st.tube([x, MY + 1.0, z], [x, MY + 1.03, z], 0.28, 0.28, 12, bamboo);
-      for (const d of [-0.45, 0.45]) { st.tube([x + (Math.abs(x) > 5 ? 0 : d), MY, z + (Math.abs(x) > 5 ? d : 0)], [x + (Math.abs(x) > 5 ? 0 : d), MY + 0.66, z + (Math.abs(x) > 5 ? d : 0)], 0.025, 0.025, 4, C.metal, 1); st.tube([x + (Math.abs(x) > 5 ? 0 : d), MY + 0.66, z + (Math.abs(x) > 5 ? d : 0)], [x + (Math.abs(x) > 5 ? 0 : d), MY + 0.7, z + (Math.abs(x) > 5 ? d : 0)], 0.16, 0.16, 10, pink); }
+      for (const d of [-0.45, 0.45]) { st.tube([x + (Math.abs(x) > 6 ? 0 : d), MY, z + (Math.abs(x) > 6 ? d : 0)], [x + (Math.abs(x) > 6 ? 0 : d), MY + 0.66, z + (Math.abs(x) > 6 ? d : 0)], 0.025, 0.025, 4, C.metal, 1); st.tube([x + (Math.abs(x) > 6 ? 0 : d), MY + 0.66, z + (Math.abs(x) > 6 ? d : 0)], [x + (Math.abs(x) > 6 ? 0 : d), MY + 0.7, z + (Math.abs(x) > 6 ? d : 0)], 0.16, 0.16, 10, pink); }
     }
     // ---- teto: folhas de palmeira penduradas e o cordão de luzinhas em zigue-zague ----
-    for (let k = 0; k < 14; k++) {
-      const x = -MX + 0.4 + (k % 7) * 1.25, z = k < 7 ? 5.2 : 11.0, a = k * 1.7;
+    for (let k = 0; k < 18; k++) {
+      const x = -MX + 0.5 + (k % 9) * 1.35, z = k < 9 ? 6.4 : 14.2, a = k * 1.7;
       for (let j = 0; j < 4; j++) { const b = a + j * 1.57; leafQ(thin, [x, H, z], [x + Math.cos(b) * 0.9, H - 0.75 - (j % 2) * 0.3, z + Math.sin(b) * 0.9], 0.22, j % 2 ? leaf : leafD); }
     }
     const bulbs = [];
-    for (let k = 0; k < 6; k++) {
-      const z = 4.2 + k * 1.75, a = [-MX, H - 0.5, z], b = [MX, H - 0.5, z + 0.9];
+    for (let k = 0; k < 8; k++) {
+      const z = 4.4 + k * 1.75, a = [-MX, H - 0.5, z], b = [MX, H - 0.5, z + 0.9];
       for (let j = 0; j <= 16; j++) { const u = j / 16, p = V.lerp(a, b, u); p[1] -= Math.sin(u * Math.PI) * 0.6; if (j) thin.tube(V.lerp(a, b, (j - 1) / 16).map((v, i) => (i === 1 ? H - 0.5 - Math.sin(((j - 1) / 16) * Math.PI) * 0.6 : v)), p, 0.006, 0.006, 3, blk, 0, { cap: false }); thin.ball(p, 0.04, [pink, yel, cyan, hex(0x7dff9a), purple][(j + k) % 5], 2, 5, 3); bulbs.push(p); }
     }
     const up = (m, o) => Rn.upload(m, o);
     const tileUp = up(tileG, { outline: false });
+    // moving heads no teto (cabeça preta + feixe de luz) e lasers saindo da cabine do DJ
+    const headG = up((() => { const m = new Mesh(); m.box(-0.14, -0.1, -0.14, 0.14, 0.12, 0.14, blk); m.tube([0, -0.1, 0], [0, -0.16, 0], 0.1, 0.1, 8, hex(0xffffff), 2); return m; })());
+    const beamG = [pink, cyan, purple, yel, hex(0x5fe08a), hex(0xffffff)].map((c) => up((() => { const m = new Mesh(); m.tube([0, 0, 0], [0, -1, 0], 0.04, 0.38, 10, c, 6, { cap: false }); return m; })(), { outline: false }));
+    const laserG = [hex(0x5fe08a), pink, cyan].map((c) => up((() => { const m = new Mesh(); m.tube([0, 0, 0], [0, 0, 1], 0.012, 0.012, 4, c, 2); return m; })(), { outline: false }));
+    const heads = [], beams = [], lasers = [];
+    for (let k = 0; k < 6; k++) { const x = -3.6 + k * 1.44, z = k % 2 ? 8.2 : 11.6; heads.push({ g: headG, mo: M.T(x, H - 0.25, z), x, z }); beams.push({ g: beamG[k], mo: M.I(), x, z, k }); }
+    for (let k = 0; k < 6; k++) lasers.push({ g: laserG[k % 3], mo: M.I(), k, hidden: true });
     const floor = [];
     for (let i = 0; i < NX; i++) for (let j = 0; j < NZ; j++) floor.push({ g: tileUp, mo: M.T(PX0 + (i + 0.5) * TS, 0, PZ0 + (j + 0.5) * TS), tint: [1, 1, 1], i, j });
-    const lights = [[-2, 5.4, 6.2], [2, 5.4, 6.2], [-2, 5.4, 9.8], [2, 5.4, 9.8], [0, 3.0, 12.2], [5.2, 2.3, 7.6], [5.2, 2.3, 11.0], [-5.6, 2.3, 8.6], [0, 2.4, 1.6], [-2.1, 1.9, 0.9], [2.1, 1.9, 0.9], [-5.5, 5.0, 10.0], [5.5, 5.0, 10.0], [0, 5.0, 14.3], [0, 2.3, 14.6]];
+    // luzes: 0-5 pista (piscam no ritmo), 6-7 palco, 8-10 bar, 11 salgadinho, 12-14 entrada e tochas, 15-18 mezanino, 19 neon do fundo
+    const lights = [[-3, 5.6, 7.5], [0, 5.6, 7.5], [3, 5.6, 7.5], [-3, 5.6, 12], [0, 5.6, 12], [3, 5.6, 12], [-1.5, 3.2, 16.2], [1.5, 3.2, 16.2], [6.6, 2.3, 9.6], [6.6, 2.3, 12.2], [6.6, 2.3, 14.6], [-7.6, 2.3, 10.6], [0, 2.4, 1.6], [-2.4, 2.0, 1.0], [2.4, 2.0, 1.0], [-7.2, 5.4, 11], [7.2, 5.4, 11], [-3, 5.4, 18.8], [3, 5.4, 18.8], [0, 2.4, 19.6]];
     const P2 = (x, z) => ({ x, z });
     const spots = [
       { id: "door", x: 0, z: 0.55, r: 0.62, act: "door", label: "Sair da festa" },
-      { id: "snack", x: -5.05, z: 8.4, r: 0.6, act: "snack", label: "Pegar um salgadinho", face: [-6.2, 8.4] },
-      { id: "bar", x: 4.1, z: 9.3, r: 0.6, act: "drink", label: "Pedir um refri no bar", face: [5.2, 9.3] },
-      { id: "dance", x: 0, z: 7.6, r: 1.3, act: "dance", label: "Dançar" },
-      { id: "dj", x: 0, z: 10.75, r: 0.55, act: "talk", who: "lucas", label: "Falar com o DJ Luskinha", face: [0, 12.5] },
+      { id: "snack", x: -7.05, z: 10.4, r: 0.6, act: "snack", label: "Pegar um salgadinho", face: [-8.2, 10.4] },
+      { id: "bar", x: 5.6, z: 12.0, r: 0.6, act: "drink", label: "Pedir um refri no Kiko", face: [6.6, 12.0] },
+      { id: "dj", x: 0, z: 14.55, r: 0.55, act: "talk", who: "lucas", label: "Falar com o DJ Luskinha", face: [0, 16.4] },
     ];
     void P2;
     return {
       id: "festa", name: "ALOHA CLUB", W, D, H, MY, base: [{ g: up(fl, { outline: false }), tex }, { g: up(st), tex }, { g: up(thin, { outline: false }), tex }],
-      dyn: { floor }, decks: [], solids, spots, lights, tables, ball: [0, 7.6], floorRect: [PX0, PZ0, NX, NZ, TS],
+      dyn: { floor, heads, beams, lasers }, decks: [], solids, solidsUp, spots, lights, tables, ball: [0, 10.0], floorRect: [PX0, PZ0, NX, NZ, TS], MX, MZ0, MZB, stairs: [-W, -W + 1.15, 1.2, MZ0],
       npcs: [],
       spawn: [0, 1.5, 0],
-      scene: { sun: V.norm([0.18, 0.95, 0.22]), top: hex(0x14102a), mid: hex(0x14102a), hz: hex(0x14102a), fog: hex(0x14102a), fogd: 0.012, shade: hex(0x3a2a6a), ink: hex(0x0a0814), ink_w: 1.5, amb: [0.62, 0.52, 0.8], night: 0.75, wet: 0, winc: [9, 9, 9] },
+      scene: { sun: V.norm([0.18, 0.95, 0.22]), top: hex(0x0c0820), mid: hex(0x0c0820), hz: hex(0x0c0820), fog: hex(0x120a2a), fogd: 0.022, shade: hex(0x2a1a5a), ink: hex(0x05030c), ink_w: 1.5, amb: [0.46, 0.38, 0.7], night: 0.9, wet: 0, winc: [9, 9, 9], uv: 0.85 },
     };
   }
   return { T, makeTex, buildDiscos, buildLan, buildSorveteria, buildFesta, coverURL, labelURL, drawCover, palOf, LINES, phoneMesh };
@@ -7629,6 +7765,7 @@ const STREET = (() => {
     const POSE = (o) => Object.assign({ stand: 1, walk: 1, px: 0, py: 0.94, pz: 0, lean: 0.04, twist: 0, hy: 0, hp: 0.04, hr: 0, roll: 0, hF: [0.04, 0.95, 0.27], hB: [0.02, 0.95, -0.27], lf: 0, lb: 0, fxF: 0, fxB: 0, fzF: 0.1, fzB: -0.1 }, o);
     const SITP = (t, o) => POSE(Object.assign({ stand: 0, walk: 0, px: -0.06, py: 0.68, lean: 0.14, hp: 0.12, hF: [0.42, 0.86, 0.13], hB: [0.42, 0.86, -0.13], fxF: 0.36, fxB: 0.36, fzF: 0.1, fzB: -0.1 }, o));
     function enterPlace(id) {
+      if (id === "festa" && /^manu/.test(lookKey() || "")) { say("A MANU PREFERE FICAR EM CASA (VIDEOGAME E SORVETE)", 2.6, true); return false; }
       const R = roomOf(id);
       if (REC) recStop();
       if (PH) photoOff();
@@ -7658,6 +7795,7 @@ const STREET = (() => {
       ui.inside && ui.inside("exit", { id });
     }
     function blockedIn(x, z) {
+      if (IN.R.id === "festa") return festaBlocked(x, z);
       const RW = IN.R.W - 0.28, RD = IN.R.D - 0.28;
       if (x < -RW || x > RW || z < 0.28 || z > RD) return true;
       const r = 0.27;
@@ -8042,34 +8180,36 @@ const STREET = (() => {
       if (IN.phones && rig.F) { Dy.headP.g = phoneG(); Dy.headP.mo = M.mul(rig.F[CHARS.BONE.head], M.S(look.headScale || 1, look.headScale || 1, look.headScale || 1)); }
     }
     // ================= festa no Aloha Club =================
-    // elenco: a turma (quem você não está jogando aparece como NPC), Julie, DJ Luskinha, Mila, Diogo, os primos
-    // Cabeça e Breno, Ana Lívia e a galera dançando (alguns lá em cima no mezanino)
-    const FESTA_CAST = [
-      { look: "lucas", who: "lucas", x: 0, z: 12.55, y: 0.4, yaw: Math.PI / 2, idle: "dj" },
-      { look: "julie", who: "julie", x: 3.25, z: 8.25, yaw: Math.PI * 0.62 },
-      { look: "kf", who: "kf", x: 3.0, z: 9.2, yaw: -Math.PI * 0.4 },
-      { look: "kaua", who: "kaua", x: -4.95, z: 8.9, yaw: Math.PI, idle: "shy" },
-      { look: "mila", who: "mila", x: -1.9, z: 9.75, yaw: Math.PI * 0.55, dance: 3 },
-      { look: "gabi", who: "gabi", x: 2.2, z: 3.0, yaw: 0.1 },
-      { look: "diogo", who: "diogo", x: 3.4, z: 3.65, yaw: Math.PI * 0.85 },
-      { look: "kauane", who: "kauane", x: -2.2, z: 3.05, yaw: Math.PI },
-      { look: "cabeca", who: "cabeca", x: -3.45, z: 3.7, yaw: -0.5 },
-      { look: "breno", who: "breno", x: -3.55, z: 2.4, yaw: 0.5 },
-      { look: "analivia", who: "analivia", x: -2.45, z: 2.3, yaw: 2.6 },
-      { look: "fx0", who: "fx", x: -2.2, z: 5.9, yaw: 0.4, dance: 0 },
-      { look: "fx1", who: "fx", x: -0.6, z: 5.6, yaw: -1.2, dance: 1 },
-      { look: "fx2", who: "fx", x: 1.0, z: 6.1, yaw: 2.2, dance: 3 },
-      { look: "fx3", who: "fx", x: 2.3, z: 5.7, yaw: 1.4, dance: 2 },
-      { look: "fx4", who: "fx", x: -1.4, z: 7.3, yaw: -0.6, dance: 5 },
-      { look: "fx5", who: "fx", x: 1.6, z: 7.6, yaw: 2.8, dance: 6 },
-      { look: "fx6", who: "fx", x: -0.2, z: 7.1, yaw: 0.9, dance: 4 },
-      { look: "fx7", who: "fx", x: 0.3, z: 8.9, yaw: -2.0, dance: 0 },
-      { look: "fx8", who: "fx", x: 2.2, z: 6.6, yaw: 2.1, dance: 3 },
-      { look: "fx9", who: "fx", x: 0.9, z: 10.0, yaw: 1.6, dance: 1 },
-      { look: "fx10", who: "fx", x: -4.7, z: 9.0, y: 3.2, yaw: 0, idle: "rail" },
-      { look: "fx11", who: "fx", x: 1.2, z: 13.85, y: 3.2, yaw: Math.PI / 2, idle: "rail" },
-    ];
-    Object.assign(WHO, { lucas: "DJ Luskinha", mila: "Mila", diogo: "Diogo", cabeca: "Cabeça", breno: "Breno", analivia: "Ana Lívia", kaua: "Kauã", gabi: "Gabi", kauane: "Kauane", fx: "" });
+    // elenco fixo: a turma (quem você joga some da lista de NPCs), Julie, DJ Luskinha, Mila, Diogo, os primos Cabeça
+    // e Breno, Ana Lívia, o Kiko no bar e a galera: dançando na pista, olhando do mezanino, no bar e andando por aí
+    const FESTA_CAST = (() => {
+      const C = [
+        { look: "lucas", who: "lucas", x: 0, z: 16.4, y: 0.4, yaw: Math.PI / 2, idle: "dj" },
+        { look: "julie", who: "julie", x: 4.35, z: 11.4, yaw: Math.PI * 0.62 },
+        { look: "kf", who: "kf", x: 4.1, z: 12.35, yaw: -Math.PI * 0.4 },
+        { look: "kaua", who: "kaua", x: -6.95, z: 10.9, yaw: Math.PI, idle: "shy" },
+        { look: "mila", who: "mila", x: -3.0, z: 12.6, yaw: Math.PI * 0.55, dance: 13 },
+        { look: "gabi", who: "gabi", x: 2.9, z: 3.4, yaw: 0.1 },
+        { look: "diogo", who: "diogo", x: 4.3, z: 4.05, yaw: Math.PI * 0.85 },
+        { look: "kauane", who: "kauane", x: -2.9, z: 3.45, yaw: Math.PI },
+        { look: "cabeca", who: "cabeca", x: -4.25, z: 4.1, yaw: -0.5 },
+        { look: "breno", who: "breno", x: -4.35, z: 2.75, yaw: 0.5 },
+        { look: "analivia", who: "analivia", x: -3.15, z: 2.6, yaw: 2.6 },
+        { look: "fx27", who: "kiko", x: 7.45, z: 12.0, yaw: Math.PI, idle: "bar" },
+      ];
+      // pista (14), mezanino (5 no guarda-corpo + 2 dançando), bar (2), entrada (2) e 2 andando
+      const floor = [[-3.8, 6.6], [-2.2, 6.4], [-0.6, 6.7], [1.0, 6.4], [2.6, 6.8], [4.0, 6.5], [-3.6, 8.2], [-1.6, 8.0], [2.2, 8.2], [3.9, 8.6], [-4.0, 9.8], [-1.0, 11.0], [3.6, 10.2], [1.4, 12.9]];
+      const moves = [0, 1, 2, 3, 4, 6, 8, 9, 10, 11, 13, 5, 7, 0];
+      floor.forEach(([x, z], i) => C.push({ look: "fx" + i, who: "fx", x, z, yaw: Math.atan2(-(10 - z), 0 - x) + (i % 3 - 1) * 0.6, dance: moves[i], boff: (i * 0.037) % 0.12, amp: 0.8 + (i % 4) * 0.12 }));
+      const rail = [[-6.15, 9.0, 0], [-6.15, 13.2, 0], [6.15, 10.2, Math.PI], [6.15, 13.6, Math.PI], [-1.2, 17.85, Math.PI / 2]];
+      rail.forEach(([x, z, yaw], i) => C.push({ look: "fx" + (16 + i), who: "fx", x, z, y: 3.4, yaw, idle: "rail" }));
+      C.push({ look: "fx23", who: "fx", x: -5.2, z: 18.9, y: 3.4, yaw: 0.4, dance: 12, boff: 0.05 }, { look: "fx24", who: "fx", x: 5.6, z: 18.9, y: 3.4, yaw: 2.5, dance: 3, boff: 0.08 });
+      C.push({ look: "fx25", who: "fx", x: 5.5, z: 9.6, yaw: 0, dance: 12 }, { look: "fx26", who: "fx", x: 5.5, z: 14.2, yaw: 0.2, dance: 12, boff: 0.1 });
+      C.push({ look: "fx21", who: "fx", x: 1.7, z: 2.3, yaw: 2.4, idle: "talk2" }, { look: "fx22", who: "fx", x: 1.0, z: 3.0, yaw: -0.7, idle: "talk2" });
+      C.push({ look: "fx14", who: "fx", x: -1.0, z: 4.5, yaw: 0, walk: [[-1.0, 4.5], [-5.6, 7.6], [-6.4, 13.5], [-4.8, 14.2], [-1.0, 4.5]] }, { look: "fx15", who: "fx", x: 5.0, z: 5.5, yaw: 0, walk: [[5.0, 5.5], [5.4, 15.6], [4.6, 16.2], [1.6, 5.0], [5.0, 5.5]] });
+      return C;
+    })();
+    Object.assign(WHO, { lucas: "DJ Luskinha", mila: "Mila", diogo: "Diogo", cabeca: "Cabeça", breno: "Breno", analivia: "Ana Lívia", kaua: "Kauã", gabi: "Gabi", kauane: "Kauane", kiko: "Kiko do bar", fx: "", batalha: "BATALHA" });
     const FLINES = {
       lucas: ["Fala, parceiro! Tá curtindo o set?", "Hoje eu trouxe só pedrada dos anos 90. Segura essa!", "Quer outra? Aperta N que eu solto a próxima.", "Daqui a pouco tem surpresa... fica ligado."],
       julie: ["Esse DJ é muito bom, né?", "Você dança, garoto tubarão? Hehe.", "Que bom que você veio."],
@@ -8082,58 +8222,66 @@ const STREET = (() => {
       analivia: ["Ai, amei a decoração!", "Você viu a Kauane? Ela tá linda hoje.", "Esse colar de flor combina com tudo, né?"],
       gabi: ["Que festa massa!", "Já foi no bar? Tem água de coco.", "Olha a decoração... parece praia."],
       kauane: ["Hmpf. Até que tá legal.", "Se alguém pisar no meu tênis, briga.", "O Lucas manda bem, vai."],
-      fx: ["Essa música é muito boa!", "Já pegou um colar de flor? Deram na porta!", "O DJ tá on fire hoje!", "Bora pra pista!", "Aloha! Hahaha."],
+      kiko: ["Refri, suco ou água de coco? Hoje é por conta da casa!", "Aloha! O abacaxi é só enfeite, hein.", "Essa pista tá pegando fogo hoje."],
+      fx: ["Essa música é muito boa!", "Já pegou um colar de flor? Deram na porta!", "O DJ tá on fire hoje!", "Bora pra pista!", "Aloha! Hahaha.", "Você viu o cara dançando break? Brabo!", "Tô sem voz de tanto cantar."],
     };
-    // passinhos (no tempo da música, ~125 bpm): 0 dois-pra-lá, 1 sobe-e-desce com a mão pra cima, 2 corridinha,
-    // 3 balanço de quadril com mão no cabelo, 4 dedo pro alto (discoteca), 5 robô, 6 pulinho eurodance, 7 só balança a cabeça
-    function DANCE(k, t, ph) {
-      const b = (t + ph * 0.13) * Math.PI * 2 * 2.08, s = Math.sin(b), c = Math.cos(b), h = Math.sin(b / 2), up = Math.abs(s);
-      switch (k % 8) {
-        case 0: return POSE({ py: 0.92 + up * 0.03, twist: h * 0.25, hy: h * 0.2, hp: 0.04, fzF: 0.12 + Math.max(0, h) * 0.12, fzB: -0.12 + Math.min(0, h) * 0.12, hF: [0.25, 1.05 + up * 0.08, 0.22], hB: [0.25, 1.05 + up * 0.08, -0.22], lf: Math.max(0, s) * 0.05, lb: Math.max(0, -s) * 0.05 });
-        case 1: return POSE({ py: 0.9 + up * 0.05, lean: -0.04, hp: -0.12, twist: h * 0.12, hF: [0.12, 1.75 + up * 0.15, 0.22], hB: [0.12, 1.75 + up * 0.15, -0.22] });
-        case 2: return POSE({ py: 0.92 + up * 0.03, lean: 0.12, fxF: s * 0.18, fxB: -s * 0.18, lf: Math.max(0, c) * 0.12, lb: Math.max(0, -c) * 0.12, hF: [-s * 0.2 + 0.1, 1.1, 0.25], hB: [s * 0.2 + 0.1, 1.1, -0.25] });
-        case 3: return POSE({ py: 0.92 + up * 0.02, twist: h * 0.35, roll: h * 0.08, hy: -h * 0.3, hp: 0.0, hF: [0.05, 1.72, 0.12], hB: [0.05, 1.0 + up * 0.1, -0.28] });
-        case 4: { const hi = h > -0.2; return POSE({ py: 0.92 + up * 0.035, lean: 0.06, twist: h * 0.28, hy: h * 0.35, hp: -0.04, hF: hi ? [0.2, 1.78, 0.34] : [0.06, 0.98, 0.3], hB: [0.04, 0.98, -0.3], lf: Math.max(0, s) * 0.05, lb: Math.max(0, -s) * 0.05 }); }
-        case 5: { const st = Math.round(h * 2) / 2; return POSE({ py: 0.93, lean: 0.02, twist: st * 0.3, hy: -st * 0.4, hp: 0.05, hF: [0.32, 1.25 + st * 0.15, 0.3], hB: [0.32, 1.25 - st * 0.15, -0.3] }); }
-        case 6: { const j = Math.max(0, s); return POSE({ py: 0.9 + j * 0.12, lean: -0.02, hp: -0.15, hF: [0.1, 1.85, 0.3], hB: [0.1, 1.85, -0.3], lf: j * 0.12, lb: j * 0.12 }); }
-        default: return POSE({ py: 0.94, lean: 0.04, hp: 0.06 + up * 0.08, hy: h * 0.1, hF: [0.28, 1.2, 0.2], hB: [0.02, 0.95, -0.27] });
-      }
-    }
+    const SIGN = { kf: 20, kaua: 7, gabi: 6, kauane: 5, julie: 13 };
+    const PARTNER = { kf: "julie", julie: "kf", kaua: "mila", gabi: "diogo" };
+    // poses que não são passo de dança
     const SLOW_A = (t, gap) => POSE({ py: 0.94, lean: 0.05, twist: Math.sin(t * 1.3) * 0.08, hp: 0.12, hF: [0.25 + gap * 0.2, 1.08, 0.17], hB: [0.25 + gap * 0.2, 1.08, -0.17], fzF: 0.1, fzB: -0.1, fxF: Math.sin(t * 1.3) * 0.05, fxB: -Math.sin(t * 1.3) * 0.05 });
     const SLOW_B = (t, gap) => POSE({ py: 0.94, lean: 0.05, twist: -Math.sin(t * 1.3) * 0.08, hp: -0.06, hF: [0.24 + gap * 0.2, 1.45, 0.17], hB: [0.24 + gap * 0.2, 1.45, -0.17], fzF: 0.1, fzB: -0.1, fxF: -Math.sin(t * 1.3) * 0.05, fxB: Math.sin(t * 1.3) * 0.05 });
+    // a Julie deita a cabeça no peito do K.F. e ele abraça
+    const CHEST_A = (t) => POSE({ lean: 0.08, hp: 0.3, hy: -0.25, twist: Math.sin(t * 1.1) * 0.05, hF: [0.36, 1.22, 0.2], hB: [0.36, 1.18, -0.2], fzF: 0.11, fzB: -0.11 });
+    const CHEST_B = (t) => POSE({ lean: 0.2, hp: 0.12, hy: 0.85, hr: 0.25, twist: -Math.sin(t * 1.1) * 0.05, hF: [0.24, 1.32, 0.16], hB: [0.3, 1.2, -0.12], fzF: 0.09, fzB: -0.09 });
     const GIGGLE = (t) => POSE({ lean: 0.08 + Math.abs(Math.sin(t * 9)) * 0.03, twist: 0.15, hp: 0.14, hy: 0.25, hF: [0.2, 1.52, 0.05], hB: [0.18, 1.47, -0.07] });
     const SHY = (t) => POSE({ lean: 0.14, twist: 0.3, hy: -0.4, hp: 0.25, hF: [0.24, 1.66, 0.02], hB: [0.02, 0.98, -0.32] });
+    const SURPRISE = (t) => POSE({ lean: -0.06, hp: -0.06, hF: [0.18, 1.55, 0.06], hB: [0.16, 1.5, -0.06] });
+    const NUDGE = (t) => POSE({ lean: 0.04, twist: 0.3, hy: 0.5, hp: 0.02, hF: [0.1, 1.15, 0.42 + Math.max(0, Math.sin(t * 7)) * 0.08], hB: [0.2, 1.5, -0.05] });
     const yawTo = (x, z, tx, tz) => Math.atan2(-(tz - z), tx - x);
     let FS = null;
     const pkey = () => (lookKey() || "kf").replace(/_.*/, "");
+    const exprCache = {};
+    function setExpr(obj, face, e) {
+      if (!obj) return;
+      if (!e) { obj.face = null; return; }
+      const k = face + ":" + e;
+      if (!(k in exprCache)) exprCache[k] = CHARS.faceUV(face, e);
+      obj.face = exprCache[k];
+    }
+    const faceOfLook = (lk) => (ART.LOOKS[lk] && ART.LOOKS[lk].face) || lk;
     function festaEnter(R) {
       const pk = pkey();
-      FS = { pk, t: 0, main: 0, step: 0, slow: 0, slowAt: 0, slowK: 0, cup: null, wait: 0, call: 0 };
+      FS = { pk, t: 0, B: 0, bpm: 124, mt: null, main: 0, slow: 0, slowAt: 0, slowK: 0, cup: null, pairOk: 0, keys: {} };
       for (const n of R.npcR) {
         if (!n.home) n.home = { x: n.x, z: n.z, yaw: n.yaw, dance: n.dance, idle: n.idle };
-        Object.assign(n, n.home); n.ov = null; n.hide = n.who === pk; n.off = n.hide;
+        Object.assign(n, n.home); n.ov = null; n.goal = null; n.expr = null; n.hide = n.who === pk; n.off = n.hide; n.wi = 1; n.wait = 0;
+        setExpr(n.rig.objs[0], null, null);
       }
-      IN.disco = { on: true }; IN.ov = null; IN.cut = null; IN.cutCam = null; IN.dancing = null; IN.cup = null; IN.snack = 0;
+      Object.assign(IN, { disco: { on: true }, ov: null, cut: null, cutCam: null, dancing: null, cup: null, snack: 0, lv: 0, y: 0, pair: null, battle: null });
       ui.festa && ui.festa("on", { i: 0 });
       const hint = { kf: "A Julie tá perto do bar... vai lá dar um oi.", kaua: "Que tanto de gente... a mesa de salgadinho parece um bom esconderijo.", gabi: "Aquele cara de camiseta de reggae tá olhando sua pulseira...", kauane: "Ih... o Cabeça e o Breno tão ali na mesinha da esquerda.", julie: "O K.F. tá ali perto do bar." }[pk] || "Bora curtir a festa!";
-      IN.sayQ = [{ t: 1.2, who: "", line: hint }];
+      IN.sayQ = [{ t: 1.2, who: "", line: hint }, { t: 4.2, who: "", line: "Espaço dança · J troca o passo · K passo especial" + (pk === "kf" ? " (break!)" : "") + " · a escada da esquerda sobe pro mezanino" }];
     }
+    // música: a página manda o bpm da faixa e o segundo do vídeo; entre um aviso e outro a batida segue sozinha
+    function festaSync(d) { if (!FS) return; FS.bpm = d.bpm || FS.bpm; FS.slowNow = !!d.slow; if (d.t > 0) { const B = (d.t * FS.bpm) / 60; if (Math.abs(B - FS.B) > 0.4) FS.B = B; } }
     const fNpc = (who) => IN.R.npcR.find((n) => n.who === who || n.look === who);
-    // posiciona alguém (NPC ou você, se for o seu personagem) numa cena: x, z, yaw e a pose da hora
-    function place2(who, x, z, yaw, pose) {
-      if (who === FS.pk) { IN.ov = { x, z, yaw, pose }; IN.x = x; IN.z = z; IN.yaw = yaw; return; }
-      const n = fNpc(who); if (n) n.ov = { x, z, yaw, pose };
+    function place2(who, x, z, yaw, pose, e) {
+      if (who === FS.pk) { IN.ov = { x, z, yaw, pose }; IN.x = x; IN.z = z; IN.yaw = yaw; if (e !== undefined) setExpr(rig.objs[0], look.face, e); return; }
+      const n = fNpc(who); if (n) { n.ov = { x, z, yaw, pose }; if (e !== undefined) n.expr = e; }
     }
     function setHome(who, x, z, yaw, extra) {
       if (who === FS.pk) { IN.x = x; IN.z = z; IN.yaw = yaw; return; }
       const n = fNpc(who); if (!n) return;
       Object.assign(n, { x, z, yaw, dance: null, idle: null }, extra || {});
     }
-    function cutStart(shots, done) { IN.cut = { shots, t: 0, i: -1, done }; IN.dancing = null; IN.talk = null; ui.cut && ui.cut("start"); ui.inside && ui.inside("spot", null); }
+    // anda até um ponto (NPC); quando chega vira pra onde mandarem
+    function walkTo(who, x, z, face, then) { const n = fNpc(who); if (!n || n.hide) return; n.goal = { x, z, face, then }; }
+    function cutStart(shots, done) { IN.cut = { shots, t: 0, i: -1, done }; IN.dancing = null; IN.pair = null; IN.talk = null; ui.cut && ui.cut("start"); ui.inside && ui.inside("spot", null); }
     function cutEnd() {
       const C = IN.cut; if (!C) return;
       IN.cut = null; IN.cutCam = null; IN.ov = null; IN.cam.fov = 1.08;
-      for (const n of IN.R.npcR) n.ov = null;
+      for (const n of IN.R.npcR) { n.ov = null; if (n.expr && !n.keepExpr) n.expr = null; }
+      setExpr(rig.objs[0], null, null);
       ui.cut && ui.cut("end");
       C.done && C.done();
     }
@@ -8142,94 +8290,180 @@ const STREET = (() => {
       let acc = 0, i = 0;
       while (i < C.shots.length && C.t > acc + C.shots[i].dur) { acc += C.shots[i].dur; i++; }
       if (i >= C.shots.length) return cutEnd();
-      const sh = C.shots[i], lt = C.t - acc, u = lt / sh.dur;
+      const sh = C.shots[i], u = (C.t - acc) / sh.dur;
       if (i !== C.i) { C.i = i; ui.cut && ui.cut("line", { who: sh.who ? WHO[sh.who] || sh.who : "", text: sh.text || "" }); if (sh.on) sh.on(); }
-      const cm = sh.cam(u); IN.cutCam = cm;
+      IN.cutCam = sh.cam(u);
       if (C.act) C.act(C.t, u, i);
     }
+    const walkP = (ph) => POSE({ lean: 0.08, twist: Math.sin(ph) * 0.07, fxF: Math.sin(ph) * 0.2, fxB: -Math.sin(ph) * 0.2, lf: Math.max(0, Math.cos(ph)) * 0.07, lb: Math.max(0, -Math.cos(ph)) * 0.07, hF: [0.1 + Math.sin(ph) * 0.12, 0.95, 0.27], hB: [0.1 - Math.sin(ph) * 0.12, 0.95, -0.27] });
+    const STILL = () => POSE({ hp: 0.05, hF: [0.03, 0.95, 0.27], hB: [0.02, 0.95, -0.27] });
     // ---- cena: o Kauã esbarra na Mila ----
     function cutBump() {
-      const KX0 = -4.6, KZ0 = 8.95, KX = -2.45, KZ = 9.6, MXp = -1.9, MZp = 9.75;
+      const KX0 = -6.6, KZ0 = 10.95, KX = -3.55, KZ = 12.45, MXp = -3.0, MZp = 12.6, KF0 = [4.1, 12.35], JU0 = [4.35, 11.4];
       const shots = [
-        { dur: 2.6, who: "kaua", text: "Licença... licença...", cam: (u) => ({ eye: [-3.3 + u * 0.6, 1.75, 7.0], at: [-3.4 + u * 1.0, 1.15, 9.3] }) },
-        { dur: 1.5, who: "", text: "", on: () => { sfx.nocan && sfx.nocan(); }, cam: () => ({ eye: [-2.15, 1.45, 8.1], at: [-2.15, 1.05, 9.7] }) },
-        { dur: 3.2, who: "kaua", text: "Foi mal! Foi mal mesmo, eu não vi...", cam: () => ({ eye: [-2.2, 1.62, 8.0], at: [-2.17, 1.42, 9.68] }) },
-        { dur: 3.2, who: "mila", text: "Relaxa, não foi nada. Era só refri.", cam: () => ({ eye: [-3.05, 1.78, 8.75], at: [-1.9, 1.5, 9.75] }) },
-        { dur: 4.2, who: "mila", text: "Gostei do cabelo. Espetado assim... tem personalidade.", cam: (u) => ({ eye: [-3.05 + u * 0.12, 1.78, 8.75], at: [-1.9, 1.5, 9.75] }) },
-        { dur: 2.8, who: "kaua", text: "Ah... v-valeu.", cam: () => ({ eye: [-1.15, 1.72, 9.2], at: [-2.45, 1.52, 9.6] }) },
-        { dur: 3.0, who: "mila", text: "Eu sou a Mila. E você?", cam: () => ({ eye: [-3.05, 1.78, 8.75], at: [-1.9, 1.5, 9.75] }) },
-        { dur: 2.4, who: "kaua", text: "Kauã. Prazer.", cam: () => ({ eye: [-1.15, 1.72, 9.2], at: [-2.45, 1.52, 9.6] }) },
-        { dur: 3.8, who: "kf", text: "Cara... quem te viu, quem te vê, hein, amigão! Hehehe.", cam: () => ({ eye: [1.9, 1.75, 10.1], at: [3.05, 1.5, 8.8] }) },
-        { dur: 2.6, who: "julie", text: "Hihi...", cam: () => ({ eye: [2.2, 1.7, 9.9], at: [3.25, 1.5, 8.25] }) },
+        { dur: 2.8, who: "kaua", text: "Licença... licença...", cam: (u) => ({ eye: [-5.6 + u * 1.2, 1.75, 9.0], at: [-5.4 + u * 1.6, 1.15, 11.6] }) },
+        { dur: 1.5, who: "", text: "", on: () => { sfx.nocan && sfx.nocan(); }, cam: () => ({ eye: [-3.3, 1.45, 11.0], at: [-3.25, 1.05, 12.55] }) },
+        { dur: 3.2, who: "kaua", text: "Foi mal! Foi mal mesmo, eu não vi...", cam: () => ({ eye: [-3.3, 1.62, 10.85], at: [-3.27, 1.42, 12.53] }) },
+        { dur: 3.2, who: "mila", text: "Relaxa, não foi nada. Era só refri.", cam: () => ({ eye: [-4.15, 1.78, 11.6], at: [-3.0, 1.5, 12.6] }) },
+        { dur: 4.2, who: "mila", text: "Gostei do cabelo. Espetado assim... tem personalidade.", cam: (u) => ({ eye: [-4.15 + u * 0.12, 1.78, 11.6], at: [-3.0, 1.5, 12.6] }) },
+        { dur: 2.8, who: "kaua", text: "Ah... v-valeu.", cam: () => ({ eye: [-2.25, 1.72, 12.05], at: [-3.55, 1.52, 12.45] }) },
+        { dur: 3.0, who: "mila", text: "Eu sou a Mila. E você?", cam: () => ({ eye: [-4.15, 1.78, 11.6], at: [-3.0, 1.5, 12.6] }) },
+        { dur: 2.4, who: "kaua", text: "Kauã. Prazer.", cam: () => ({ eye: [-2.25, 1.72, 12.05], at: [-3.55, 1.52, 12.45] }) },
+        { dur: 3.8, who: "kf", text: "Cara... quem te viu, quem te vê, hein, amigão! Hehehe.", cam: () => ({ eye: [3.0, 1.78, 13.6], at: [4.1, 1.52, 12.3] }) },
+        { dur: 2.6, who: "julie", text: "Hihi...", cam: () => ({ eye: [3.2, 1.72, 10.3], at: [4.35, 1.5, 11.4] }) },
       ];
       cutStart(shots, () => {
-        setHome("kaua", KX, KZ, yawTo(KX, KZ, MXp, MZp), { idle: "talk2" });
-        setHome("mila", MXp, MZp, yawTo(MXp, MZp, KX, KZ), { idle: "talk2" });
+        setHome("kaua", KX, KZ, yawTo(KX, KZ, MXp, MZp), { idle: "talk2", expr: "happy" });
+        setHome("mila", MXp, MZp, yawTo(MXp, MZp, KX, KZ), { idle: "talk2", expr: "smile" });
         FS.main = 1; FS.slowAt = FS.t + 8;
       });
       IN.cut.act = (T, u, i) => {
-        const tk = Math.min(1, T / 2.6), kx = KX0 + (KX - KX0) * tk, kz = KZ0 + (KZ - KZ0) * tk;
-        const walkP = (ph) => POSE({ lean: 0.08, twist: Math.sin(ph) * 0.07, fxF: Math.sin(ph) * 0.2, fxB: -Math.sin(ph) * 0.2, lf: Math.max(0, Math.cos(ph)) * 0.07, lb: Math.max(0, -Math.cos(ph)) * 0.07, hF: [0.1, 0.95, 0.27], hB: [-0.1, 0.95, -0.27] });
+        const tk = Math.min(1, T / 2.8), kx = KX0 + (KX - KX0) * tk, kz = KZ0 + (KZ - KZ0) * tk;
         const kp = i === 0 ? walkP(T * 9) : i === 1 ? POSE({ lean: -0.12, hp: -0.1, hF: [0.3, 1.3, 0.25], hB: [0.3, 1.3, -0.25] }) : i === 5 || i === 7 ? SHY(T) : POSE({ lean: 0.06, hp: 0.1, twist: 0.1, hF: [0.3, 1.15, 0.2], hB: [0.02, 0.95, -0.27] });
-        place2("kaua", kx, kz, yawTo(KX0, KZ0, KX, KZ), kp);
-        const turned = i >= 1, my = turned ? yawTo(MXp, MZp, KX, KZ) : Math.PI * 0.55;
-        const mp = i === 0 ? DANCE(3, T, 0) : i === 1 ? POSE({ lean: -0.08, hp: -0.15, hF: [0.25, 1.25, 0.25], hB: [0.1, 0.95, -0.3] }) : POSE({ lean: 0.03, twist: 0.12, hp: 0.04, hy: 0.15, hF: [0.12, 1.0, 0.28], hB: [0.05, 1.68, -0.12] });
-        place2("mila", MXp, MZp, my, mp);
-        // copo da Mila caindo
+        place2("kaua", kx, kz, yawTo(KX0, KZ0, KX, KZ), kp, i >= 1 && i <= 5 ? "nervous" : i >= 7 ? "happy" : null);
+        const my = i >= 1 ? yawTo(MXp, MZp, KX, KZ) : Math.PI * 0.55;
+        const mp = i === 0 ? CHARS.dance(13, FS.B, 1) : i === 1 ? POSE({ lean: -0.08, hp: -0.15, hF: [0.25, 1.25, 0.25], hB: [0.1, 0.95, -0.3] }) : POSE({ lean: 0.03, twist: 0.12, hp: 0.04, hy: 0.15, hF: [0.12, 1.0, 0.28], hB: [0.05, 1.68, -0.12] });
+        place2("mila", MXp, MZp, my, mp, i === 1 ? "surprise" : i >= 3 ? "smile" : null);
         FS.cup = i === 0 ? { x: MXp + 0.15, y: 1.25, z: MZp - 0.2 } : i === 1 ? { x: MXp - 0.15 - u * 0.2, y: Math.max(0.03, 1.2 - u * u * 3), z: MZp - 0.3, r: u * 3 } : { x: MXp - 0.35, y: 0.03, z: MZp - 0.3, r: 1.57 };
-        place2("kf", 3.0, 9.2, yawTo(3.0, 9.2, KX, KZ), i === 8 ? POSE({ twist: 0.15, hp: 0.0, hF: [0.25, 1.2 + Math.sin(T * 6) * 0.05, 0.25], hB: [0.02, 0.95, -0.27] }) : POSE({ hp: 0.05, hF: [0.03, 0.95, 0.27], hB: [0.02, 0.95, -0.27] }));
-        place2("julie", 3.25, 8.25, yawTo(3.25, 8.25, KX, KZ), i === 9 ? GIGGLE(T) : POSE({ hp: 0.05, hF: [0.03, 0.95, 0.27], hB: [0.02, 0.95, -0.27] }));
+        place2("kf", KF0[0], KF0[1], yawTo(KF0[0], KF0[1], KX, KZ), i === 8 ? POSE({ twist: 0.15, hF: [0.25, 1.2 + Math.sin(T * 6) * 0.05, 0.25], hB: [0.02, 0.95, -0.27] }) : STILL(), i === 8 ? "goofy" : null);
+        place2("julie", JU0[0], JU0[1], yawTo(JU0[0], JU0[1], KX, KZ), i === 9 ? GIGGLE(T) : STILL(), i === 9 ? "happy" : null);
       };
     }
-    // ---- cena: a música lenta (o DJ chama os casais; K.F. e Julie, Kauã e Mila; o primeiro beijo do K.F. e da Julie) ----
-    const SLOW_PAIRS = [["fx0", "fx2", 2.4, 9.5, 0.4], ["fx3", "fx4", -2.9, 6.0, -0.3], ["fx5", "fx7", 2.6, 5.9, 2.4], ["fx1", "fx8", -3.3, 10.4, 1.2]], SLOW_SOLO = [["fx6", -3.5, 9.9], ["fx9", 3.5, 7.4]];
+    // ---- a música lenta: cada protagonista tem a sua cena ----
+    const KJ = [0.6, 9.4], KM = [-2.3, 11.3], GD = [2.6, 11.8];
+    const SLOW_PAIRS = [["fx0", "fx2", 3.6, 7.0, 0.4], ["fx3", "fx4", -3.6, 7.2, -0.3], ["fx5", "fx7", -0.6, 13.6, 2.4], ["fx1", "fx8", 3.9, 13.4, 1.2], ["fx6", "fx13", -1.8, 6.6, 0.9]];
+    function couplesAt(T, skip) {
+      const pairs = [["kf", "julie", KJ], ["kaua", "mila", KM], ["diogo", "gabi", GD]];
+      for (const [a, b2, c] of pairs) if (!skip || !skip.includes(a)) { place2(a, c[0] - 0.24, c[1], 0, SLOW_A(T, 0)); place2(b2, c[0] + 0.24, c[1], Math.PI, SLOW_B(T, 0)); }
+      SLOW_PAIRS.forEach(([a, b2, x, z, r], k) => { place2(a, x - Math.cos(r) * 0.24, z + Math.sin(r) * 0.24, r, SLOW_A(T + k, 0)); place2(b2, x + Math.cos(r) * 0.24, z - Math.sin(r) * 0.24, r + Math.PI, SLOW_B(T + k, 0)); });
+    }
+    function slowHomes() {
+      const pairs = [["kf", "julie", KJ], ["kaua", "mila", KM], ["diogo", "gabi", GD]];
+      for (const [a, b2, c] of pairs) { setHome(a, c[0] - 0.24, c[1], 0, { idle: "slowA" }); setHome(b2, c[0] + 0.24, c[1], Math.PI, { idle: "slowB" }); }
+      SLOW_PAIRS.forEach(([a, b2, x, z, r]) => { setHome(a, x - Math.cos(r) * 0.24, z + Math.sin(r) * 0.24, r, { idle: "slowA" }); setHome(b2, x + Math.cos(r) * 0.24, z - Math.sin(r) * 0.24, r + Math.PI, { idle: "slowB" }); });
+    }
     function cutSlow() {
-      FS.slow = 1;
+      const pk = FS.pk, focus = pk === "julie" ? "kf" : pk;
+      FS.slow = 1; FS.slowStart = FS.t;
       ui.festa && ui.festa("slow");
-      const KJ = [0.5, 7.4], KM = [-1.6, 8.75];
-      const shots = [
-        { dur: 3.8, who: "lucas", text: "Agora a gente vai diminuir o ritmo um pouquinho...", cam: (u) => ({ eye: [0.3 - u * 0.4, 2.0, 9.5], at: [0, 1.75, 12.5] }) },
-        { dur: 3.4, who: "lucas", text: "Chama o seu par e vem pra pista!", cam: () => ({ eye: [-0.2, 1.95, 10.1], at: [0, 1.8, 12.5] }) },
-        { dur: 4.2, who: "", text: "♪", cam: (u) => ({ eye: [-4.1 + u * 0.6, 5.2, 13.0], at: [0, 0.8, 7.8] }) },
-        { dur: 4.4, who: "julie", text: "Sabe que eu nunca dancei música lenta com ninguém?", cam: () => ({ eye: [KJ[0] - 0.95, 1.78, KJ[1] - 0.7], at: [KJ[0] + 0.24, 1.48, KJ[1]] }) },
-        { dur: 4.0, who: "kf", text: "Nem eu. Mas acho que a gente tá indo bem.", cam: () => ({ eye: [KJ[0] + 0.95, 1.72, KJ[1] - 0.7], at: [KJ[0] - 0.24, 1.6, KJ[1]] }) },
-        { dur: 3.6, who: "mila", text: "Relaxa... é só ir no balanço.", cam: () => ({ eye: [KM[0] - 0.95, 1.72, KM[1] - 0.7], at: [KM[0] + 0.24, 1.48, KM[1]] }) },
-        { dur: 3.2, who: "kaua", text: "Tô tentando! Acho que tô pegando o jeito.", cam: () => ({ eye: [KM[0] + 0.95, 1.68, KM[1] - 0.7], at: [KM[0] - 0.24, 1.55, KM[1]] }) },
-        { dur: 5.6, who: "", text: "", cam: (u) => ({ eye: [KJ[0] + 0.05, 1.85 - u * 0.1, KJ[1] - 1.05 + u * 0.12], at: [KJ[0], 1.6, KJ[1]], fov: 0.85 }) },
-        { dur: 4.4, who: "", text: "♪ ♪ ♪", cam: (u) => ({ eye: [3.6 - u * 0.8, 4.4, 3.2], at: [0, 2.6, 8.0] }) },
+      const dj = [
+        { dur: 3.8, who: "lucas", text: "Agora a gente vai diminuir o ritmo um pouquinho...", cam: (u) => ({ eye: [0.3 - u * 0.4, 2.0, 13.4], at: [0, 1.75, 16.4] }) },
+        { dur: 3.2, who: "lucas", text: "Chama o seu par e vem pra pista!", cam: () => ({ eye: [-0.2, 1.95, 14.0], at: [0, 1.8, 16.4] }) },
+        { dur: 4.0, who: "", text: "♪", cam: (u) => ({ eye: [-6.6 + u * 0.8, 5.6, 16.6], at: [0, 0.8, 10.2] }) },
       ];
+      const end = { dur: 4.4, who: "", text: "♪ ♪ ♪", cam: (u) => ({ eye: [4.6 - u * 1.0, 4.8, 4.4], at: [0, 2.6, 10.5] }) };
+      const C2 = (c, side) => ({ eye: [c[0] + side * 0.95, 1.76, c[1] - 0.72], at: [c[0] - side * 0.24, 1.5, c[1]] });
+      let shots, act;
+      if (focus === "kf") {
+        shots = [...dj,
+          { dur: 4.4, who: "julie", text: "Sabe que eu nunca dancei música lenta com ninguém?", cam: () => C2(KJ, -1) },
+          { dur: 4.0, who: "kf", text: "Nem eu. Mas acho que a gente tá indo bem.", cam: () => C2(KJ, 1) },
+          { dur: 6.0, who: "", text: "", cam: (u) => ({ eye: [KJ[0] + 0.55 - u * 0.2, 1.66, KJ[1] + 1.15 - u * 0.1], at: [KJ[0] + 0.05, 1.42, KJ[1]], fov: 0.85 }) },
+          end];
+        act = (T, u, i) => {
+          couplesAt(T, ["kf"]);
+          const lay = i === 5 ? Math.min(1, Math.max(0, (u - 0.1) / 0.4)) : i > 5 ? 1 : 0, e = lay * lay * (3 - 2 * lay), g = 0.24 - e * 0.07;
+          const A = e > 0 ? ART.lerpPose(SLOW_A(T, 0), CHEST_A(T), e) : SLOW_A(T, 0), Bp = e > 0 ? ART.lerpPose(SLOW_B(T, 0), CHEST_B(T), e) : SLOW_B(T, 0);
+          place2("kf", KJ[0] - g, KJ[1], 0, A, i >= 4 ? "goofy" : null); place2("julie", KJ[0] + g, KJ[1], Math.PI, Bp, i >= 5 ? "happy" : i >= 3 ? "smile" : null);
+        };
+      } else if (focus === "kaua") {
+        shots = [...dj,
+          { dur: 3.6, who: "mila", text: "Relaxa... é só ir no balanço.", cam: () => C2(KM, -1) },
+          { dur: 3.4, who: "kaua", text: "Tô tentando! Acho que tô pegando o jeito.", cam: () => C2(KM, 1) },
+          { dur: 3.4, who: "mila", text: "Tá vendo? Você manda bem, Kauã.", cam: () => C2(KM, -1) },
+          { dur: 4.6, who: "", text: "", cam: (u) => ({ eye: [KM[0] + 0.1, 1.9 - u * 0.15, KM[1] - 1.5 + u * 0.3], at: [KM[0], 1.5, KM[1]], fov: 0.9 }) },
+          end];
+        act = (T, u, i) => { couplesAt(T); place2("kaua", KM[0] - 0.24, KM[1], 0, SLOW_A(T, 0), i === 4 ? "nervous" : i >= 5 ? "happy" : null); place2("mila", KM[0] + 0.24, KM[1], Math.PI, SLOW_B(T, 0), i >= 3 ? "smile" : null); };
+      } else if (focus === "gabi") {
+        shots = [...dj,
+          { dur: 3.6, who: "diogo", text: "Bora? Prometo não pisar no seu pé.", cam: () => C2(GD, 1) },
+          { dur: 3.4, who: "gabi", text: "Hahaha, vou cobrar, hein.", cam: () => C2(GD, -1) },
+          { dur: 4.6, who: "", text: "", cam: (u) => ({ eye: [GD[0] - 0.2, 1.85, GD[1] - 1.5 + u * 0.3], at: [GD[0], 1.5, GD[1]], fov: 0.9 }) },
+          end];
+        act = (T, u, i) => { couplesAt(T); place2("diogo", GD[0] - 0.24, GD[1], 0, SLOW_A(T, 0), i >= 3 ? "happy" : null); place2("gabi", GD[0] + 0.24, GD[1], Math.PI, SLOW_B(T, 0), i >= 4 ? "happy" : null); };
+      } else if (focus === "kauane") {
+        // ela quebra o clima: tira o Cabeça pra uma batalha de dança (só amigos!)
+        shots = [...dj.slice(0, 2),
+          { dur: 3.4, who: "cabeca", text: "E aí, Kauane... bora?", cam: () => ({ eye: [-1.0, 1.7, 7.0], at: [-0.2, 1.45, 8.2] }) },
+          { dur: 4.2, who: "kauane", text: "Dançar música lenta com você? Nem a pau. Mas te desafio pra uma batalha!", cam: () => ({ eye: [0.8, 1.7, 7.2], at: [-0.25, 1.45, 8.1] }) },
+          { dur: 3.0, who: "cabeca", text: "Hahaha! Aí sim. Valendo!", cam: () => ({ eye: [-1.0, 1.7, 7.0], at: [-0.2, 1.45, 8.2] }) },
+          { dur: 3.0, who: "lucas", text: "Ih, batalha! Abre a roda que eu solto o som!", on: () => { ui.festa && ui.festa("next", { force: 1 }); }, cam: () => ({ eye: [0.2, 2.0, 13.6], at: [0, 1.75, 16.4] }) }];
+        act = (T, u, i) => {
+          couplesAt(T);
+          place2("kauane", 0.2, 8.0, yawTo(0.2, 8.0, -0.6, 8.3), i === 3 ? POSE({ twist: 0.2, hF: [0.3, 1.5, 0.3], hB: [0.02, 1.05, -0.3] }) : STILL(), i >= 3 ? "happy" : null);
+          place2("cabeca", -0.6, 8.3, yawTo(-0.6, 8.3, 0.2, 8.0), i === 2 ? POSE({ twist: 0.1, hF: [0.38, 1.3, 0.2], hB: [0.02, 0.95, -0.27] }) : STILL(), i >= 4 ? "happy" : null);
+        };
+      } else return;
       cutStart(shots, () => {
         FS.slowDone = 1; FS.slowEnd = FS.t + 150;
-        SLOW_PAIRS.forEach(([a, b2, x, z, r]) => { setHome(a, x - Math.cos(r) * 0.24, z + Math.sin(r) * 0.24, r, { idle: "slowA" }); setHome(b2, x + Math.cos(r) * 0.24, z - Math.sin(r) * 0.24, r + Math.PI, { idle: "slowB" }); });
-        for (const [lk, x, z] of SLOW_SOLO) setHome(lk, x, z, yawTo(x, z, KJ[0], KJ[1]), { idle: "talk2" });
-        setHome("kf", KJ[0] - 0.24, KJ[1], 0, { idle: "slowA", pair: 1 }); setHome("julie", KJ[0] + 0.24, KJ[1], Math.PI, { idle: "slowB", pair: 1 });
-        setHome("kaua", KM[0] - 0.24, KM[1], 0, { idle: "slowA" }); setHome("mila", KM[0] + 0.24, KM[1], Math.PI, { idle: "slowB" });
-        if (FS.pk === "kf" || FS.pk === "julie" || FS.pk === "kaua") IN.ov = null;
+        slowHomes();
+        if (focus === "kauane") { FS.slowEnd = 0; battleStart(); }
+        else { FS.pairOk = 1; IN.sayQ = [{ t: 1.0, who: "", line: "L: dançar junto com " + WHO[PARTNER[pk]] + " · J gira · K balança · L solta" }]; }
       });
-      IN.cut.act = (T, u, i) => {
-        // gap: distância entre os dois; no beijo eles chegam pertinho e inclinam a cabeça
-        const kiss = i === 7 ? Math.min(1, Math.max(0, (u - 0.15) / 0.45)) : i === 8 ? 1 : 0, ke = kiss * kiss * (3 - 2 * kiss), g = 0.24 - ke * 0.05;
-        const A = SLOW_A(T, 0), B = SLOW_B(T, 0);
-        if (ke > 0) { A.hp = 0.12 + ke * 0.16; A.lean = 0.05 + ke * 0.08; A.hy = -ke * 0.12; B.hp = -0.06 - ke * 0.18; B.lean = 0.05 + ke * 0.06; B.hy = ke * 0.12; A.twist = B.twist = 0; }
-        place2("kf", KJ[0] - g, KJ[1], 0, A); place2("julie", KJ[0] + g, KJ[1], Math.PI, B);
-        place2("kaua", KM[0] - 0.24, KM[1], 0, SLOW_A(T + 0.7, 0)); place2("mila", KM[0] + 0.24, KM[1], Math.PI, SLOW_B(T + 0.7, 0));
-        SLOW_PAIRS.forEach(([a, b2, x, z, r], k) => { place2(a, x - Math.cos(r) * 0.24, z + Math.sin(r) * 0.24, r, SLOW_A(T + k, 0)); place2(b2, x + Math.cos(r) * 0.24, z - Math.sin(r) * 0.24, r + Math.PI, SLOW_B(T + k, 0)); });
-        for (const [lk, x, z] of SLOW_SOLO) place2(lk, x, z, yawTo(x, z, KJ[0], KJ[1]), POSE({ hp: 0.05, twist: Math.sin(T * 0.8) * 0.06, hF: [0.25, 1.1, 0.2], hB: [0.02, 0.95, -0.27] }));
-        if (i === 0 || i === 1) { const n = fNpc("lucas"); if (n) n.ov = { x: n.x, z: n.z, yaw: n.yaw, pose: POSE({ lean: 0.02, hp: -0.02, twist: 0.1, hF: [0.32, 1.62, 0.06], hB: [0.42, 1.3, -0.25] }) }; }
-        // quem não tem par na hora assiste do canto
-        if (FS.pk === "gabi") place2("gabi", 2.5, 4.4, yawTo(2.5, 4.4, KJ[0], KJ[1]), POSE({ hp: 0.05, hy: Math.sin(T * 0.5) * 0.2, hF: [0.2, 1.1, 0.2], hB: [0.02, 0.95, -0.27] }));
-        if (FS.pk === "kauane") place2("kauane", -2.6, 4.2, yawTo(-2.6, 4.2, KJ[0], KJ[1]), POSE({ hp: 0.05, hF: [0.25, 1.05, 0.12], hB: [0.25, 1.05, -0.12] }));
-      };
+      IN.cut.act = act;
+    }
+    // ---- batalha de dança da Kauane contra o Cabeça: ele faz 4 passos, você repete com as setas ----
+    const BMOVE = { up: 3, right: 4, down: 10, left: 5 }, BARROW = { up: "⬆", right: "➡", down: "⬇", left: "⬅" }, BKEYS = ["up", "right", "down", "left"];
+    function battleStart() {
+      const ring = [];
+      IN.R.npcR.forEach((n, i) => { if (n.who === "fx" && !(n.y > 1) && ring.length < 14 && !n.walk) ring.push(n); });
+      ring.forEach((n, k) => { const a = (k / ring.length) * Math.PI * 2, x = Math.cos(a) * 2.6, z = 8.2 + Math.sin(a) * 2.2; Object.assign(n, { x, z, yaw: yawTo(x, z, 0, 8.2), dance: null, idle: "cheer" }); });
+      setHome("cabeca", -0.8, 8.2, yawTo(-0.8, 8.2, 0.8, 8.2), { idle: "talk2" });
+      IN.x = 0.8; IN.z = 8.2; IN.yaw = yawTo(0.8, 8.2, -0.8, 8.2);
+      IN.battle = { round: 0, phase: "show", t: 0, seq: [], idx: 0, hits: 0, ring };
+      battleRound();
+    }
+    function battleRound() {
+      const Bt = IN.battle;
+      Bt.seq = Array.from({ length: 4 }, (_, k) => BKEYS[(Math.floor(Math.random() * 4) + k + Bt.round) % 4]);
+      Bt.phase = "show"; Bt.t = 0; Bt.idx = 0;
+      sayIn("batalha", "Rodada " + (Bt.round + 1) + " de 3 · Cabeça: " + Bt.seq.map((k) => BARROW[k]).join(" "), 5);
+    }
+    function battleKey(k) {
+      const Bt = IN.battle;
+      if (!Bt || Bt.phase !== "input") return;
+      const ok = Bt.seq[Bt.idx] === k;
+      Bt.hits += ok ? 1 : 0; Bt.idx++; Bt.mv = BMOVE[k]; Bt.mvT = 0.9;
+      ui.inside && ui.inside("say", { who: "", line: ok ? "Boa! " + BARROW[k] : "Errou! " + BARROW[k], mini: 1 });
+      if (Bt.idx >= 4) { Bt.phase = "wait"; Bt.t = 0; }
+    }
+    function battleFrame(dt) {
+      const Bt = IN.battle; Bt.t += dt;
+      const cab = fNpc("cabeca");
+      Bt.mvT = (Bt.mvT || 0) - dt;
+      IN.ov = { x: IN.x, z: IN.z, yaw: IN.yaw, pose: Bt.mvT > 0 ? CHARS.dance(Bt.mv, FS.B, 1.15) : CHARS.dance(12, FS.B, 0.6) };
+      if (Bt.phase === "show") {
+        const q = Math.floor(Bt.t / 0.8);
+        if (cab) cab.ov = { x: cab.x, z: cab.z, yaw: cab.yaw, pose: q < 4 ? CHARS.dance(BMOVE[Bt.seq[q]], FS.B, 1.1) : STILL() };
+        if (Bt.t > 3.6) { Bt.phase = "input"; Bt.t = 0; if (cab) cab.ov = null; sayIn("batalha", "Sua vez! Repete com as setas: " + Bt.seq.map((k) => BARROW[k]).join(" "), 5); }
+      } else if (Bt.phase === "wait" && Bt.t > 1.2) {
+        Bt.round++;
+        if (Bt.round < 3) battleRound();
+        else {
+          const win = Bt.hits >= 8;
+          IN.battle = null; IN.ov = null; FS.slowEnd = FS.t + 0.1;
+          for (const n of Bt.ring) Object.assign(n, { x: n.home.x, z: n.home.z, yaw: n.home.yaw, dance: n.home.dance, idle: n.home.idle });
+          IN.sayQ = (win ? [["batalha", "Kauane venceu! " + Bt.hits + " de 12"], ["cabeca", "Tá bom, tá bom... perdi de novo. Você é brabíssima."], ["kauane", "Eu avisei, hein!"], ["cabeca", "Amigos?"], ["kauane", "Amigos. Mas na próxima ladeira eu te deixo comendo poeira."], ["breno", "Hahaha! Essa eu quero ver."]]
+            : [["batalha", "Cabeça venceu! (" + Bt.hits + " de 12)"], ["cabeca", "Uhuul! Finalmente ganhei uma!"], ["kauane", "Sorte de principiante. Revanche na ladeira."], ["cabeca", "Fechou! Amigos?"], ["kauane", "...Amigos. Hmpf."]]).map(([w, l], k) => ({ t: k ? 2.9 : 0.4, who: w, line: l }));
+          const cab2 = fNpc("cabeca"); if (cab2) { cab2.expr = "happy"; cab2.keepExpr = 1; }
+          setExpr(rig.objs[0], look.face, "happy");
+        }
+      }
     }
     function festaTalk(who) {
       const pk = FS.pk, L = FLINES[who] || FLINES.fx;
       const Q = (arr) => { IN.sayQ = arr.map(([w, line], k) => ({ t: k ? 2.9 : 0.05, who: w, line })); };
-      const busy = IN.sayQ && IN.sayQ.length;
-      if (busy) return true;
+      if (IN.sayQ && IN.sayQ.some((q) => q.who || q.fn)) return true;
+      IN.sayQ = null;
       if ((pk === "kf" && who === "julie") || (pk === "julie" && who === "kf")) {
         if (!FS.greet) {
           FS.greet = 1;
+          // Gabi e Kauane chegam de mansinho pra ver o K.F. com a Julie
+          if (pk !== "gabi") walkTo("gabi", 2.7, 13.2, [4.2, 11.9]);
+          if (pk !== "kauane") walkTo("kauane", 2.0, 12.4, [4.2, 11.9]);
+          FS.react = 1;
           Q([["julie", "Oi, garoto tubarão!"], ["gabi", "...garoto tubarão?"], ["kauane", "Oxe. Que apelido é esse?"], ["kf", "E aí, Julie! Nem sabia que você vinha."], ["julie", "O Lucas é meu vizinho. Não ia perder o set dele por nada."], ["kf", "O cara tá brabo hoje, né?"], ["julie", "Tá demais! Fica aqui com a gente... quer dizer, comigo. Hehe."], ["julie", "Ei... o Kauã tá sozinho lá no salgadinho. Chama ele pra cá!"]]);
+          IN.sayQ.push({ t: 2.9, who: "", line: "", fn: () => { FS.react = 0; for (const w of ["gabi", "kauane"]) { const n = fNpc(w); if (n && !n.hide) { n.expr = null; walkTo(w, n.home.x, n.home.z, null, () => (n.yaw = n.home.yaw)); } } } });
           return true;
         }
       }
@@ -8244,7 +8478,7 @@ const STREET = (() => {
         return true;
       }
       if (pk === "gabi" && who === "diogo" && !FS.main) {
-        Q([["diogo", "Opa! Pulseira da hora essa. Curte reggae?"], ["gabi", "Demais. Lá em casa só toca Cidade Negra e Natiruts."], ["diogo", "Sério? Eu toco numa banda com uns amigos. Uns covers e umas nossas."], ["gabi", "Mentira! Qual o nome?"], ["diogo", "Raízes. Tá até na camiseta, ó. Hahaha."], ["gabi", "Hahaha, propaganda gratuita. Gostei."], ["diogo", "Sábado tem ensaio na garagem do meu primo. Cola lá com a galera!"], ["gabi", "Fechou! Valeu, Diogo."]]);
+        Q([["diogo", "Opa! Pulseira da hora essa. Curte reggae?"], ["gabi", "Demais. Lá em casa só toca Cidade Negra e Natiruts."], ["diogo", "Sério? Eu toco numa banda com uns amigos. Uns covers e umas nossas."], ["gabi", "Mentira! Qual o nome?"], ["diogo", "Raízes. Tá até na camiseta, ó. Hahaha."], ["gabi", "Hahaha, propaganda gratuita. Gostei."], ["diogo", "Sábado tem ensaio na garagem do meu primo. Cola lá!"], ["gabi", "Fechou! Valeu, Diogo."]]);
         IN.sayQ.push({ t: 2.9, who: "", line: "", fn: () => { FS.main = 1; FS.slowAt = FS.t + 6; } });
         return true;
       }
@@ -8256,66 +8490,198 @@ const STREET = (() => {
       sayIn(who, L[IN.li++ % L.length], 3.5);
       return true;
     }
-    // falar com quem está perto: os pontos de conversa acompanham as pessoas
+    // pontos de conversa acompanham as pessoas (no andar de cima só dá pra falar estando lá)
     function festaSpots(R) {
       R.spots = R.spots.filter((s) => !s.npc);
       for (const n of R.npcR) {
-        if (n.hide || (n.y || 0) > 1 || n.who === "lucas") continue;
+        if (n.hide || n.who === "lucas" || n.goal || (IN.pair && IN.pair.who === n.who)) continue;
         const nm = n.who === "fx" ? ART.LOOKS[n.look].name : WHO[n.who];
-        R.spots.push({ id: "t_" + n.look, npc: 1, x: n.x - Math.cos(n.yaw) * -0.0, z: n.z, r: 0.95, act: "ftalk", who: n.who, look: n.look, label: "Falar com " + nm, face: [n.x, n.z] });
+        R.spots.push({ id: "t_" + n.look + n.x.toFixed(1), npc: 1, x: n.x, z: n.z, r: 0.95, lv: (n.y || 0) > 1 ? 1 : 0, act: "ftalk", who: n.who, look: n.look, label: "Falar com " + nm, face: [n.x, n.z] });
+      }
+    }
+    // ---- andar de cima: a escada da esquerda sobe até o mezanino em U ----
+    function festaBlocked(x, z) {
+      const R = IN.R, r = 0.27, [sx0, sx1, sz0, sz1] = R.stairs, lv = IN.lv || 0;
+      if (x < -R.W + r || x > R.W - r || z < 0.28 || z > R.D - r) return true;
+      const inSt = x > sx0 && x < sx1 && z > sz0 && z < sz1 + 0.05;
+      if (lv === 2) return !(x > sx0 + r * 0.6 && x < sx1 - r * 0.6);
+      if (lv === 1) {
+        if (inSt) return IN.z < sz1 - 0.45;
+        const ok = x < -R.MX - r || x > R.MX + r || z > R.MZB + r;
+        if (!ok || z < R.MZ0 + r && x > sx1) return true;
+        for (const [x0, z0, x1, z1] of R.solidsUp) if (x > x0 - r && x < x1 + r && z > z0 - r && z < z1 + r) return true;
+        for (const n of R.npcR) if (!n.hide && (n.y || 0) > 1 && Math.hypot(x - n.x, z - n.z) < 0.5) return true;
+        return false;
+      }
+      if (inSt) return !(IN.z < sz0 + 0.4 && x > sx0 + r * 0.6 && x < sx1 - r * 0.6);
+      for (const [x0, z0, x1, z1] of R.solids) if (x > x0 - r && x < x1 + r && z > z0 - r && z < z1 + r) return true;
+      for (const n of R.npcR) if (!n.off && !n.hide && !((n.y || 0) > 1) && !n.goal && Math.hypot(x - n.x, z - n.z) < 0.5) return true;
+      return false;
+    }
+    function festaLevel(R) {
+      const [sx0, sx1, sz0, sz1] = R.stairs, onSt = IN.x > sx0 && IN.x < sx1 && IN.z > sz0 && IN.z < sz1;
+      if (onSt) IN.lv = 2;
+      else if (IN.lv === 2) IN.lv = IN.z >= sz1 ? 1 : 0;
+      IN.y = IN.lv === 1 ? R.MY : IN.lv === 2 ? Math.max(0, Math.min(R.MY, (R.MY * (IN.z - sz0)) / (sz1 - sz0))) : 0;
+    }
+    // ---- dança a dois (depois da lenta): você conduz, o par acompanha na sua frente ----
+    function pairFrame(dt, t) {
+      const P = IN.pair, n = fNpc(P.who);
+      if (!n) { IN.pair = null; return; }
+      P.spin = Math.max(0, P.spin - dt); P.dip = Math.max(0, P.dip - dt);
+      const fx = Math.cos(IN.yaw), fz = -Math.sin(IN.yaw), d = 0.44;
+      const sp = P.spin > 0 ? (1 - P.spin / 1.1) * Math.PI * 2 : 0, dp = P.dip > 0 ? Math.sin((1 - P.dip / 1.4) * Math.PI) : 0;
+      const nx = IN.x + fx * d, nz = IN.z + fz * d;
+      const slowNow = FS.slowNow || FS.slowK > 0.5, B = FS.B;
+      const lead = P.spin > 0 ? POSE({ lean: 0.04, hp: 0.05, hF: [0.38, 1.95, 0.12], hB: [0.08, 1.0, -0.3] }) : dp > 0 ? POSE({ lean: 0.1 + dp * 0.25, hp: 0.25 * dp + 0.1, hF: [0.45, 1.05 - dp * 0.15, 0.15], hB: [0.4, 1.1, -0.2] }) : slowNow ? SLOW_A(t, 0) : ART.lerpPose(SLOW_A(t, 0), CHARS.dance(0, B, 0.6), 0.35);
+      const part = P.spin > 0 ? POSE({ lean: 0.02, hp: -0.05, hF: [0.1, 1.9, 0.12], hB: [0.1, 1.05, -0.28] }) : dp > 0 ? POSE({ lean: -0.35 * dp, hp: -0.35 * dp, hF: [0.25, 1.45, 0.17], hB: [0.1, 1.0 + dp * 0.3, -0.45] }) : slowNow ? SLOW_B(t, 0) : ART.lerpPose(SLOW_B(t, 0), CHARS.dance(0, B + 0.5, 0.6), 0.35);
+      IN.ov = { x: IN.x, z: IN.z, yaw: IN.yaw, pose: lead };
+      n.ov = { x: nx, z: nz, yaw: IN.yaw + Math.PI + sp, pose: part };
+      n.expr = "happy";
+      setExpr(rig.objs[0], look.face, FS.pk === "kaua" ? "happy" : FS.pk === "kf" ? "goofy" : "happy");
+    }
+    // ---- luzes da balada: tudo no ritmo; strobo a cada 8 tempos; luz negra fixa ----
+    const LCOL = [[1, 0.25, 0.7], [0.25, 0.75, 1], [0.6, 0.3, 1], [1, 0.85, 0.2], [0.3, 1, 0.5]];
+    function festaLights(R, D, dt, t) {
+      const B = FS.B, f = ((B % 1) + 1) % 1, pulse = Math.exp(-f * 7), slow = FS.slowNow || FS.slowK > 0.5, strobe = !slow && (B % 8) < 0.12;
+      const L = R.scene.lightCols || (R.scene.lightCols = new Float32Array(72));
+      const set = (i, c, k) => { L[i * 3] = c[0] * k; L[i * 3 + 1] = c[1] * k; L[i * 3 + 2] = c[2] * k; };
+      for (let i = 0; i < 24; i++) set(i, [0, 0, 0], 0);
+      for (let i = 0; i < 6; i++) set(i, slow ? [0.6, 0.35, 1] : LCOL[(i + Math.floor(B)) % 5], slow ? 0.55 : 0.45 + pulse * 0.9);
+      set(6, slow ? [0.9, 0.4, 1] : LCOL[Math.floor(B) % 5], 0.8 + pulse * 0.5); set(7, slow ? [0.9, 0.4, 1] : LCOL[(Math.floor(B) + 2) % 5], 0.8 + pulse * 0.5);
+      for (let i = 8; i <= 10; i++) set(i, [1, 0.7, 0.4], 0.75);
+      set(11, [1, 0.75, 0.45], 0.7); set(12, [1, 0.6, 0.9], 0.5);
+      set(13, [1, 0.55, 0.2], 0.75 + Math.sin(t * 17) * 0.12); set(14, [1, 0.55, 0.2], 0.75 + Math.sin(t * 13 + 1) * 0.12);
+      for (let i = 15; i <= 18; i++) set(i, [0.55, 0.3, 1], 0.65);
+      set(19, [1, 0.3, 0.75], 0.9);
+      if (strobe) for (let i = 0; i < 8; i++) set(i, [1, 1, 1], 1.6);
+      R.scene.uv = 0.85;
+      // piso de luz em ondas no tempo; na lenta, roxinho e calmo
+      const sk = FS.slowK;
+      for (const o of D.floor) {
+        const w = (o.i + o.j + Math.floor(B)) % 5, on = ((o.i * 3 + o.j * 5 + Math.floor(B)) % 4) !== 0, c = LCOL[w], lv = strobe ? 1.6 : on ? 0.6 + pulse * 0.6 : 0.2;
+        o.tint = [c[0] * lv * (1 - sk) + 0.45 * sk, c[1] * lv * (1 - sk) + 0.25 * sk, c[2] * lv * (1 - sk) + 0.75 * sk];
+      }
+      // moving heads varrendo a pista; lasers saindo da cabine nas partes mais animadas
+      for (const b of D.beams) {
+        const k = b.k, a = t * (slow ? 0.25 : 0.7) * (k % 2 ? -1 : 1) + k * 1.1, tilt = 0.3 + Math.sin(t * (slow ? 0.3 : 0.8) + k) * 0.22;
+        b.hidden = slow && k % 2 === 1;
+        b.mo = M.mul(M.T(b.x, R.H - 0.42, b.z), M.mul(M.RY(a), M.mul(M.RX(tilt), M.S(1, 6.6, 1))));
+        b.tint = [0.55 + pulse * 0.5, 0.55 + pulse * 0.5, 0.55 + pulse * 0.5];
+      }
+      const drop = !slow && (B % 32) >= 16;
+      for (const l of D.lasers) {
+        l.hidden = !drop;
+        if (!drop) continue;
+        const yw = Math.PI + (l.k - 2.5) * 0.13 + Math.sin(t * 1.4 + l.k * 0.3) * 0.28, pt = -0.04 + Math.sin(t * 0.9 + l.k) * 0.05;
+        l.mo = M.mul(M.T(0, 2.25, 15.3), M.mul(M.RY(yw), M.mul(M.RX(pt), M.S(1, 1, 16))));
       }
     }
     const cupG = Rn.upload((() => { const m = new Mesh(); m.tube([0, -0.06, 0], [0, 0.06, 0], 0.035, 0.042, 8, hex(0xe0302b)); m.tube([0, 0.06, 0], [0, 0.065, 0], 0.042, 0.042, 8, hex(0xffffff)); m.tube([0.01, 0.06, 0], [0.03, 0.15, 0], 0.005, 0.005, 3, hex(0xff4fa3)); return m; })());
     const coxG = Rn.upload((() => { const m = new Mesh(); m.ball([0, 0.02, 0], 0.04, hex(0xd88a3a), 0, 7, 5, { sy: 1.25 }); return m; })());
     function festaFrame(R, D, dt, t) {
       if (!FS) return;
-      FS.t += dt;
-      // piso de luz: acende no tempo da música, em ondas coloridas; na música lenta fica roxinho e calmo
-      FS.slowK = Math.max(0, Math.min(1, FS.slowK + ((FS.slow && (IN.cut || FS.slowDone) && FS.t - (FS.slowStart || 0) < 140) ? dt / 2 : -dt / 3)));
-      const beat = FS.t * 2.08, PAL = [[1, 0.3, 0.65], [0.3, 0.8, 1], [1, 0.85, 0.25], [0.55, 0.35, 1], [0.35, 1, 0.55]];
-      for (const o of D.floor) {
-        const w = (o.i + o.j + Math.floor(beat)) % 5, on = ((o.i * 3 + o.j * 5 + Math.floor(beat)) % 4) !== 0, c = PAL[w], lv = on ? 1 : 0.25, sk = FS.slowK;
-        o.tint = [(c[0] * lv) * (1 - sk) + 0.45 * sk, (c[1] * lv) * (1 - sk) + 0.25 * sk, (c[2] * lv) * (1 - sk) + 0.75 * sk];
+      const pkNow = pkey();
+      if (pkNow !== FS.pk && !IN.cut) {
+        if (pkNow === "manu") { ui.inside && ui.inside("leave"); say("A MANU PREFERE FICAR EM CASA (VIDEOGAME E SORVETE)", 2.6, true); return; }
+        festaEnter(R);
       }
+      FS.t += dt;
+      FS.B += (dt * (FS.bpm > 140 ? FS.bpm / 2 : FS.bpm)) / 60;
+      FS.slowK = Math.max(0, Math.min(1, FS.slowK + (FS.slowNow ? dt / 2 : -dt / 3)));
+      festaLevel(R);
       discoFx(R, D, dt, t);
-      if (FS.slowK > 0 && R.scene.amb) R.scene.amb = R.scene.amb.map((v) => v * (1 - FS.slowK * 0.35));
+      if (R.scene.amb) R.scene.amb = R.scene.amb.map((v) => v * (0.85 - FS.slowK * 0.25));
+      festaLights(R, D, dt, t);
+      // gente: anda até o ponto, troca de cara (curtindo, cantando), olha a cena
+      for (const n of R.npcR) {
+        if (n.hide) continue;
+        if (n.goal) {
+          const dx = n.goal.x - n.x, dz = n.goal.z - n.z, dd = Math.hypot(dx, dz);
+          if (dd < 0.08) { const g = n.goal; n.goal = null; if (g.face) n.yaw = yawTo(n.x, n.z, g.face[0], g.face[1]); if (g.then) g.then(); }
+          else { const sp = Math.min(dd, dt * 1.3); n.x += (dx / dd) * sp; n.z += (dz / dd) * sp; n.yaw = Math.atan2(-dz, dx); n.walkPh = (n.walkPh || 0) + dt * 9; }
+        } else if (n.walk && !IN.battle && !FS.slowNow) {
+          if (n.wait > 0) n.wait -= dt;
+          else { const w = n.walk[n.wi % n.walk.length]; n.goal = { x: w[0], z: w[1], then: () => { n.wi++; n.wait = 2 + (n.wi % 3) * 2; } }; }
+        }
+        if (n.who === "fx" && !n.ov) {
+          n.exT = (n.exT || Math.random() * 6) - dt;
+          if (n.exT <= 0) { n.exT = 3 + Math.random() * 6; n.expr = n.dance != null ? ["happy", "sing", null, "happy"][Math.floor(Math.random() * 4)] : Math.random() < 0.4 ? "happy" : null; }
+        }
+        if (FS.react && (n.who === "gabi" || n.who === "kauane") && !n.goal && !n.ov) n.expr = "surprise";
+        setExpr(n.rig.objs[0], faceOfLook(n.look), n.expr);
+      }
       // copo que cai na cena do esbarrão
       if (!D.cup) D.cup = { g: cupG, mo: M.I(), hidden: true };
       D.cup.hidden = !(IN.cut && FS.cup);
       if (!D.cup.hidden) D.cup.mo = M.mul(M.T(FS.cup.x, FS.cup.y, FS.cup.z), M.RZ(FS.cup.r || 0));
-      // na mão: refri do bar ou coxinha (comendo)
       if (!D.hand) D.hand = { g: cupG, mo: M.I(), hidden: true };
-      const h = !IN.cut && (IN.cup || IN.snack > 0) && rig.F ? handOf(rig, look, "F") : null;
+      const h = !IN.cut && !IN.dancing && !IN.pair && (IN.cup || IN.snack > 0) && rig.F ? handOf(rig, look, "F") : null;
       D.hand.hidden = !h;
       if (h) { D.hand.g = IN.snack > 0 ? coxG : cupG; D.hand.mo = M.T(h[0], h[1] + 0.04, h[2]); }
       if (IN.snack > 0) IN.snack -= dt;
       if (IN.cut) { cutTick(dt); return; }
+      if (!IN.pair) IN.ov = null;
+      if (IN.pair) pairFrame(dt, t);
+      else if (IN.dancing) setExpr(rig.objs[0], look.face, "happy");
+      else if (!IN.battle) setExpr(rig.objs[0], null, null);
+      if (IN.battle) {
+        // setas = passos na batalha
+        for (const k of BKEYS) { if (keys[k] && !FS.keys[k]) battleKey(k); FS.keys[k] = keys[k]; }
+        battleFrame(dt);
+      }
       festaSpots(R);
-      // Kauã (jogando com ele): depois de um tempo no salgadinho, o K.F. chama; indo até eles, esbarra na Mila
+      // Kauã (jogando com ele): depois do salgadinho o K.F. chama; indo até eles, esbarra na Mila
       if (FS.pk === "kaua" && !FS.main) {
         if (!FS.call && ((FS.ate && FS.t > FS.ate + 3.5) || FS.t > 25)) { FS.call = 1; IN.sayQ = [{ t: 0.4, who: "kf", line: "Ô Kauã! Larga essa coxinha e cola aqui com a gente!" }, { t: 3.2, who: "julie", line: "Vem, Kauã! A gente tá aqui perto do bar." }]; }
-        if (FS.call && IN.x > -3.6 && !(IN.sayQ && IN.sayQ.length)) cutBump();
+        if (FS.call && IN.x > -5.2 && IN.lv === 0 && !(IN.sayQ && IN.sayQ.length)) cutBump();
       }
-      if (FS.main && !FS.slow && FS.t > FS.slowAt && !(IN.sayQ && IN.sayQ.length)) { FS.slowStart = FS.t; cutSlow(); }
+      if (FS.main && !FS.slow && FS.t > FS.slowAt && !(IN.sayQ && IN.sayQ.length) && IN.lv === 0) cutSlow();
       if (FS.slowEnd && FS.t > FS.slowEnd) {
         FS.slowEnd = 0;
         for (const n of R.npcR) if (n.who === "fx") Object.assign(n, { x: n.home.x, z: n.home.z, yaw: n.home.yaw, dance: n.home.dance, idle: n.home.idle });
-        for (const w of ["kf", "julie", "kaua", "mila"]) { const n = fNpc(w); if (n && n.idle && /^slow/.test(n.idle)) n.idle = "talk2"; }
+        for (const w of ["kf", "julie", "kaua", "mila", "gabi", "diogo"]) { const n = fNpc(w); if (n && n.idle && /^slow/.test(n.idle) && !(IN.pair && IN.pair.who === w)) Object.assign(n, { idle: null, dance: [0, 13, 2, 3, 6, 4][["kf", "julie", "kaua", "mila", "gabi", "diogo"].indexOf(w)] }); }
+      }
+    }
+    // teclas da festa: Espaço dança/para, J troca o passo, K passo especial (K.F.: break), L dança a dois
+    function festaKey(k) {
+      if (!FS || !IN || IN.R.id !== "festa" || IN.cut || IN.battle) return;
+      const say1 = (line) => ui.inside && ui.inside("say", { who: "", line, mini: 1 });
+      if (IN.pair) {
+        if (k === "next") { IN.pair.spin = 1.1; say1("Girou! ♪"); }
+        else if (k === "special") { IN.pair.dip = 1.4; say1("Balancinho ♪"); }
+        else if (k === "pair" || k === "dance") { const n = fNpc(IN.pair.who); if (n) { n.ov = null; n.x = IN.x + Math.cos(IN.yaw) * 0.5; n.z = IN.z - Math.sin(IN.yaw) * 0.5; n.yaw = IN.yaw + Math.PI; n.idle = null; n.dance = 0; } IN.pair = null; IN.ov = null; }
+        return;
+      }
+      if (k === "pair") {
+        const pw = PARTNER[FS.pk], n = pw && fNpc(pw);
+        if (!FS.pairOk || !n) { say1(FS.pairOk ? "Cadê o seu par?" : "Isso fica pra depois da música lenta ;)"); return; }
+        if (Math.hypot(n.x - IN.x, n.z - IN.z) > 2.4) { say1("Chega mais perto de " + WHO[pw] + "!"); return; }
+        IN.dancing = null; IN.pair = { who: pw, spin: 0, dip: 0 }; n.goal = null;
+        sayIn(pw, { julie: "Hihi... vem!", kf: "Bora, Julie!", mila: "Só não pisa no meu pé, hein!", diogo: "Bora, Gabi!" }[pw] || "Bora!", 2.4);
+        return;
+      }
+      if (k === "dance") { IN.dancing = IN.dancing ? null : { k: 0 }; IN.cup = null; if (IN.dancing) say1("♪ " + CHARS.DANCE_NAMES[0]); return; }
+      if (k === "next") { const c = IN.dancing && IN.dancing.k < 14 ? IN.dancing.k : -1; IN.dancing = { k: (c + 1) % 14 }; IN.cup = null; say1("♪ " + CHARS.DANCE_NAMES[IN.dancing.k]); return; }
+      if (k === "special") {
+        IN.cup = null;
+        if (FS.pk === "kf") { const c = IN.dancing && IN.dancing.k >= 20 ? IN.dancing.k : 19; const n2 = c >= 23 ? 20 : c + 1; IN.dancing = { k: n2 }; say1("Break: " + CHARS.BREAK_NAMES[n2 - 20]); }
+        else { const s2 = SIGN[FS.pk] != null ? SIGN[FS.pk] : 4; IN.dancing = { k: s2 }; say1("Passo especial: " + CHARS.DANCE_NAMES[s2]); }
       }
     }
     function festaAct(s) {
       if (s.act === "ftalk") { IN.dancing = null; return festaTalk(s.who); }
       if (s.act === "talk" && s.who === "lucas") return festaTalk("lucas");
       if (s.act === "snack") { IN.snack = 2.2; IN.cup = null; FS.ate = FS.ate || FS.t; sayIn(FS.pk, ["Hmm, coxinha quentinha.", "Mais uma não faz mal...", "Esse pastelzinho tá bom demais."][IN.li++ % 3], 2.2); return true; }
-      if (s.act === "drink") { IN.cup = true; IN.snack = 0; sayIn("", "Kiko do bar: Refri geladinho saindo! Por conta da casa hoje.", 2.6); return true; }
-      if (s.act === "dance") { IN.dancing = IN.dancing ? null : { s: (IN.li++ % 7) }; IN.cup = null; return true; }
+      if (s.act === "drink") { IN.cup = true; IN.snack = 0; sayIn("kiko", "Refri geladinho saindo! Por conta da casa hoje.", 2.6); return true; }
       return false;
     }
     function inFrame(dt, t) {
       const R = IN.R;
       IN.t += dt;
-      const walk = S.running && !IN.hold && !IN.sit && IN.change == null && !IN.lounge && !IN.cut;
-      if (IN.dancing && (keys.up || keys.down)) IN.dancing = null;
+      const walk = S.running && !IN.hold && !IN.sit && IN.change == null && !IN.lounge && !IN.cut && !IN.battle;
+      if (IN.dancing && (keys.up || keys.down) && !IN.battle) IN.dancing = null;
+      if (IN.dancing && IN.dancing.k === 23) IN.yaw += dt * 7;
       let mv = 0;
       if (walk) {
         const turn = (keys.left ? 1 : 0) - (keys.right ? 1 : 0);
@@ -8342,7 +8708,7 @@ const STREET = (() => {
       // ponto de interação mais perto
       if (!IN.hold && !IN.sit) {
         let sp = null, bd = 9;
-        for (const s of R.spots) { const d = Math.hypot(IN.x - s.x, IN.z - s.z); if (d < s.r && d < bd) { sp = s; bd = d; } }
+        for (const s of R.spots) { if ((s.lv || 0) !== (IN.lv === 1 ? 1 : 0) || (IN.lv === 2 && s.act !== "door")) continue; const d = Math.hypot(IN.x - s.x, IN.z - s.z); if (d < s.r && d < bd) { sp = s; bd = d; } }
         if (IN.phones && !(sp && sp.deck === IN.phoneDeck)) { IN.phones = false; ui.inside && ui.inside("say", { who: "", line: "Fone de volta no gancho", mini: 1 }); }
         const lb = sp ? spotLabel(sp) : null;
         if (sp !== IN.spot || lb !== IN.lb) { IN.spot = sp; IN.lb = lb; ui.inside && ui.inside("spot", sp ? { label: lb, act: sp.act } : null); }
@@ -8376,7 +8742,7 @@ const STREET = (() => {
         const br = Math.sin(t * 0.8) * 0.01;
         tp = k < 1 ? POSE({ py: 0.94 - 0.3 * e }) : LOUNGE(t, br);
       } else if (IN.dancing && Math.abs(IN.v) < 0.12) {
-        tp = DANCE(IN.dancing.s, t, 0);
+        tp = CHARS.dance(IN.dancing.k, FS ? FS.B : t * 2, 1);
       } else if (Math.abs(IN.v) > 0.12) {
         const sw = Math.sin(IN.ph), cw = Math.cos(IN.ph), sg = IN.v < 0 ? -1 : 1;
         tp = POSE({ lean: 0.06, twist: sw * 0.07, fxF: sw * 0.2 * sg, fxB: -sw * 0.2 * sg, lf: Math.max(0, cw) * 0.07, lb: Math.max(0, -cw) * 0.07, hF: [-sw * 0.18 * sg, 0.93, 0.27], hB: [sw * 0.18 * sg, 0.93, -0.27] });
@@ -8404,7 +8770,7 @@ const STREET = (() => {
       for (const k of ["stand", "walk", "hr", "roll"]) IN.pose[k] = tp[k];
       if (IN.ov) { px = IN.ov.x; pz = IN.ov.z; yaw = IN.ov.yaw; IN.pose = ART.lerpPose(IN.pose, IN.ov.pose, Math.min(1, dt * 12)); }
       const sk = look.skates ? Math.PI / 2 : 0;
-      rig.pose(M.mul(M.T(px, look.skates ? 0 : -0.1, pz), M.RY(yaw + sk)), IN.pose);
+      rig.pose(M.mul(M.T(px, (look.skates ? 0 : -0.1) + (IN.y || 0), pz), M.RY(yaw + sk)), IN.pose);
       rig.board.hidden = true;
       // gente lá dentro
       if (IN.sayQ && IN.sayQ.length) { IN.sayQ[0].t -= dt; if (IN.sayQ[0].t <= 0) { const q = IN.sayQ.shift(); if (q.line) sayIn(q.who, q.line); if (q.fn) q.fn(); if (q.give && SA && SA.def.kind === "ice") { SA.phase = 1; IN.cone = { kf: 1, julie: 1, c: 0xf8f2e6 }; sfx.can(); } } }
@@ -8426,7 +8792,12 @@ const STREET = (() => {
         else if (n.idle === "talk2") p = POSE({ twist: 0.08 + Math.sin(t * 1.1 + n.ph) * 0.06, hp: 0.06, hy: Math.sin(t * 0.7 + n.ph) * 0.12, hF: [0.22 + Math.sin(t * 2.7 + n.ph) * 0.05, 1.12 + Math.sin(t * 2.1) * 0.06, 0.24], hB: [0.02, 0.95, -0.27] });
         else if (n.idle === "slowA") p = SLOW_A(t, 0);
         else if (n.idle === "slowB") p = SLOW_B(t, 0);
-        else if (n.dance != null) p = DANCE(n.dance, t, n.ph);
+        else if (n.idle === "cheer") { const b = FS ? FS.B : t * 2; p = POSE({ py: 0.94, lean: -0.02, hp: -0.08, twist: Math.sin(b * Math.PI) * 0.1, hF: [0.25, 1.7 + Math.abs(Math.sin(b * Math.PI * 2 + n.ph)) * 0.25, 0.2], hB: [0.25, 1.6 + Math.abs(Math.sin(b * Math.PI * 2 + n.ph + 1)) * 0.25, -0.2] }); }
+        else if (n.idle === "bar") p = POSE({ lean: 0.2, hp: 0.15, hy: Math.sin(t * 0.5) * 0.3, hF: [0.42 + Math.sin(t * 3) * 0.08, 1.0, 0.12 + Math.cos(t * 3) * 0.08], hB: [0.4, 1.0, -0.22] });
+        else if (n.dance != null) p = CHARS.dance(n.dance, (FS ? FS.B : t * 2) + (n.boff || 0), n.amp || 1);
+        if (FS && FS.react && !n.goal && !n.ov && n.who === "gabi") p = SURPRISE(t);
+        if (FS && FS.react && !n.goal && !n.ov && n.who === "kauane") p = NUDGE(t);
+        if (n.goal) p = walkP(n.walkPh || 0);
         else p = POSE({ lean: 0.04 + Math.sin(t * 1.1 + n.ph) * 0.02, twist: 0.1, hy: -0.3 + Math.sin(t * 0.6 + n.ph) * 0.2, hp: 0.12, hF: [0.06, 1.0, 0.2], hB: [0.02, 0.92, -0.25] });
         const dance = n.who === "vava" && IN.disco && IN.disco.vava && (IN.discoK || 0) > 0.4 && !talking;
         if (dance) {
@@ -8459,7 +8830,12 @@ const STREET = (() => {
       else if (IN.hold && IN.spot && IN.spot.face) { const f = IN.spot.face; eye = [px - fx * 1.25 + sx * 0.45, 2.05, pz - fz * 1.25 + sz * 0.45]; at = [(px + f[0]) / 2, 1.0, (pz + f[1]) / 2]; }
       else { eye = [px - fx * 2.4, 2.55, pz - fz * 2.4]; at = [px + fx * 0.9, 1.05, pz + fz * 0.9]; }
       eye[0] = Math.max(-R.W + 0.25, Math.min(R.W - 0.25, eye[0])); eye[2] = Math.max(0.12, Math.min(R.D - 0.2, eye[2])); eye[1] = Math.min(R.H - 0.3, eye[1]);
-      if (R.id === "festa" && !IN.cutCam) { const under = (Math.abs(eye[0]) > 4.0 && eye[2] > 5.6) || eye[2] > 13.3 || (Math.abs(px) > 4.2 && pz > 5.8); eye[1] = under ? Math.min(eye[1], 2.4) : Math.min(eye[1] + 0.35, R.H - 0.3); }
+      if (R.id === "festa" && !IN.cutCam) {
+        const y0 = IN.y || 0;
+        if (IN.lv === 0) { const under = (Math.abs(eye[0]) > R.MX - 0.3 && eye[2] > R.MZ0 - 0.4) || eye[2] > R.MZB - 0.3 || (Math.abs(px) > R.MX - 0.2 && pz > R.MZ0 - 0.2); eye[1] = under ? Math.min(eye[1], R.MY - 0.85) : Math.min(eye[1] + 0.35, R.H - 0.3); }
+        else { eye[1] = Math.min(eye[1] + y0 + 0.2, R.H - 0.25); at[1] += y0; }
+        if (IN.battle) { eye = [0.4, 3.9, 4.4]; at = [0, 0.9, 8.4]; }
+      }
       if (IN.cutCam) { IN.cam.eye = IN.cutCam.eye.slice(); IN.cam.at = IN.cutCam.at.slice(); IN.cam.fov = IN.cutCam.fov || 0.95; }
       else {
       if (IN.t < 0.05) { IN.cam.eye = eye.slice(); IN.cam.at = at.slice(); }
@@ -10671,7 +11047,7 @@ const STREET = (() => {
         reset(run || "session");
       },
       setSkatesForward(v) { skFwd = !!v; },
-      enterPlace, exitPlace, interact: inInteract, release: inRelease, shopAlbums,
+      enterPlace, exitPlace, interact: inInteract, release: inRelease, shopAlbums, festaKey: (k) => festaKey(k), festaSync: (d) => festaSync(d),
       get inside() { return IN ? IN.id : null; },
       shopPlay(ai, fmt, deck) { if (IN) { IN.play = { ai, fmt, deck: deck || "main" }; } },
       phones: () => phonesToggle(),
@@ -11071,10 +11447,12 @@ const FEST={on:0,i:0,slow:0};
 function festPlay(i){const S=RADIO.festa(),n=S.set.length;FEST.i=((i%n)+n)%n;FEST.slow=0;const f=S.set[FEST.i];
   RADIO.playTrack({a:f.a,t:f.t,id:f.id,s:f.s||0,once:1,onEnd:()=>{if(FEST.on&&!FEST.slow)festPlay(FEST.i+1)},onFail:()=>{if(FEST.on&&!FEST.slow)setTimeout(()=>festPlay(FEST.i+1),400)}});
   toastC('♪ DJ Luskinha: '+f.a+' — '+f.t)}
+function festBeat(){if(!FEST.on)return;const S=RADIO.festa(),f=FEST.slow?S.lenta:S.set[FEST.i];game.festaSync&&game.festaSync({bpm:(f&&f.bpm)||124,t:RADIO.ready()?RADIO.time():0,slow:FEST.slow})}
+setInterval(festBeat,500);
 function festSlow(){const L=RADIO.festa().lenta;FEST.slow=1;RADIO.playTrack({a:L.a,t:L.t,id:L.id,s:0,once:1,onEnd:()=>{FEST.slow=0;if(FEST.on)festPlay(FEST.i+1)},onFail:()=>{FEST.slow=0;if(FEST.on)festPlay(FEST.i+1)}});toastC('♪ '+L.a+' — '+L.t)}
-ui.festa=(ev,d)=>{if(ev==='on'){FEST.on=1;festPlay((d&&d.i)||0)}else if(ev==='slow')festSlow();else if(ev==='next'&&FEST.on&&!FEST.slow)festPlay(FEST.i+1);else if(ev==='off'){FEST.on=0;FEST.slow=0}};
+ui.festa=(ev,d)=>{if(ev==='on'){FEST.on=1;festPlay((d&&d.i)||0)}else if(ev==='slow')festSlow();else if(ev==='next'&&FEST.on&&(!FEST.slow||(d&&d.force)))festPlay(FEST.i+1);else if(ev==='off'){FEST.on=0;FEST.slow=0}};
 ui.inside=(ev,d)=>{
-  if(ev==='enter'){$('screen').classList.add('inside');if(d.name==='VAVÁ DISCOS')tvStart();$('inName').textContent=d.name;$('mmBox').classList.remove('on');clearTimeout(dmQ);clearTimeout(dmMini);$('dm').className='dm';DISC.set('');SHOP.radioWas=RADIO.active;RADIO.hold(true);if(RADIO.active)RADIO.pause(true);clearInterval(SHOP.tm);SHOP.tm=setInterval(shopTick,400);inSpot(null);if(d.skates)setTimeout(()=>toastC('Patins na porta, chinelo no pé 🩴'),900)}
+  if(ev==='enter'){document.body.classList.toggle('festaK',d.id==='festa');$('screen').classList.add('inside');if(d.name==='VAVÁ DISCOS')tvStart();$('inName').textContent=d.name;$('mmBox').classList.remove('on');clearTimeout(dmQ);clearTimeout(dmMini);$('dm').className='dm';DISC.set('');SHOP.radioWas=RADIO.active;RADIO.hold(true);if(RADIO.active)RADIO.pause(true);clearInterval(SHOP.tm);SHOP.tm=setInterval(shopTick,400);inSpot(null);if(d.skates)setTimeout(()=>toastC('Patins na porta, chinelo no pé 🩴'),900)}
   else if(ev==='spot')inSpot(d);
   else if(ev==='say'&&d.mini){toastC(d.line)}
   else if(ev==='say'){$('sayW').textContent=d.who;$('sayL').textContent='“'+d.line+'”';const b=$('say');b.classList.remove('on');void b.offsetWidth;b.classList.add('on');clearTimeout(SHOP.sayT);SHOP.sayT=setTimeout(()=>b.classList.remove('on'),4200)}
@@ -11085,7 +11463,7 @@ ui.inside=(ev,d)=>{
   else if(ev==='lounge'){inSpot(d.on?{label:d.seat?'Sentado na mesinha… Enter levanta':'Curtindo o som… Enter levanta'}:null);if(d.on)$('inPL').parentNode.querySelector('kbd').textContent='Enter';}
   else if(ev==='lift')shopStop();
   else if(ev==='leave'){inSpot(null);fadeDo(()=>game.exitPlace())}
-  else if(ev==='exit'){if(FEST.on){FEST.on=0;FEST.slow=0;SHOP.ai=0}$('screen').classList.remove('inside');tvStop();SHOP.dz=null;$('mmBox').classList.add('on');inSpot(null);$('say').classList.remove('on');clearInterval(SHOP.tm);for(const o of ['digO','insO','lanO'])$(o).classList.remove('on');INO=null;placeOn=null;MG.stop();
+  else if(ev==='exit'){document.body.classList.remove('festaK');if(FEST.on){FEST.on=0;FEST.slow=0;SHOP.ai=0}$('screen').classList.remove('inside');tvStop();SHOP.dz=null;$('mmBox').classList.add('on');inSpot(null);$('say').classList.remove('on');clearInterval(SHOP.tm);for(const o of ['digO','insO','lanO'])$(o).classList.remove('on');INO=null;placeOn=null;MG.stop();
     if(d.reset){RADIO.hold(false);RADIO.setVol(null);if(SHOP.ai>=0){SHOP.ai=-1;$('np').classList.remove('on');RADIO.stopTrack()}return}
     $('ndl').classList.remove('on');
     RADIO.setVol(null);RADIO.hold(false);
@@ -11309,6 +11687,7 @@ addEventListener('keydown',e=>{const k=e.key.toLowerCase();
   if(game.inside&&!paused&&game.lounging){if(k==='enter'||k==='escape'||k===' '||k==='e'){e.preventDefault();game.release()}return}
   if(game.inside&&!paused&&k==='f'){game.phones();return}
   if(game.inside&&!paused&&k==='q'){game.door();return}
+  if(game.inside==='festa'&&!paused){if(k===' '){e.preventDefault();if(!e.repeat)game.festaKey('dance');return}if(k==='j'||k==='k'||k==='l'){if(!e.repeat)game.festaKey(k==='j'?'next':k==='k'?'special':'pair');return}}
   if(game.inside&&!paused){if(k==='enter'||k==='e'||k===' '){e.preventDefault();if(!e.repeat)game.interact();return}if(k==='n'){if(FEST.on)ui.festa('next');else shopSkip(1);return}if(k==='b'){shopSkip(-1);return}if(k==='f'||k==='r'||k==='c')return}
   if(dlgOn){if(k==='enter'){e.preventDefault();game.acceptMission();dlg(false);return}if(k==='escape'){e.preventDefault();dlg(false);return}}
   // fita passando: controles do videocassete
